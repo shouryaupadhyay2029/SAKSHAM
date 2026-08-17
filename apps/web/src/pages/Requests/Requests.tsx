@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { mockRequests } from '../../data/mockRequests';
-import type { DemandRequest } from '../../types/request';
 import { Search, Filter, FileText } from 'lucide-react';
+import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Requests.module.css';
 
 export const Requests: React.FC = () => {
-  const [requests] = useState<DemandRequest[]>(mockRequests);
+  const { requests } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -20,7 +19,7 @@ export const Requests: React.FC = () => {
   });
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} textureCream`}>
       <div className={styles.header}>
         <div>
           <h2>Civilian Demand Requests Ledger</h2>

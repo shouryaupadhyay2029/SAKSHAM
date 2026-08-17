@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { mockVehicles } from '../../data/mockVehicles';
-import type { Vehicle } from '../../types/vehicle';
 import { Search, Filter, Truck, Radio, MapPin } from 'lucide-react';
+import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Vehicles.module.css';
 
 export const Vehicles: React.FC = () => {
-  const [vehicles] = useState<Vehicle[]>(mockVehicles);
+  const { vehicles } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
@@ -18,7 +17,7 @@ export const Vehicles: React.FC = () => {
   });
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} textureCream`}>
       <div className={styles.header}>
         <div>
           <h2>Emergency Fleet Log</h2>

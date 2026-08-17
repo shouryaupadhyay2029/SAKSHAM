@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
+import { useOperationalState } from '../context/OperationalStateContext';
 import { 
   Activity, 
   AlertTriangle, 
@@ -19,6 +20,7 @@ import {
 import styles from './OperationsLayout.module.css';
 
 export const OperationsLayout: React.FC = () => {
+  const { incidents, requests } = useOperationalState();
   const [time, setTime] = useState(new Date());
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -48,11 +50,15 @@ export const OperationsLayout: React.FC = () => {
     });
   };
 
+  // Dynamically count active incidents and pending requests from our global context
+  const activeIncidentsCount = incidents.filter(i => i.status === 'ACTIVE' || i.status === 'UNDER_RESPONSE').length;
+  const pendingRequestsCount = requests.filter(r => r.status === 'PENDING').length;
+
   const navItems = [
     { path: '/operations/command-center', label: 'Command Center', icon: Activity },
-    { path: '/operations/incidents', label: 'Incidents Registry', icon: AlertTriangle, badge: '5' },
+    { path: '/operations/incidents', label: 'Incidents Registry', icon: AlertTriangle, badge: activeIncidentsCount > 0 ? String(activeIncidentsCount) : undefined },
     { path: '/operations/resources', label: 'Resource Registry', icon: Layers },
-    { path: '/operations/requests', label: 'Demand Requests', icon: FileText, badge: '3' },
+    { path: '/operations/requests', label: 'Demand Requests', icon: FileText, badge: pendingRequestsCount > 0 ? String(pendingRequestsCount) : undefined },
     { path: '/operations/vehicles', label: 'Vehicle Fleet', icon: Truck },
     { path: '/operations/shelters', label: 'Shelter Network', icon: Home },
     { path: '/operations/analytics', label: 'Analytics & Reports', icon: BarChart3 },
@@ -66,14 +72,14 @@ export const OperationsLayout: React.FC = () => {
   return (
     <div className={styles.layout}>
       {/* Topbar */}
-      <header className={styles.topbar}>
+      <header className={`${styles.topbar} textureDark`}>
         <div className={styles.topbarLeft}>
           <button 
             className={styles.menuToggle} 
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle Sidebar"
           >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
           <div className={styles.logoArea}>
             <div className={styles.logoAccent} />
@@ -89,7 +95,7 @@ export const OperationsLayout: React.FC = () => {
         <div className={styles.topbarRight}>
           {/* Delhi Operational Clock */}
           <div className={styles.clockArea}>
-            <Clock size={16} className={styles.clockIcon} />
+            <Clock size={15} className={styles.clockIcon} />
             <div className={styles.clockTimes}>
               <span className={`${styles.clockTime} tech-code`}>{formatDelhiTime(time)}</span>
               <span className={styles.clockZone}>IST (DELHI)</span>
@@ -106,7 +112,7 @@ export const OperationsLayout: React.FC = () => {
               onClick={() => setNotificationsOpen(!notificationsOpen)}
               aria-label="Notifications"
             >
-              <Bell size={20} />
+              <Bell size={18} />
               <span className={styles.notificationBadge}>3</span>
             </button>
 
@@ -146,19 +152,27 @@ export const OperationsLayout: React.FC = () => {
           {/* User Profile Info */}
           <div className={styles.profileArea}>
             <div className={styles.profileBadge}>
-              <ShieldCheck size={14} className={styles.shieldIcon} />
+              <ShieldCheck size={13} className={styles.shieldIcon} />
               <span>NDRF OFFICER</span>
             </div>
             <div className={styles.profileAvatar}>
-              <User size={16} />
+              <User size={15} />
             </div>
           </div>
         </div>
       </header>
 
       <div className={styles.bodyContainer}>
+        {/* Mobile Sidebar Backdrop Overlay */}
+        {sidebarOpen && (
+          <div 
+            className={styles.sidebarOverlay} 
+            onClick={() => setSidebarOpen(false)} 
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed}`}>
+        <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed} textureDark`}>
           <nav className={styles.sidebarNav}>
             {navItems.map((item) => {
               const IconComponent = item.icon;
@@ -170,10 +184,10 @@ export const OperationsLayout: React.FC = () => {
                     `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
                   }
                 >
-                  <IconComponent size={18} className={styles.navIcon} />
+                  <IconComponent size={16} className={styles.navIcon} />
                   <span className={styles.navLabel}>{item.label}</span>
                   {item.badge && <span className={styles.navBadge}>{item.badge}</span>}
-                  <ChevronRight size={14} className={styles.navArrow} />
+                  <ChevronRight size={13} className={styles.navArrow} />
                 </NavLink>
               );
             })}
@@ -190,9 +204,9 @@ export const OperationsLayout: React.FC = () => {
           <div className={styles.pageHeader}>
             <div className={styles.breadcrumbs}>
               <Link to="/">Home</Link>
-              <ChevronRight size={12} />
+              <ChevronRight size={11} />
               <span>Operations</span>
-              <ChevronRight size={12} />
+              <ChevronRight size={11} />
               <span className={styles.currentBreadcrumb}>{getPageTitle()}</span>
             </div>
           </div>

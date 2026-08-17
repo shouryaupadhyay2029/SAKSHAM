@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { mockResources } from '../../data/mockResources';
-import type { ResourceItem } from '../../types/resource';
 import { Search, Filter, Package, MapPin } from 'lucide-react';
+import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Resources.module.css';
 
 export const Resources: React.FC = () => {
-  const [resources] = useState<ResourceItem[]>(mockResources);
+  const { resources } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -19,7 +18,7 @@ export const Resources: React.FC = () => {
   });
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} textureCream`}>
       <div className={styles.header}>
         <div>
           <h2>Resource Stock Registry</h2>

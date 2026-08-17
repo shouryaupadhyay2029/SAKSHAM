@@ -1,0 +1,291 @@
+.mapPanelWrapper {
+  position: relative;
+  width: 100%;
+  height: 560px;
+  border-radius: 18px;
+  border: 1px solid rgba(12, 29, 23, 0.08);
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(12, 29, 23, 0.04);
+  background-color: #0E1A14;
+}
+
+.mapContainerInner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* TOP-LEFT OVERLAY */
+.mapHeaderOverlay {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 10;
+  background-color: rgba(12, 29, 23, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(250, 248, 243, 0.08);
+  padding: 12px 16px;
+  border-radius: 10px;
+  color: #FAF8F3;
+}
+
+.liveBadge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.pulseDot {
+  color: #F47C20;
+  animation: blink 1.5s infinite ease-in-out;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.statsRow {
+  display: flex;
+  gap: 16px;
+}
+
+.statBox {
+  display: flex;
+  flex-direction: column;
+}
+
+.statLabel {
+  font-size: 8px;
+  font-family: var(--font-sans);
+  color: rgba(250, 248, 243, 0.4);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #FAF8F3;
+}
+
+/* TOP-RIGHT LEGEND OVERLAY */
+.legendOverlay {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 10;
+  background-color: rgba(12, 29, 23, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(250, 248, 243, 0.08);
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.legendItem {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: rgba(250, 248, 243, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legendDot {
+  font-size: 10px;
+}
+
+.dotCritical { color: var(--color-critical); }
+.dotWarning { color: var(--color-warning); }
+.dotSuccess { color: var(--color-success); }
+
+/* RIGHT PANEL OVERLAYS (Incident Feed & Deployed Units) */
+.rightOverlayContainer {
+  position: absolute;
+  top: 80px;
+  right: var(--space-4);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 220px;
+}
+
+.overlayPanel {
+  background-color: rgba(12, 29, 23, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(250, 248, 243, 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  color: #FAF8F3;
+}
+
+.panelTitle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(250, 248, 243, 0.4);
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(250, 248, 243, 0.05);
+  padding-bottom: 6px;
+}
+
+.panelList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feedItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feedItemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.feedType {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: #FAF8F3;
+}
+
+.feedZone {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: rgba(250, 248, 243, 0.4);
+}
+
+.feedTime {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  color: #F47C20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.emptyFeed {
+  font-size: 10px;
+  color: rgba(250, 248, 243, 0.4);
+  text-align: center;
+}
+
+.unitGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.unitBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(250, 248, 243, 0.03);
+  border-radius: 6px;
+  padding: 6px 0;
+}
+
+.unitNum {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: #FAF8F3;
+}
+
+.unitLabel {
+  font-size: 8px;
+  color: rgba(250, 248, 243, 0.4);
+  text-transform: uppercase;
+}
+
+/* BOTTOM-LEFT ACTIVE TEAM CARD OVERLAY */
+.activeTeamOverlay {
+  position: absolute;
+  bottom: var(--space-4);
+  left: var(--space-4);
+  z-index: 10;
+  background-color: rgba(12, 29, 23, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(250, 248, 243, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #FAF8F3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.teamHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.teamIcon {
+  color: #F47C20;
+}
+
+.teamName {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.teamStatus {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: rgba(250, 248, 243, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusDot {
+  color: var(--color-success);
+}
+
+.teamEta {
+  color: #F47C20;
+  font-weight: 700;
+}
+
+/* MOBILE MEDIA QUERY RESPONSIVENESS */
+@media (max-width: 768px) {
+  .mapPanelWrapper {
+    height: 440px;
+  }
+
+  .rightOverlayContainer {
+    display: none; /* Hide dense list panels on small screens */
+  }
+
+  .mapHeaderOverlay {
+    padding: 8px 12px;
+  }
+
+  .statValue {
+    font-size: 1.1rem;
+  }
+}

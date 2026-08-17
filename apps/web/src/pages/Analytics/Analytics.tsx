@@ -14,15 +14,15 @@ import {
   LineChart,
   Line
 } from 'recharts';
-import { mockIncidents } from '../../data/mockIncidents';
-import { mockResources } from '../../data/mockResources';
-import { mockShelters } from '../../data/mockShelters';
+import { useOperationalState } from '../../context/OperationalStateContext';
 import { ShieldAlert, Users, Truck } from 'lucide-react';
 import styles from './Analytics.module.css';
 
 export const Analytics: React.FC = () => {
+  const { incidents, resources, shelters } = useOperationalState();
+
   // 1. Calculate Incident Severity Pie Chart Data
-  const severityCount = mockIncidents.reduce((acc: Record<string, number>, curr) => {
+  const severityCount = incidents.reduce((acc: Record<string, number>, curr) => {
     acc[curr.severity] = (acc[curr.severity] || 0) + 1;
     return acc;
   }, {});
@@ -35,7 +35,7 @@ export const Analytics: React.FC = () => {
   ];
 
   // 2. Resource stock availability by Depot
-  const depotResources = mockResources.reduce((acc: Record<string, number>, curr) => {
+  const depotResources = resources.reduce((acc: Record<string, number>, curr) => {
     const key = curr.locationName.split(' ')[0]; // E.g. "East" or "Delhi"
     acc[key] = (acc[key] || 0) + curr.quantity;
     return acc;
@@ -47,7 +47,7 @@ export const Analytics: React.FC = () => {
   }));
 
   // 3. Shelter Capacity details
-  const shelterCapData = mockShelters.map(shl => ({
+  const shelterCapData = shelters.map(shl => ({
     name: shl.name.split(' ')[0], // Short name
     Occupied: shl.capacityOccupied,
     Available: shl.capacityTotal - shl.capacityOccupied
@@ -65,7 +65,7 @@ export const Analytics: React.FC = () => {
   ];
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} textureCream`}>
       <div className={styles.header}>
         <h2>Operational Analytics Deck</h2>
         <p className={styles.subtext}>Aggregated resource flows, regional threat matrices, and emergency shelter network dashboards.</p>
@@ -74,7 +74,7 @@ export const Analytics: React.FC = () => {
       {/* Metrics Highlights */}
       <div className={styles.metricsGrid}>
         <div className={styles.cardStat}>
-          <div className={styles.statIconWrapper} style={{ backgroundColor: 'rgba(217, 75, 61, 0.1)', color: '#D94B3D' }}>
+          <div className={`${styles.statIconWrapper} ${styles.statThreat}`}>
             <ShieldAlert size={20} />
           </div>
           <div>
@@ -84,7 +84,7 @@ export const Analytics: React.FC = () => {
         </div>
 
         <div className={styles.cardStat}>
-          <div className={styles.statIconWrapper} style={{ backgroundColor: 'rgba(79, 143, 91, 0.1)', color: '#4F8F5B' }}>
+          <div className={`${styles.statIconWrapper} ${styles.statOccupancy}`}>
             <Users size={20} />
           </div>
           <div>
@@ -94,7 +94,7 @@ export const Analytics: React.FC = () => {
         </div>
 
         <div className={styles.cardStat}>
-          <div className={styles.statIconWrapper} style={{ backgroundColor: 'rgba(244, 124, 32, 0.1)', color: '#F47C20' }}>
+          <div className={`${styles.statIconWrapper} ${styles.statSupply}`}>
             <Truck size={20} />
           </div>
           <div>

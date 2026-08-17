@@ -8,12 +8,22 @@
   --color-forest: #21583F;
   --color-dark-forest: #10291F;
   --color-earth: #5A4636;
-  --color-cream: #F4EFE6;
-  --color-warm-white: #FAF8F3;
+  
+  /* Cream Material Palette */
+  --color-cream-light: #FAF7F0;
+  --color-cream-primary: #F5F0E7;
+  --color-cream-deep: #EEE6D8;
+  --color-cream-parchment: #E7DDCE;
+  --color-cream-surface: #F2ECE2;
+  --color-cream-border: #D8CEC0;
+  --color-cream-border-light: #E5DDD2;
+  --color-cream-muted: #B7AD9F;
+  
+  --color-cream: var(--color-cream-primary);
+  --color-warm-white: var(--color-cream-light);
   --color-charcoal: #101513;
-  --color-secondary-text: #68716C;
-  --color-border: #D9D2C7;
-  --color-border-strong: #B8AF9F;
+  --color-border: var(--color-cream-border-light);
+  --color-border-strong: var(--color-cream-border);
   
   /* Status Colors */
   --color-critical: #D94B3D;      /* Red - real danger */
@@ -22,21 +32,22 @@
   --color-info: #4A82A8;          /* Blue - informational */
   
   /* Layout Surfaces */
-  --color-bg-base: var(--color-warm-white);
-  --color-bg-surface: #FFFFFF;
-  --color-bg-surface-raised: var(--color-cream);
+  --color-bg-base: var(--color-cream-light);
+  --color-bg-surface: var(--color-cream-primary);
+  --color-bg-surface-raised: var(--color-cream-surface);
   --color-bg-sidebar: var(--color-dark-forest);
   --color-bg-topbar: var(--color-deep-forest);
   
   /* Text Colors */
-  --color-text-primary: var(--color-charcoal);
-  --color-text-secondary: var(--color-secondary-text);
-  --color-text-muted: #8B9490;
-  --color-text-on-dark: var(--color-warm-white);
+  --color-text-primary: #17211C;
+  --color-text-secondary: #5F675F;
+  --color-text-muted: var(--color-cream-muted);
+  --color-text-on-dark: var(--color-cream-light);
   --color-text-on-primary: #FFFFFF;
   
   /* Typography Stacks */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'AsteraCasty', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Feldora', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   
   /* Font Sizes */

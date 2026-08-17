@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { mockShelters } from '../../data/mockShelters';
-import type { Shelter } from '../../types/shelter';
 import { Search, Filter, Home, CheckCircle2, User, Phone } from 'lucide-react';
+import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Shelters.module.css';
 
 export const Shelters: React.FC = () => {
-  const [shelters] = useState<Shelter[]>(mockShelters);
+  const { shelters } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
@@ -17,7 +16,7 @@ export const Shelters: React.FC = () => {
   });
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} textureCream`}>
       <div className={styles.header}>
         <div>
           <h2>Shelter & Transit Network</h2>

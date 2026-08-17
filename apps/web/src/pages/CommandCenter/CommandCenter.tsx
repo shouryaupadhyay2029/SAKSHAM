@@ -1,21 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  mockIncidents as initialIncidents 
-} from '../../data/mockIncidents';
-import { 
-  mockResources as initialResources 
-} from '../../data/mockResources';
-import { 
-  mockVehicles as initialVehicles 
-} from '../../data/mockVehicles';
-import { 
-  mockShelters as initialShelters 
-} from '../../data/mockShelters';
 import { MapView } from '../../components/map/MapView';
 import type { Incident } from '../../types/incident';
 import type { Vehicle } from '../../types/vehicle';
 import type { Shelter } from '../../types/shelter';
+import { useOperationalState } from '../../context/OperationalStateContext';
 import { 
   Search, 
   Truck, 
@@ -32,11 +21,13 @@ import {
 import styles from './CommandCenter.module.css';
 
 export const CommandCenter: React.FC = () => {
-  // Manage state locally for active interactions
-  const [incidents, setIncidents] = useState<Incident[]>(initialIncidents);
-  const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
-  const [resources] = useState(initialResources);
-  const [shelters] = useState<Shelter[]>(initialShelters);
+  const { 
+    incidents, 
+    vehicles, 
+    resources, 
+    shelters, 
+    dispatchVehicleToIncident 
+  } = useOperationalState();
 
   // Selection states
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
@@ -59,32 +50,7 @@ export const CommandCenter: React.FC = () => {
 
   // Action: Dispatch Vehicle to Incident
   const handleDispatch = (vehicleId: string, incidentId: string) => {
-    const targetIncident = incidents.find(inc => inc.id === incidentId);
-    if (!targetIncident) return;
-
-    // Update vehicle destination, status, and cargo
-    setVehicles(prevVehicles => 
-      prevVehicles.map(veh => 
-        veh.id === vehicleId 
-          ? {
-              ...veh,
-              status: 'EN_ROUTE',
-              destination: targetIncident.coordinates,
-              cargo: `Dispatching for ${targetIncident.type.replace('_', ' ')} relief`,
-              speedKmh: 50
-            }
-          : veh
-      )
-    );
-
-    // Update incident status to UNDER_RESPONSE
-    setIncidents(prevIncidents =>
-      prevIncidents.map(inc =>
-        inc.id === incidentId
-          ? { ...inc, status: 'UNDER_RESPONSE', assignedTeam: `Dispatched ${vehicleId}` }
-          : inc
-      )
-    );
+    dispatchVehicleToIncident(vehicleId, incidentId);
 
     // Update selected incident detail panel view
     setSelectedIncident(prev => 
@@ -120,7 +86,7 @@ export const CommandCenter: React.FC = () => {
   return (
     <div className={styles.container}>
       {/* Sidebar / Left Operations Control Panel */}
-      <aside className={styles.controlPanel}>
+      <aside className={`${styles.controlPanel} textureDark`}>
         <div className={styles.panelHeader}>
           <h3>OPERATIONS PANEL</h3>
           <span className={`${styles.badgeCount} tech-code`}>{filteredIncidents.length} INCIDENTS</span>
@@ -274,7 +240,7 @@ export const CommandCenter: React.FC = () => {
         />
 
         {/* Map Legend overlay */}
-        <div className={styles.mapLegend}>
+        <div className={`${styles.mapLegend} textureDark`}>
           <h5>MAP LEGEND</h5>
           <div className={styles.legendRow}><span className={`${styles.legendDot} ${styles.bgCritical}`} /> Critical Incident</div>
           <div className={styles.legendRow}><span className={`${styles.legendDot} ${styles.bgWarning}`} /> Warning Incident</div>
@@ -287,7 +253,7 @@ export const CommandCenter: React.FC = () => {
         <AnimatePresence>
           {selectedIncident && (
             <motion.div 
-              className={styles.drawer}
+              className={`${styles.drawer} textureCream`}
               initial={{ x: 400, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 400, opacity: 0 }}
@@ -389,7 +355,7 @@ export const CommandCenter: React.FC = () => {
         <AnimatePresence>
           {selectedVehicle && (
             <motion.div 
-              className={styles.drawer}
+              className={`${styles.drawer} textureCream`}
               initial={{ x: 400, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 400, opacity: 0 }}
@@ -455,7 +421,7 @@ export const CommandCenter: React.FC = () => {
         <AnimatePresence>
           {selectedShelter && (
             <motion.div 
-              className={styles.drawer}
+              className={`${styles.drawer} textureCream`}
               initial={{ x: 400, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 400, opacity: 0 }}

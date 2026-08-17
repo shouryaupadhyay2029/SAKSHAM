@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { mockIncidents } from '../../data/mockIncidents';
-import type { Incident } from '../../types/incident';
 import { Search, Filter, AlertTriangle } from 'lucide-react';
+import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Incidents.module.css';
 
 export const Incidents: React.FC = () => {
-  const [incidents] = useState<Incident[]>(mockIncidents);
+  const { incidents } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -20,7 +19,7 @@ export const Incidents: React.FC = () => {
   });
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} textureCream`}>
       <div className={styles.header}>
         <div>
           <h2>Incident Reports Registry</h2>
