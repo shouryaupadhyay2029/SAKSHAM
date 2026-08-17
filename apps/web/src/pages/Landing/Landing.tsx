@@ -257,6 +257,166 @@ export const Landing: React.FC = () => {
         }
       });
 
+      // 10. SAKSHAM ECOSYSTEM (Section A) reveals
+      gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionSub}`, 
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          scrollTrigger: {
+            trigger: `.${styles.networkFlowSection}`,
+            start: 'top 80%',
+            once: true
+          }
+        }
+      );
+      
+      gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionTitle}`,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1,
+          y: 0,
+          scrollTrigger: {
+            trigger: `.${styles.networkFlowSection}`,
+            start: 'top 75%',
+            once: true
+          }
+        }
+      );
+      
+      gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionDesc}`,
+        { opacity: 0, y: 16 },
+        {
+          opacity: 1,
+          y: 0,
+          scrollTrigger: {
+            trigger: `.${styles.networkFlowSection}`,
+            start: 'top 70%',
+            once: true
+          }
+        }
+      );
+
+      // Ecosystem Sequential diagram activation (scrubbed)
+      const nodes = gsap.utils.toArray(`.${styles.networkDiagram} .${styles.diagramNode}`);
+      const diagramLines = gsap.utils.toArray(`.${styles.networkDiagram} .${styles.diagramLine}`);
+      const isMobile = window.innerWidth <= 768;
+
+      gsap.set(nodes, { opacity: 0.35 });
+      gsap.set(diagramLines.map((l: any) => l.querySelector(`.${styles.diagramLineInner}`)), {
+        scaleX: isMobile ? 1 : 0,
+        scaleY: isMobile ? 0 : 1,
+        transformOrigin: isMobile ? 'top' : 'left'
+      });
+
+      const ecosystemTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: `.${styles.networkDiagram}`,
+          start: 'top 75%',
+          end: 'bottom 45%',
+          scrub: 0.5
+        }
+      });
+
+      ecosystemTl
+        .to(nodes[0] as any, { opacity: 1, duration: 0.2 })
+        .to((nodes[0] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2')
+        .set((diagramLines[0] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 1 })
+        .to((diagramLines[0] as any).querySelector(`.${styles.diagramLineInner}`), { scaleX: 1, scaleY: 1, duration: 0.4 })
+        .to((diagramLines[0] as any).querySelector(`.${styles.diagramLineSignal}`), {
+          left: isMobile ? '50%' : '100%',
+          top: isMobile ? '100%' : '50%',
+          duration: 0.4,
+          ease: 'power1.inOut'
+        }, '-=0.4')
+        .set((diagramLines[0] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 0 })
+
+        .to(nodes[1] as any, { opacity: 1, duration: 0.2 })
+        .to((nodes[1] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2')
+        .set((diagramLines[1] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 1 })
+        .to((diagramLines[1] as any).querySelector(`.${styles.diagramLineInner}`), { scaleX: 1, scaleY: 1, duration: 0.4 })
+        .to((diagramLines[1] as any).querySelector(`.${styles.diagramLineSignal}`), {
+          left: isMobile ? '50%' : '100%',
+          top: isMobile ? '100%' : '50%',
+          duration: 0.4,
+          ease: 'power1.inOut'
+        }, '-=0.4')
+        .set((diagramLines[1] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 0 })
+
+        .to(nodes[2] as any, { opacity: 1, duration: 0.2 })
+        .to((nodes[2] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2')
+        .set((diagramLines[2] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 1 })
+        .to((diagramLines[2] as any).querySelector(`.${styles.diagramLineInner}`), { scaleX: 1, scaleY: 1, duration: 0.4 })
+        .to((diagramLines[2] as any).querySelector(`.${styles.diagramLineSignal}`), {
+          left: isMobile ? '50%' : '100%',
+          top: isMobile ? '100%' : '50%',
+          duration: 0.4,
+          ease: 'power1.inOut'
+        }, '-=0.4')
+        .set((diagramLines[2] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 0 })
+
+        .to(nodes[3] as any, { opacity: 1, duration: 0.2 })
+        .to((nodes[3] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2');
+
+
+      // 11. OPERATIONAL RUNTIME (Section B) reveals
+      gsap.fromTo(`.${styles.workflowSection} .${styles.sectionSub}`,
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          scrollTrigger: {
+            trigger: `.${styles.workflowSection}`,
+            start: 'top 80%',
+            once: true
+          }
+        }
+      );
+      gsap.fromTo(`.${styles.workflowSection} .${styles.sectionTitle}`,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1,
+          y: 0,
+          scrollTrigger: {
+            trigger: `.${styles.workflowSection}`,
+            start: 'top 75%',
+            once: true
+          }
+        }
+      );
+
+      // Staggered card entry
+      const stepCards = gsap.utils.toArray(`.${styles.stepsGrid} .${styles.stepCard}`);
+      gsap.fromTo(stepCards,
+        { opacity: 0, y: 35, scale: 0.985 },
+        {
+          opacity: 0.65, // starts at slightly muted opacity as planned
+          y: 0,
+          scale: 1,
+          duration: 0.85,
+          stagger: 0.12,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: `.${styles.stepsGrid}`,
+            start: 'top 78%',
+            once: true
+          }
+        }
+      );
+
+      // Active card viewport focus observer
+      stepCards.forEach((card: any) => {
+        ScrollTrigger.create({
+          trigger: card,
+          start: 'top 55%',
+          end: 'bottom 45%',
+          onEnter: () => card.classList.add(styles.stepCardActive),
+          onLeave: () => card.classList.remove(styles.stepCardActive),
+          onEnterBack: () => card.classList.add(styles.stepCardActive),
+          onLeaveBack: () => card.classList.remove(styles.stepCardActive),
+        });
+      });
+
     }, landingRef);
 
     return () => ctx.revert();
@@ -411,17 +571,26 @@ export const Landing: React.FC = () => {
               <div className={styles.nodeIcon}><ShieldAlert size={20} /></div>
               <span>Incidents</span>
             </div>
-            <div className={styles.diagramLine} />
+            <div className={styles.diagramLine}>
+              <div className={styles.diagramLineInner} />
+              <div className={styles.diagramLineSignal} />
+            </div>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><Layers size={20} /></div>
               <span>Demand</span>
             </div>
-            <div className={styles.diagramLine} />
+            <div className={styles.diagramLine}>
+              <div className={styles.diagramLineInner} />
+              <div className={styles.diagramLineSignal} />
+            </div>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><Link2 size={20} /></div>
               <span>Resources</span>
             </div>
-            <div className={styles.diagramLine} />
+            <div className={styles.diagramLine}>
+              <div className={styles.diagramLineInner} />
+              <div className={styles.diagramLineSignal} />
+            </div>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><Truck size={20} /></div>
               <span>Routes</span>

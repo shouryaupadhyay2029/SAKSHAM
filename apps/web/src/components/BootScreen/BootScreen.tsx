@@ -224,10 +224,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
         {/* Brand SAKSHAM Centered Logo & Typography */}
         <div className={styles.leftBrandContainer}>
           <div ref={logoMarkRef} className={styles.logoMark}>
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="18" y="2" width="22" height="22" rx="4" transform="rotate(45 18 2)" fill="#0C1D17" stroke="#F47C20" strokeWidth="2.5"/>
-              <circle cx="18" cy="18" r="4" fill="#F47C20"/>
-            </svg>
+            <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
           </div>
           <h1 ref={brandWordmarkRef} className={styles.brandWordmark}>
             SAKSHAM

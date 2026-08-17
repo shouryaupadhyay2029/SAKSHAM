@@ -22,21 +22,22 @@
 
 /* Markers Baseline */
 .marker {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 2px solid #FFFFFF;
-  box-shadow: var(--shadow-md);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 0 2.5px rgba(255, 255, 255, 0.15), var(--shadow-md);
   transition: var(--transition-fast);
 }
 
 .marker:hover {
-  transform: scale(1.15);
+  transform: scale(1.2);
   z-index: 999;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25), 0 0 15px rgba(255, 255, 255, 0.4);
 }
 
 .markerDot {
@@ -112,20 +113,21 @@
 
 /* Map Popup Overrides (applied in JS template injection) */
 :global(.maplibregl-popup-content) {
-  background-color: var(--color-bg-surface) !important;
+  background-color: rgba(12, 29, 23, 0.88) !important; /* Premium semi-transparent forest green */
+  backdrop-filter: blur(10px) !important;
   border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-lg) !important;
-  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid rgba(250, 248, 243, 0.1) !important;
   padding: var(--space-3) !important;
 }
 
 :global(.maplibregl-popup-tip) {
-  border-top-color: var(--color-border) !important;
+  border-top-color: rgba(12, 29, 23, 0.88) !important;
 }
 
 :global(.mapPopup) {
   font-family: var(--font-sans);
-  color: var(--color-text-primary);
+  color: #FAF8F3;
   min-width: 180px;
   max-width: 240px;
 }
@@ -143,51 +145,51 @@
 }
 
 :global(.badgeCRITICAL) {
-  background-color: rgba(217, 75, 61, 0.15);
-  color: var(--color-critical);
-  border: 1px solid rgba(217, 75, 61, 0.3);
+  background-color: rgba(217, 75, 61, 0.2);
+  color: #FF8F85;
+  border: 1px solid rgba(217, 75, 61, 0.45);
 }
 
 :global(.badgeHIGH) {
-  background-color: rgba(231, 167, 43, 0.15);
-  color: var(--color-warning);
-  border: 1px solid rgba(231, 167, 43, 0.3);
+  background-color: rgba(244, 124, 32, 0.2);
+  color: #FFB380;
+  border: 1px solid rgba(244, 124, 32, 0.45);
 }
 
 :global(.badgeShelter) {
-  background-color: rgba(79, 143, 91, 0.15);
-  color: var(--color-success);
-  border: 1px solid rgba(79, 143, 91, 0.3);
+  background-color: rgba(79, 143, 91, 0.2);
+  color: #A3E2B2;
+  border: 1px solid rgba(79, 143, 91, 0.45);
 }
 
 :global(.badgeVehicle) {
-  background-color: rgba(244, 124, 32, 0.15);
-  color: var(--color-primary);
-  border: 1px solid rgba(244, 124, 32, 0.3);
+  background-color: rgba(244, 124, 32, 0.2);
+  color: #FFB380;
+  border: 1px solid rgba(244, 124, 32, 0.45);
 }
 
 :global(.badgeResource) {
-  background-color: rgba(74, 130, 168, 0.15);
-  color: var(--color-info);
-  border: 1px solid rgba(74, 130, 168, 0.3);
+  background-color: rgba(74, 130, 168, 0.2);
+  color: #9BD2F5;
+  border: 1px solid rgba(74, 130, 168, 0.45);
 }
 
 :global(.popupTitle) {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   margin-bottom: 2px;
-  color: var(--color-deep-forest);
+  color: #FAF8F3;
 }
 
 :global(.popupLoc) {
   font-size: 11px;
-  color: var(--color-text-secondary);
+  color: rgba(250, 248, 243, 0.7);
   margin-bottom: var(--space-2);
 }
 
 :global(.popupDesc) {
   font-size: 11px;
-  color: var(--color-text-secondary);
+  color: rgba(250, 248, 243, 0.75);
   line-height: 1.4;
   margin-bottom: var(--space-1);
 }
@@ -195,7 +197,7 @@
 :global(.popupCapacityBar) {
   width: 100%;
   height: 6px;
-  background-color: var(--color-cream);
+  background-color: rgba(250, 248, 243, 0.15);
   border-radius: var(--radius-full);
   overflow: hidden;
   margin: var(--space-2) 0 var(--space-1);
@@ -209,17 +211,17 @@
 
 :global(.popupCapText) {
   font-size: 10px;
-  color: var(--color-text-muted);
+  color: rgba(250, 248, 243, 0.5);
   font-family: var(--font-mono);
 }
 
 :global(.popupCargo) {
   font-size: 11px;
-  background-color: var(--color-bg-surface-raised);
+  background-color: rgba(250, 248, 243, 0.05);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-xs);
   margin-top: var(--space-1);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(250, 248, 243, 0.1);
 }
 
 /* Animations (Map-scoped) */

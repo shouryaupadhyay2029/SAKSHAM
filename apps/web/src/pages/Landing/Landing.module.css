@@ -872,13 +872,16 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(23, 61, 45, 0.12);
   background-color: var(--color-cream-light);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-text-primary);
-  transition: transform 200ms ease, border-color 200ms ease;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), 
+              border-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+              color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .diagramNode span {
@@ -887,14 +890,42 @@
   font-weight: 700;
   color: var(--color-text-secondary);
   text-transform: uppercase;
+  transition: color 300ms ease;
 }
 
 .diagramLine {
   flex-grow: 1;
   height: 1px;
-  background-color: rgba(23, 61, 45, 0.12);
+  background-color: rgba(23, 61, 45, 0.08);
   margin: 0 16px;
   position: relative;
+  overflow: hidden;
+}
+
+.diagramLineInner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #F47C20;
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
+}
+
+.diagramLineSignal {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #F47C20;
+  box-shadow: 0 0 8px #F47C20;
+  pointer-events: none;
+  opacity: 0;
 }
 
 /* Workflow section styling */
@@ -917,7 +948,17 @@
   border: 1px solid rgba(23, 61, 45, 0.06);
   padding: var(--space-8);
   border-radius: 12px;
-  transition: transform 250ms ease, border-color 250ms ease;
+  transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1), 
+              border-color 350ms cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 350ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 350ms cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 0.65;
+}
+
+.stepCardActive {
+  opacity: 1 !important;
+  border-color: rgba(244, 124, 32, 0.3) !important;
+  box-shadow: 0 12px 30px rgba(12, 29, 23, 0.04);
 }
 
 .stepCard:hover {
@@ -929,8 +970,14 @@
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 700;
-  color: #F47C20;
+  color: var(--color-text-secondary);
   margin-bottom: 16px;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), color 300ms ease;
+}
+
+.stepCardActive .stepNum {
+  color: #F47C20 !important;
+  transform: translateY(-4px);
 }
 
 .stepCard h4 {
@@ -939,6 +986,7 @@
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0 0 10px 0;
+  transition: color 300ms ease;
 }
 
 .stepCard p {

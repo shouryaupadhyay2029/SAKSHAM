@@ -9,6 +9,7 @@ import styles from './PublicLayout.module.css';
 
 export const PublicLayout: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isCompressed, setIsCompressed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isMegaOpen, setIsMegaOpen] = useState(false);
   const [isAlertVisible, setIsAlertVisible] = useState(true);
@@ -18,12 +19,26 @@ export const PublicLayout: React.FC = () => {
 
   const isHome = location.pathname === '/';
 
-  // Scroll handler
+  // Scroll handler with compression based on direction
   useEffect(() => {
+    let lastY = window.scrollY;
+    
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40);
+      const currentY = window.scrollY;
+      setIsScrolled(currentY > 40);
+
+      if (currentY > 120) {
+        if (currentY > lastY) {
+          setIsCompressed(true); // scrolling down: compress
+        } else {
+          setIsCompressed(false); // scrolling up: expand
+        }
+      } else {
+        setIsCompressed(false);
+      }
+      lastY = currentY;
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -96,14 +111,11 @@ export const PublicLayout: React.FC = () => {
       )}
 
       {/* 2. MAIN NAV HEADER */}
-      <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''}`}>
+      <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''} ${isCompressed ? styles.headerCompressed : ''}`}>
         <div className={styles.headerWrapper}>
           {/* Brand Logo & Wordmark */}
           <div className={styles.brandArea}>
-            <svg width="22" height="22" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="18" y="2" width="22" height="22" rx="4" transform="rotate(45 18 2)" fill="none" stroke="#B35D38" strokeWidth="3"/>
-              <circle cx="18" cy="18" r="4" fill="#B35D38"/>
-            </svg>
+            <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', marginRight: '14px' }} />
             <Link to="/" className={styles.logoText}>SAKSHAM</Link>
           </div>
 

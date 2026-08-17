@@ -20,6 +20,7 @@ import NotFound from './pages/NotFound/NotFound';
 import Report from './pages/Report/Report';
 import Help from './pages/Help/Help';
 import { OperationalStateProvider } from './context/OperationalStateContext';
+import { SmoothScrollProvider } from './motion/scroll/LenisProvider';
 import BootScreen from './components/BootScreen/BootScreen';
 
 const queryClient = new QueryClient({
@@ -47,32 +48,34 @@ export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <OperationalStateProvider>
-        {showBoot && <BootScreen onComplete={handleBootComplete} />}
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<PublicLayout />}>
-              <Route index element={<Landing />} />
-              <Route path="report" element={<Report />} />
-              <Route path="help" element={<Help />} />
-            </Route>
+        <SmoothScrollProvider>
+          {showBoot && <BootScreen onComplete={handleBootComplete} />}
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<PublicLayout />}>
+                <Route index element={<Landing />} />
+                <Route path="report" element={<Report />} />
+                <Route path="help" element={<Help />} />
+              </Route>
 
-            {/* Operations / Command Board Routes */}
-            <Route path="/operations" element={<OperationsLayout />}>
-              <Route index element={<Navigate to="/operations/command-center" replace />} />
-              <Route path="command-center" element={<CommandCenter />} />
-              <Route path="incidents" element={<Incidents />} />
-              <Route path="resources" element={<Resources />} />
-              <Route path="requests" element={<Requests />} />
-              <Route path="vehicles" element={<Vehicles />} />
-              <Route path="shelters" element={<Shelters />} />
-              <Route path="analytics" element={<Analytics />} />
-            </Route>
+              {/* Operations / Command Board Routes */}
+              <Route path="/operations" element={<OperationsLayout />}>
+                <Route index element={<Navigate to="/operations/command-center" replace />} />
+                <Route path="command-center" element={<CommandCenter />} />
+                <Route path="incidents" element={<Incidents />} />
+                <Route path="resources" element={<Resources />} />
+                <Route path="requests" element={<Requests />} />
+                <Route path="vehicles" element={<Vehicles />} />
+                <Route path="shelters" element={<Shelters />} />
+                <Route path="analytics" element={<Analytics />} />
+              </Route>
 
-            {/* Fallback Area */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+              {/* Fallback Area */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </SmoothScrollProvider>
       </OperationalStateProvider>
     </QueryClientProvider>
   );

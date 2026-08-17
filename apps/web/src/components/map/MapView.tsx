@@ -49,7 +49,7 @@ export const MapView: React.FC<MapViewProps> = ({
     // CartoDB Positron is a beautiful, light, clean styled map, perfect for dashboards.
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
       center: [77.22, 28.61], // Center of Delhi (lng, lat)
       zoom: 11,
       minZoom: 9,
