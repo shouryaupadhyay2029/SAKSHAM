@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, ChevronRight, Package, MapPin, AlertTriangle, AlertCircle, Plus } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Resources.module.css';
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 
 export const Resources: React.FC = () => {
   const { resources, requests } = useOperationalState();
@@ -66,7 +67,10 @@ export const Resources: React.FC = () => {
       {/* ── 1. Page Header ── */}
       <header className={styles.pageHeader}>
         <div className={styles.headerTitles}>
-          <span className={styles.eyebrow}>RESOURCE COORDINATION</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span className={styles.eyebrow} style={{ marginBottom: 0 }}>RESOURCE COORDINATION</span>
+            <PageGuideTrigger />
+          </div>
           <h1 className={styles.title}>Relief Resource Registry</h1>
           <p className={styles.lead}>Track available supplies, response equipment, depot storage nodes, and operational readiness networks.</p>
         </div>
@@ -345,6 +349,7 @@ export const Resources: React.FC = () => {
         </section>
       )}
 
+      <PageGuidebook guideKey="resources" />
     </div>
   );
 };

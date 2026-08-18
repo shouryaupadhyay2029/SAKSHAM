@@ -2,7 +2,7 @@ import type { Coordinates } from './common';
 
 export type VehicleType = 'TRUCK' | 'AMBULANCE' | 'HELICOPTER' | 'RESCUE_BOAT' | 'DRONE' | 'SUV';
 
-export type VehicleStatus = 'AVAILABLE' | 'DISPATCHED' | 'EN_ROUTE' | 'ARRIVED' | 'RETURNING' | 'MAINTENANCE';
+export type VehicleStatus = 'AVAILABLE' | 'ASSIGNED' | 'DISPATCHED' | 'EN_ROUTE' | 'ARRIVED' | 'RETURNING' | 'MAINTENANCE' | 'DEPLOYED';
 
 export interface Vehicle {
   id: string;

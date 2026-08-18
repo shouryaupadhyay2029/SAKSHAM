@@ -1,0 +1,466 @@
+/* ═══════════════════════════════════════════════════════════
+   SAKSHAM OFFICER LOGIN — SolaceUI auth-section-1 layout
+   CSS Modules — no Tailwind dependency
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Page wrapper ── */
+.page {
+  min-height: 100vh;
+  background-color: #F7F4EF;
+  padding: 12px;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── Two-column grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  min-height: calc(100vh - 24px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEFT COLUMN — FORM
+   ═══════════════════════════════════════════════════════════ */
+.formCol {
+  display: flex;
+  align-items: flex-start;
+  background: #ffffff;
+  border: 1px solid rgba(11, 33, 25, 0.12);
+  border-radius: 8px;
+  padding: 56px 48px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  min-height: 720px;
+}
+
+@media (max-width: 768px) {
+  .formCol {
+    padding: 36px 24px;
+    min-height: auto;
+  }
+}
+
+.formInner {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Back link ── */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(11, 33, 25, 0.45);
+  text-decoration: none;
+  margin-bottom: 40px;
+  width: fit-content;
+  transition: color 0.2s;
+}
+.backLink:hover {
+  color: #0B2119;
+}
+
+/* ── Brand ── */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.brandMark {
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid rgba(11, 33, 25, 0.18);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0B2119;
+  background: #FAF8F3;
+}
+.brandName {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #0B2119;
+}
+
+/* ── Heading ── */
+.headingBlock {
+  margin-bottom: 28px;
+}
+.accessLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #F47C20;
+  margin-bottom: 10px;
+  display: block;
+}
+.heading {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 700;
+  color: #0B2119;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+}
+.subtext {
+  font-size: 15px;
+  color: rgba(11, 33, 25, 0.55);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Notice ── */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(11, 33, 25, 0.04);
+  border: 1px solid rgba(11, 33, 25, 0.1);
+  border-left: 3px solid rgba(11, 33, 25, 0.22);
+  border-radius: 8px;
+  padding: 11px 14px;
+  margin-bottom: 28px;
+  font-size: 12px;
+  color: rgba(11, 33, 25, 0.65);
+  line-height: 1.5;
+}
+.noticeIcon {
+  color: rgba(11, 33, 25, 0.35);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Error banner ── */
+.errorBanner {
+  background: rgba(200, 40, 40, 0.06);
+  border: 1px solid rgba(200, 40, 40, 0.2);
+  border-left: 3px solid #c82828;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: rgba(11, 33, 25, 0.75);
+  line-height: 1.5;
+}
+.errorBanner strong {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #c82828;
+  margin-bottom: 4px;
+}
+.errorBanner p {
+  margin: 0;
+}
+
+/* ── Form ── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 28px;
+}
+
+/* ── Field: SolaceUI pill style ── */
+.fieldGroup {
+  margin-bottom: 18px;
+}
+
+.fieldPill {
+  display: flex;
+  align-items: center;
+  height: 58px;
+  background: #ffffff;
+  border: 1px solid rgba(11, 33, 25, 0.18);
+  border-radius: 10px;
+  padding: 0 18px;
+  gap: 10px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: text;
+}
+.fieldPill:focus-within {
+  border-color: #0B2119;
+  box-shadow: 0 0 0 3px rgba(11, 33, 25, 0.07);
+}
+.fieldPillError {
+  border-color: #c82828;
+}
+.fieldPillError:focus-within {
+  box-shadow: 0 0 0 3px rgba(200, 40, 40, 0.08);
+}
+
+.fieldInput {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  color: #0B2119;
+  padding: 0;
+}
+.fieldInput::placeholder {
+  color: rgba(11, 33, 25, 0.3);
+}
+.fieldInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Floating label on the right */
+.fieldLabel {
+  flex-shrink: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: rgba(11, 33, 25, 0.45);
+  white-space: nowrap;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.fieldPill:focus-within .fieldLabel {
+  opacity: 0;
+}
+
+.fieldError {
+  display: block;
+  font-size: 11px;
+  color: #c82828;
+  margin-top: 5px;
+  padding-left: 4px;
+}
+
+/* Toggle password button */
+.togglePw {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 4px;
+  color: rgba(11, 33, 25, 0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+.togglePw:hover { color: #0B2119; }
+.togglePw:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Forgot row ── */
+.forgotRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 22px;
+}
+.forgotLink {
+  font-size: 12px;
+  color: rgba(11, 33, 25, 0.45);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.forgotLink:hover { color: #0B2119; }
+
+/* ── Submit button ── */
+.submitBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 52px;
+  background: #0B2119;
+  color: #FAF8F3;
+  border: 1px solid rgba(11, 33, 25, 0.6);
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s, transform 0.15s;
+}
+.submitBtn:hover:not(:disabled) {
+  background: #1A3D2B;
+}
+.submitBtn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+.submitBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(247, 244, 239, 0.35);
+  border-top-color: #F7F4EF;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Civilian separator ── */
+.civilianRow {
+  text-align: center;
+  padding-top: 24px;
+  border-top: 1px solid rgba(11, 33, 25, 0.08);
+  font-size: 13px;
+  color: rgba(11, 33, 25, 0.5);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.civilianRow p {
+  margin: 0 0 6px;
+}
+.civilianLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: #F47C20;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.civilianLink:hover { opacity: 0.75; }
+
+/* ── Demo panel ── */
+.demoPanel {
+  border: 1px dashed rgba(244, 124, 32, 0.35);
+  border-radius: 8px;
+  background: rgba(244, 124, 32, 0.03);
+  padding: 14px 16px;
+}
+.demoPanelLabel {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(244, 124, 32, 0.7);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.demoBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.06);
+  padding: 8px 2px;
+  cursor: pointer;
+  gap: 12px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.demoBtn:last-child { border-bottom: none; }
+.demoBtn:hover { background: rgba(244, 124, 32, 0.06); }
+.demoRole {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #F47C20;
+}
+.demoEmail {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: rgba(11, 33, 25, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RIGHT COLUMN — GRAIN SHADER VISUAL
+   ═══════════════════════════════════════════════════════════ */
+.visualCol {
+  position: relative;
+  display: flex;
+  min-height: 720px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0B1A10;
+}
+
+@media (max-width: 1024px) {
+  .visualCol {
+    display: none;
+  }
+}
+
+.visualContent {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 64px 56px 56px;
+  width: 100%;
+}
+
+.visualHeading {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(48px, 5vw, 72px);
+  font-weight: 700;
+  line-height: 1.0;
+  letter-spacing: -0.04em;
+  color: #FAF8F3;
+  margin: 0;
+}
+
+.statsRow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 28px;
+}
+.stat:first-child { padding-left: 0; }
+.stat strong {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #FAF8F3;
+  line-height: 1;
+}
+.stat span {
+  font-size: 11px;
+  color: rgba(250, 248, 243, 0.45);
+  letter-spacing: 0.04em;
+}
+.statDivider {
+  width: 1px;
+  height: 36px;
+  background: rgba(250, 248, 243, 0.12);
+  flex-shrink: 0;
+}

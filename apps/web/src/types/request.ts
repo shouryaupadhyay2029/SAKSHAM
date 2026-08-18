@@ -1,6 +1,18 @@
 import type { Coordinates, RequestPriority } from './common';
 
-export type RequestStatus = 'PENDING' | 'MATCHED' | 'ALLOCATED' | 'DISPATCHED' | 'FULFILLING' | 'FULFILLED' | 'CANCELLED';
+export type RequestStatus = 
+  | 'PENDING' 
+  | 'OPEN'
+  | 'MATCHING'
+  | 'MATCHED'
+  | 'ALLOCATED'
+  | 'DISPATCHED'
+  | 'FULFILLING' 
+  | 'DELIVERING'
+  | 'FULFILLED'
+  | 'PARTIALLY_FULFILLED'
+  | 'UNFULFILLED'
+  | 'CANCELLED';
 
 export interface DemandRequest {
   id: string;

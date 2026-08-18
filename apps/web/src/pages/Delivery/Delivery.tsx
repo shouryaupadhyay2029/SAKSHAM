@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
@@ -16,79 +16,9 @@ import type { DemandRequest } from '../../types/request';
 import styles from './Delivery.module.css';
 
 import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 
 gsap.registerPlugin(ScrollTrigger);
-
-// ─── Local Types ────────────────────────────────────────────────────────────
-export interface ReliefDelivery {
-  id: string;
-  dispatchId: string;
-  demandId: string;
-  incidentId: string;
-  resourceId: string;
-  vehicleId: string;
-  requestedQty: number;
-  allocatedQty: number;
-  deliveredQty: number;
-  unit: string;
-  status: 'PENDING' | 'ARRIVED' | 'IN_DELIVERY' | 'DELIVERED' | 'VERIFIED';
-  resourceType: string;
-  destinationName: string;
-  verifiedBy?: string;
-  verifiedAt?: string;
-  notes?: string;
-}
-
-const INITIAL_DELIVERIES: ReliefDelivery[] = [
-  {
-    id: 'DEL-2026-081',
-    dispatchId: 'DSP-DEL-041',
-    demandId: 'REQ-DEL-101',
-    incidentId: 'INC-2026-101', // Yamuna Bank Flood
-    resourceId: 'RES-WT-001',
-    vehicleId: 'VEH-BT-401',
-    requestedQty: 12000,
-    allocatedQty: 12000,
-    deliveredQty: 0,
-    unit: 'Liters',
-    status: 'ARRIVED',
-    resourceType: 'Clean Drinking Water',
-    destinationName: 'Yamuna Bank Inundation Area, East Delhi'
-  },
-  {
-    id: 'DEL-2026-082',
-    dispatchId: 'DSP-DEL-042',
-    demandId: 'REQ-DEL-103',
-    incidentId: 'INC-2026-103',
-    resourceId: 'RES-EQ-005',
-    vehicleId: 'VEH-TR-102',
-    requestedQty: 4,
-    allocatedQty: 4,
-    deliveredQty: 0,
-    unit: 'Sets',
-    status: 'IN_DELIVERY',
-    resourceType: 'Heavy Resuscitation & Rescue Tools',
-    destinationName: 'Okhla Structural Collapse, South-East Delhi'
-  },
-  {
-    id: 'DEL-2026-083',
-    dispatchId: 'DSP-DEL-043',
-    demandId: 'REQ-DEL-102',
-    incidentId: 'INC-2026-102',
-    resourceId: 'RES-MD-003',
-    vehicleId: 'VEH-AM-201',
-    requestedQty: 50,
-    allocatedQty: 50,
-    deliveredQty: 50,
-    unit: 'Kits',
-    status: 'VERIFIED',
-    resourceType: 'Emergency Medical Kits',
-    destinationName: 'Karol Bagh Fire Zone, Central-West Delhi',
-    verifiedBy: 'Seema Gupta',
-    verifiedAt: '10:58',
-    notes: 'Kits distributed successfully at relief center.'
-  }
-];
 
 export const Delivery: React.FC = () => {
   const {
@@ -97,11 +27,16 @@ export const Delivery: React.FC = () => {
     incidents,
     setRequests,
     setVehicles,
-    setIncidents
+    setIncidents,
+    deliveries,
+    setDeliveries,
+    setMissions,
+    setResources,
+    addToast
   } = useOperationalState();
 
-  const [deliveries, setDeliveries] = useState<ReliefDelivery[]>(INITIAL_DELIVERIES);
   const [selectedDelId, setSelectedDelId] = useState<string>('DEL-2026-081');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Input states for reconciliation & verification
   const [inputQty, setInputQty] = useState<string>('');
@@ -171,6 +106,17 @@ export const Delivery: React.FC = () => {
     return () => ctx.revert();
   }, []);
 
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const delId = searchParams.get('deliveryId');
+    if (delId) {
+      const match = deliveries.find(d => d.id === delId);
+      if (match) {
+        setSelectedDelId(delId);
+      }
+    }
+  }, [searchParams, deliveries]);
+
   // Set default form inputs on selection change
   useEffect(() => {
     if (activeDelivery) {
@@ -195,6 +141,10 @@ export const Delivery: React.FC = () => {
       if (d.id !== activeDelivery.id) return d;
       return { ...d, status: 'ARRIVED' };
     }));
+    setMissions(prev => prev.map(m => {
+      if (m.id !== activeDelivery.dispatchId) return m;
+      return { ...m, status: 'ARRIVED' };
+    }));
     setShowConfirmArrival(false);
   };
 
@@ -204,106 +154,156 @@ export const Delivery: React.FC = () => {
       if (d.id !== activeDelivery.id) return d;
       return { ...d, status: 'IN_DELIVERY' };
     }));
+    setMissions(prev => prev.map(m => {
+      if (m.id !== activeDelivery.dispatchId) return m;
+      return { ...m, status: 'EN_ROUTE' };
+    }));
     setShowStartDelivery(false);
   };
 
   const handleVerifyDelivery = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeDelivery) return;
+    if (!activeDelivery || isSubmitting) return;
 
     if (isOverDelivery) {
-      alert("Entered quantity exceeds original allocation. Please review quantity or adjust allocation.");
+      addToast('ERROR', 'DELIVERY CANNOT BE VERIFIED: Delivered quantity exceeds original allocation.');
       return;
     }
+
+    setIsSubmitting(true);
 
     const timeStr = new Date().toLocaleTimeString('en-US', {
       hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata'
     });
 
-    // 1. Update delivery status locally
-    setDeliveries(prev => prev.map(d => {
-      if (d.id !== activeDelivery.id) return d;
-      return {
-        ...d,
-        status: 'VERIFIED',
-        deliveredQty: enteredQtyNum,
-        verifiedBy: inputOfficer,
-        verifiedAt: timeStr,
-        notes: inputNotes
-      };
-    }));
-
-    // 2. Sync Demand request status
-    setRequests(prev => prev.map(req => {
-      if (req.id !== activeDelivery.demandId) return req;
-      return {
-        ...req,
-        status: isZeroDelivery ? 'PENDING' : (isPartialDelivery ? 'FULFILLING' : 'FULFILLED')
-      };
-    }));
-
-    // 3. Sync vehicle status to AVAILABLE
-    setVehicles(prev => prev.map(veh => {
-      if (veh.id !== activeDelivery.vehicleId) return veh;
-      return { ...veh, status: 'AVAILABLE', destination: undefined, cargo: undefined };
-    }));
-
-    // 4. Sync incidents with a new timeline log entry
-    if (linkedIncident) {
-      const description = isZeroDelivery 
-        ? `Delivery mission failed or cancelled (0 units delivered). Reason: ${selectedException || 'unspecified'}.`
-        : `Verified distribution of ${enteredQtyNum.toLocaleString()} ${activeDelivery.unit} of ${activeDelivery.resourceType} by field team (Ref: ${activeDelivery.id}).`;
-      
-      setIncidents(prev => prev.map(inc => {
-        if (inc.id !== linkedIncident.id) return inc;
-        const currentTimeline = inc.timeline || [];
+    // Simulate verification processing lag (750ms) to prevent double clicks and ensure smooth UX
+    setTimeout(() => {
+      // 1. Update delivery status locally
+      setDeliveries(prev => prev.map(d => {
+        if (d.id !== activeDelivery.id) return d;
         return {
-          ...inc,
-          updatedAt: new Date().toISOString(),
-          timeline: [...currentTimeline, {
-            time: timeStr,
-            title: isZeroDelivery ? 'DELIVERY FAILED' : 'DELIVERY VERIFIED',
-            description
-          }]
+          ...d,
+          status: 'VERIFIED',
+          deliveredQty: enteredQtyNum,
+          verifiedBy: inputOfficer,
+          verifiedAt: timeStr,
+          notes: inputNotes,
+          exceptionReason: isZeroDelivery ? selectedException : undefined
         };
       }));
-    }
 
-    // 5. Create follow-up demand if partial fulfillment occurs
-    if (isPartialDelivery && linkedRequest) {
-      const followUpId = `${linkedRequest.id}-F01`;
-      const outstandingQty = linkedRequest.quantity - enteredQtyNum;
+      // 2. Sync Demand request status
+      setRequests(prev => prev.map(req => {
+        if (req.id !== activeDelivery.demandId) return req;
+        return {
+          ...req,
+          status: isZeroDelivery ? 'UNFULFILLED' : (isPartialDelivery ? 'PARTIALLY_FULFILLED' : 'FULFILLED')
+        };
+      }));
 
-      const followUpRequest: DemandRequest = {
-        ...linkedRequest,
-        id: followUpId,
-        quantity: outstandingQty,
-        status: 'PENDING',
-        requestedAt: new Date().toISOString(),
-        allocatedResourceId: undefined,
-        allocatedVehicleId: undefined
-      };
+      // 2b. Reconcile resource stock
+      const diff = activeDelivery.allocatedQty - enteredQtyNum;
+      if (diff > 0) {
+        setResources(prev => prev.map(res => {
+          if (res.id !== activeDelivery.resourceId) return res;
+          const newQty = res.quantity + diff;
+          const newAllocated = Math.max(0, (res.allocatedQuantity ?? 0) - diff);
+          return {
+            ...res,
+            quantity: newQty,
+            allocatedQuantity: newAllocated,
+            status: newQty > 0 ? 'AVAILABLE' : res.status
+          };
+        }));
+      } else {
+        setResources(prev => prev.map(res => {
+          if (res.id !== activeDelivery.resourceId) return res;
+          const newAllocated = Math.max(0, (res.allocatedQuantity ?? 0) - activeDelivery.allocatedQty);
+          return {
+            ...res,
+            allocatedQuantity: newAllocated
+          };
+        }));
+      }
 
-      setRequests(prev => [...prev, followUpRequest]);
+      // 3. Sync vehicle status to AVAILABLE
+      setVehicles(prev => prev.map(veh => {
+        if (veh.id !== activeDelivery.vehicleId) return veh;
+        return { ...veh, status: 'AVAILABLE', incidentId: undefined, destination: undefined, cargo: undefined };
+      }));
 
-      // Log the follow-up demand creation on the linked incident timeline
+      // 3b. Sync dispatch mission status to DELIVERED
+      setMissions(prev => prev.map(m => {
+        if (m.id !== activeDelivery.dispatchId) return m;
+        return { ...m, status: 'DELIVERED' };
+      }));
+
+      // 4. Sync incidents with a new timeline log entry
       if (linkedIncident) {
+        const description = isZeroDelivery 
+          ? `Delivery mission failed or cancelled (0 units delivered). Reason: ${selectedException || 'unspecified'}.`
+          : `Verified distribution of ${enteredQtyNum.toLocaleString()} ${activeDelivery.unit} of ${activeDelivery.resourceType} by field team (Ref: ${activeDelivery.id}).`;
+        
         setIncidents(prev => prev.map(inc => {
           if (inc.id !== linkedIncident.id) return inc;
           const currentTimeline = inc.timeline || [];
           return {
             ...inc,
+            updatedAt: new Date().toISOString(),
             timeline: [...currentTimeline, {
               time: timeStr,
-              title: 'FOLLOW-UP DEMAND GENERATED',
-              description: `Outstanding quantity of ${outstandingQty.toLocaleString()} units logged under ref: ${followUpId}.`
+              title: isZeroDelivery ? 'DELIVERY FAILED' : 'DELIVERY VERIFIED',
+              description
             }]
           };
         }));
       }
-    }
 
-    setShowVerification(false);
+      // 5. Create follow-up demand if partial fulfillment occurs
+      if (isPartialDelivery && linkedRequest) {
+        const followUpId = `${linkedRequest.id}-F01`;
+        const outstandingQty = linkedRequest.quantity - enteredQtyNum;
+
+        const followUpRequest: DemandRequest = {
+          ...linkedRequest,
+          id: followUpId,
+          quantity: outstandingQty,
+          status: 'PENDING',
+          requestedAt: new Date().toISOString(),
+          allocatedResourceId: undefined,
+          allocatedVehicleId: undefined
+        };
+
+        setRequests(prev => [...prev, followUpRequest]);
+
+        // Log the follow-up demand creation on the linked incident timeline
+        if (linkedIncident) {
+          setIncidents(prev => prev.map(inc => {
+            if (inc.id !== linkedIncident.id) return inc;
+            const currentTimeline = inc.timeline || [];
+            return {
+              ...inc,
+              timeline: [...currentTimeline, {
+                time: timeStr,
+                title: 'FOLLOW-UP DEMAND GENERATED',
+                description: `Outstanding quantity of ${outstandingQty.toLocaleString()} units logged under ref: ${followUpId}.`
+              }]
+            };
+          }));
+        }
+      }
+
+      if (isZeroDelivery) {
+        addToast('WARNING', `⚠ Relief delivery failed or rejected. Incident log recorded.`);
+      } else if (isPartialDelivery) {
+        addToast('WARNING', `⚠ Relief delivery verified. Created follow-up demand for remaining ${diff.toLocaleString()} units.`);
+      } else {
+        addToast('SUCCESS', '✓ Relief delivery verified and recorded successfully.');
+      }
+
+      setShowVerification(false);
+      setIsSubmitting(false);
+    }, 750);
   };
 
   // Close Incident Handler
@@ -350,7 +350,10 @@ export const Delivery: React.FC = () => {
       {/* ── Page Hero ── */}
       <header ref={heroRef} className={styles.hero}>
         <div className={styles.heroLeft}>
-          <span className={styles.heroEyebrow}>LOGISTICS EXECUTION</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>LOGISTICS EXECUTION</span>
+            <PageGuideTrigger />
+          </div>
           <h1 className={styles.heroTitle}>Relief Delivery &amp; Closure</h1>
           <p className={styles.heroLead}>
             Verify field delivery, reconcile fulfilled demand, and close the operational response loop.
@@ -723,9 +726,9 @@ export const Delivery: React.FC = () => {
                 <button
                   type="submit"
                   className={styles.vSubmitBtn}
-                  disabled={isOverDelivery}
+                  disabled={isOverDelivery || isSubmitting}
                 >
-                  VERIFY &amp; CONFIRM HANDOVER
+                  {isSubmitting ? 'VERIFYING...' : 'VERIFY & CONFIRM HANDOVER'}
                 </button>
               </div>
             </form>
@@ -818,6 +821,7 @@ export const Delivery: React.FC = () => {
         </div>
       </section>
 
+      <PageGuidebook guideKey="delivery" />
     </div>
   );
 };

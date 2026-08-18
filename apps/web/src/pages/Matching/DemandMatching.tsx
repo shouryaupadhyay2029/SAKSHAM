@@ -1,11 +1,12 @@
 import React, {
   useState, useMemo, useEffect, useRef, useCallback
 } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Search, X, Check, ChevronDown, ChevronUp, ArrowRight, Info } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
+import { EmptyState, NoResultsState } from '../../components/ui/SystemStates';
 import { MapView } from '../../components/map/MapView';
 import {
   matchResources,
@@ -16,6 +17,7 @@ import {
 import type { DemandRequest } from '../../types/request';
 import type { ResourceItem } from '../../types/resource';
 import styles from './DemandMatching.module.css';
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 
 import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
 
@@ -582,6 +584,17 @@ export const DemandMatching: React.FC = () => {
     else setScoringActive(false);
   }, [showScoringLogic]);
 
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const reqId = searchParams.get('requestId');
+    if (reqId) {
+      const req = requests.find(r => r.id === reqId);
+      if (req && (!selectedDemand || selectedDemand.id !== req.id)) {
+        handleSelectDemand(req);
+      }
+    }
+  }, [requests, searchParams, selectedDemand]);
+
   /* ══════════════════════ RENDER ════════════════════════ */
   return (
     <div ref={pageRef} className={styles.page}>
@@ -590,7 +603,10 @@ export const DemandMatching: React.FC = () => {
       {/* ── Operational Header ── */}
       <header ref={heroRef} className={styles.hero}>
         <div className={styles.heroLeft}>
-          <span className={styles.heroEyebrow}>DEMAND → RESOURCE ALLOCATION</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>DEMAND → RESOURCE ALLOCATION</span>
+            <PageGuideTrigger />
+          </div>
           <h1 className={styles.heroTitle}>Resource Matching Engine</h1>
           <p className={styles.heroLead}>
             Match operational demand with the most suitable available resources across the response network.
@@ -629,10 +645,17 @@ export const DemandMatching: React.FC = () => {
 
         {/* Demand Queue */}
         <div className={styles.demandQueue}>
-          {filteredDemands.length === 0 ? (
-            <div className={styles.emptyQueue}>
-              No pending demands match your search. <Link to="/operations/requests">View all requests →</Link>
-            </div>
+          {matchableDemands.length === 0 ? (
+            <EmptyState
+              title="No Outstanding Demands"
+              description="All current requests are either allocated, fully resolved, or cancelled."
+              iconType="check"
+            />
+          ) : filteredDemands.length === 0 ? (
+            <NoResultsState
+              query={searchQuery}
+              onClear={() => setSearchQuery('')}
+            />
           ) : (
             filteredDemands.map(d => {
               const isActive = selectedDemand?.id === d.id;
@@ -926,6 +949,7 @@ export const DemandMatching: React.FC = () => {
           onConfirm={handleConfirmAllocation}
         />
       )}
+      <PageGuidebook guideKey="matching" />
     </div>
   );
 };

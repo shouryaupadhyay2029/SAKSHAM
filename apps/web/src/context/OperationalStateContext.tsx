@@ -11,12 +11,200 @@ import type { ResourceItem, ResourceStatus } from '../types/resource';
 import { mockResources } from '../data/mockResources';
 import type { Coordinates, Severity } from '../types/common';
 
+export interface DispatchMission {
+  id: string;
+  requestId: string;
+  vehicleId: string;
+  status: 'AWAITING_DISPATCH' | 'DISPATCHED' | 'EN_ROUTE' | 'ARRIVED' | 'DELIVERED';
+  destinationName: string;
+  resourceType: string;
+  quantity: number;
+  unit: string;
+  etaMinutes: number;
+  operatorName: string;
+  speedKmh: number;
+  distanceKm: number;
+  signalStrength: number;
+  fuelPct: number;
+  trafficLevel: 'LOW' | 'MODERATE' | 'HEAVY' | 'BLOCKED';
+  routePath: string[];
+  alertMessage?: string;
+  timeline: { time: string; title: string; done: boolean }[];
+}
+
+export interface ReliefDelivery {
+  id: string;
+  dispatchId: string;
+  demandId: string;
+  incidentId: string;
+  resourceId: string;
+  vehicleId: string;
+  requestedQty: number;
+  allocatedQty: number;
+  deliveredQty: number;
+  unit: string;
+  status: 'PENDING' | 'ARRIVED' | 'IN_DELIVERY' | 'DELIVERED' | 'VERIFIED';
+  resourceType: string;
+  destinationName: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  notes?: string;
+  exceptionReason?: string;
+}
+
+const INITIAL_MISSIONS: DispatchMission[] = [
+  {
+    id: 'DSP-DEL-041',
+    requestId: 'REQ-DEL-101',
+    vehicleId: 'VEH-BT-401',
+    status: 'EN_ROUTE',
+    destinationName: 'Yamuna Bank Inundation Area, East Delhi',
+    resourceType: 'Clean Drinking Water',
+    quantity: 12000,
+    unit: 'Liters',
+    etaMinutes: 18,
+    operatorName: 'Sgt. Harish Negi',
+    speedKmh: 45,
+    distanceKm: 6.2,
+    signalStrength: 98,
+    fuelPct: 72,
+    trafficLevel: 'MODERATE',
+    routePath: ['East Delhi Relief Depot', 'NH-24 Bypass', 'Yamuna Bank Crossing', 'Flood Relief Zone'],
+    timeline: [
+      { time: '10:42', title: 'ALLOCATION APPROVED', done: true },
+      { time: '10:47', title: 'VEHICLE ASSIGNED', done: true },
+      { time: '10:51', title: 'DISPATCH AUTHORIZED', done: true },
+      { time: '10:53', title: 'EN ROUTE TO TARGET', done: true },
+      { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
+      { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
+    ]
+  },
+  {
+    id: 'DSP-DEL-042',
+    requestId: 'REQ-DEL-103',
+    vehicleId: 'VEH-TR-102',
+    status: 'DISPATCHED',
+    destinationName: 'Okhla Structural Collapse, South-East Delhi',
+    resourceType: 'Heavy Resuscitation & Rescue Tools',
+    quantity: 4,
+    unit: 'Sets',
+    etaMinutes: 25,
+    operatorName: 'Constable Baldev Singh',
+    speedKmh: 55,
+    distanceKm: 9.4,
+    signalStrength: 94,
+    fuelPct: 88,
+    trafficLevel: 'HEAVY',
+    routePath: ['South Depot Central', 'Outer Ring Road', 'Okhla Phase III', 'Collapse Site'],
+    alertMessage: 'TRAFFIC DELAY: Construction alert near Govindpuri.',
+    timeline: [
+      { time: '11:15', title: 'ALLOCATION APPROVED', done: true },
+      { time: '11:19', title: 'VEHICLE ASSIGNED', done: true },
+      { time: '11:22', title: 'DISPATCH AUTHORIZED', done: true },
+      { time: '--:--', title: 'EN ROUTE TO TARGET', done: false },
+      { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
+      { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
+    ]
+  },
+  {
+    id: 'DSP-DEL-043',
+    requestId: 'REQ-DEL-102',
+    vehicleId: 'VEH-AM-201',
+    status: 'ARRIVED',
+    destinationName: 'Karol Bagh Fire Zone, Central-West Delhi',
+    resourceType: 'Emergency Medical Kits',
+    quantity: 50,
+    unit: 'Kits',
+    etaMinutes: 0,
+    operatorName: 'Naresh Kumar',
+    speedKmh: 0,
+    distanceKm: 0,
+    signalStrength: 92,
+    fuelPct: 65,
+    trafficLevel: 'LOW',
+    routePath: ['Dr. RML Hospital Depot', 'Pusa Road', 'Karol Bagh Metro Loop', 'Fire Zone Depot'],
+    timeline: [
+      { time: '11:02', title: 'ALLOCATION APPROVED', done: true },
+      { time: '11:05', title: 'VEHICLE ASSIGNED', done: true },
+      { time: '11:09', title: 'DISPATCH AUTHORIZED', done: true },
+      { time: '11:12', title: 'EN ROUTE TO TARGET', done: true },
+      { time: '11:25', title: 'DESTINATION ARRIVAL', done: true },
+      { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
+    ]
+  }
+];
+
+const INITIAL_DELIVERIES: ReliefDelivery[] = [
+  {
+    id: 'DEL-2026-081',
+    dispatchId: 'DSP-DEL-041',
+    demandId: 'REQ-DEL-101',
+    incidentId: 'INC-2026-101',
+    resourceId: 'RES-WT-001',
+    vehicleId: 'VEH-BT-401',
+    requestedQty: 12000,
+    allocatedQty: 12000,
+    deliveredQty: 0,
+    unit: 'Liters',
+    status: 'ARRIVED',
+    resourceType: 'Clean Drinking Water',
+    destinationName: 'Yamuna Bank Inundation Area, East Delhi'
+  },
+  {
+    id: 'DEL-2026-082',
+    dispatchId: 'DSP-DEL-042',
+    demandId: 'REQ-DEL-103',
+    incidentId: 'INC-2026-103',
+    resourceId: 'RES-EQ-005',
+    vehicleId: 'VEH-TR-102',
+    requestedQty: 4,
+    allocatedQty: 4,
+    deliveredQty: 0,
+    unit: 'Sets',
+    status: 'IN_DELIVERY',
+    resourceType: 'Heavy Resuscitation & Rescue Tools',
+    destinationName: 'Okhla Structural Collapse, South-East Delhi'
+  },
+  {
+    id: 'DEL-2026-083',
+    dispatchId: 'DSP-DEL-043',
+    demandId: 'REQ-DEL-102',
+    incidentId: 'INC-2026-102',
+    resourceId: 'RES-MD-003',
+    vehicleId: 'VEH-AM-201',
+    requestedQty: 50,
+    allocatedQty: 50,
+    deliveredQty: 50,
+    unit: 'Kits',
+    status: 'VERIFIED',
+    resourceType: 'Emergency Medical Kits',
+    destinationName: 'Karol Bagh Fire Zone, Central-West Delhi',
+    verifiedBy: 'Seema Gupta',
+    verifiedAt: '10:58',
+    notes: 'Kits distributed successfully at relief center.'
+  }
+];
+
+export interface ToastMessage {
+  id: string;
+  type: 'SUCCESS' | 'INFO' | 'WARNING' | 'ERROR';
+  text: string;
+}
+
 interface OperationalStateContextType {
   incidents: Incident[];
   vehicles: Vehicle[];
   requests: DemandRequest[];
   shelters: Shelter[];
   resources: ResourceItem[];
+  missions: DispatchMission[];
+  deliveries: ReliefDelivery[];
+  setMissions: React.Dispatch<React.SetStateAction<DispatchMission[]>>;
+  setDeliveries: React.Dispatch<React.SetStateAction<ReliefDelivery[]>>;
+  toasts: ToastMessage[];
+  addToast: (type: ToastMessage['type'], text: string) => void;
+  removeToast: (id: string) => void;
+  isOffline: boolean;
 
   // --- SOS intake ---
   addIncidentFromSOS: (sosData: {
@@ -73,6 +261,41 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
   const [requests, setRequests] = useState<DemandRequest[]>(mockRequests);
   const [shelters] = useState<Shelter[]>(mockShelters);
   const [resources, setResources] = useState<ResourceItem[]>(mockResources);
+  const [missions, setMissions] = useState<DispatchMission[]>(INITIAL_MISSIONS);
+  const [deliveries, setDeliveries] = useState<ReliefDelivery[]>(INITIAL_DELIVERIES);
+
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  React.useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      addToast('SUCCESS', 'CONNECTION RESTORED: Live operational data is available again.');
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      addToast('WARNING', 'CONNECTION LIMITED: Actions requiring a live connection are temporarily unavailable.');
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const addToast = (type: ToastMessage['type'], text: string) => {
+    const id = `toast-${Math.random().toString(36).substr(2, 9)}`;
+    const newToast = { id, type, text };
+    setToasts(prev => [...prev, newToast].slice(-5));
+    setTimeout(() => {
+      removeToast(id);
+    }, 4000);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
 
   // Helper coordinate mapper for Delhi zones
   const getZoneCoordinates = (zone: string): Coordinates => {
@@ -469,6 +692,14 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
         requests,
         shelters,
         resources,
+        missions,
+        deliveries,
+        setMissions,
+        setDeliveries,
+        toasts,
+        addToast,
+        removeToast,
+        isOffline,
         addIncidentFromSOS,
         addManualIncident,
         dispatchVehicleToIncident,

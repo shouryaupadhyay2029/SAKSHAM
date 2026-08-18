@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, ChevronRight, FileText, Plus, AlertCircle, ArrowDown } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Requests.module.css';
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 
 export const Requests: React.FC = () => {
   const { requests, resources } = useOperationalState();
@@ -47,7 +48,10 @@ export const Requests: React.FC = () => {
       {/* ── 1. Page Header ── */}
       <header className={styles.pageHeader}>
         <div className={styles.headerTitles}>
-          <span className={styles.eyebrow}>DEMAND COORDINATION</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span className={styles.eyebrow} style={{ marginBottom: 0 }}>DEMAND COORDINATION</span>
+            <PageGuideTrigger />
+          </div>
           <h1 className={styles.title}>Civilian Demand Registry</h1>
           <p className={styles.lead}>Track incoming relief requests, prioritize unmet needs, and coordinate resource allocation.</p>
         </div>
@@ -293,6 +297,7 @@ export const Requests: React.FC = () => {
 
       </div>
 
+      <PageGuidebook guideKey="demand" />
     </div>
   );
 };

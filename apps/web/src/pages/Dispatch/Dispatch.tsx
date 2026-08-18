@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MapView } from '../../components/map/MapView';
-import { useOperationalState } from '../../context/OperationalStateContext';
 import type { Vehicle } from '../../types/vehicle';
 import type { IncidentType } from '../../types/incident';
 import {
@@ -17,112 +16,10 @@ import {
 import styles from './Dispatch.module.css';
 
 import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
-
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 gsap.registerPlugin(ScrollTrigger);
 
-// ─── Dispatch Types ──────────────────────────────────────────────────────────
-export interface DispatchMission {
-  id: string;
-  requestId: string;
-  vehicleId: string;
-  status: 'AWAITING_DISPATCH' | 'DISPATCHED' | 'EN_ROUTE' | 'ARRIVED' | 'DELIVERED';
-  destinationName: string;
-  resourceType: string;
-  quantity: number;
-  unit: string;
-  etaMinutes: number;
-  operatorName: string;
-  speedKmh: number;
-  distanceKm: number;
-  signalStrength: number;
-  fuelPct: number;
-  trafficLevel: 'LOW' | 'MODERATE' | 'HEAVY' | 'BLOCKED';
-  routePath: string[];
-  alertMessage?: string;
-  timeline: { time: string; title: string; done: boolean }[];
-}
-
-const INITIAL_MISSIONS: DispatchMission[] = [
-  {
-    id: 'DSP-DEL-041',
-    requestId: 'REQ-DEL-101',
-    vehicleId: 'VEH-BT-401',
-    status: 'EN_ROUTE',
-    destinationName: 'Yamuna Bank Inundation Area, East Delhi',
-    resourceType: 'Clean Drinking Water',
-    quantity: 12000,
-    unit: 'Liters',
-    etaMinutes: 18,
-    operatorName: 'Sgt. Harish Negi',
-    speedKmh: 45,
-    distanceKm: 6.2,
-    signalStrength: 98,
-    fuelPct: 72,
-    trafficLevel: 'MODERATE',
-    routePath: ['East Delhi Relief Depot', 'NH-24 Bypass', 'Yamuna Bank Crossing', 'Flood Relief Zone'],
-    timeline: [
-      { time: '10:42', title: 'ALLOCATION APPROVED', done: true },
-      { time: '10:47', title: 'VEHICLE ASSIGNED', done: true },
-      { time: '10:51', title: 'DISPATCH AUTHORIZED', done: true },
-      { time: '10:53', title: 'EN ROUTE TO TARGET', done: true },
-      { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
-      { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
-    ]
-  },
-  {
-    id: 'DSP-DEL-042',
-    requestId: 'REQ-DEL-103',
-    vehicleId: 'VEH-TR-102',
-    status: 'DISPATCHED',
-    destinationName: 'Okhla Structural Collapse, South-East Delhi',
-    resourceType: 'Heavy Resuscitation & Rescue Tools',
-    quantity: 4,
-    unit: 'Sets',
-    etaMinutes: 25,
-    operatorName: 'Constable Baldev Singh',
-    speedKmh: 55,
-    distanceKm: 9.4,
-    signalStrength: 94,
-    fuelPct: 88,
-    trafficLevel: 'HEAVY',
-    routePath: ['South Depot Central', 'Outer Ring Road', 'Okhla Phase III', 'Collapse Site'],
-    alertMessage: 'TRAFFIC DELAY: Construction alert near Govindpuri.',
-    timeline: [
-      { time: '11:15', title: 'ALLOCATION APPROVED', done: true },
-      { time: '11:19', title: 'VEHICLE ASSIGNED', done: true },
-      { time: '11:22', title: 'DISPATCH AUTHORIZED', done: true },
-      { time: '--:--', title: 'EN ROUTE TO TARGET', done: false },
-      { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
-      { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
-    ]
-  },
-  {
-    id: 'DSP-DEL-043',
-    requestId: 'REQ-DEL-102',
-    vehicleId: 'VEH-AM-201',
-    status: 'ARRIVED',
-    destinationName: 'Karol Bagh Fire Zone, Central-West Delhi',
-    resourceType: 'Emergency Medical Kits',
-    quantity: 50,
-    unit: 'Kits',
-    etaMinutes: 0,
-    operatorName: 'Naresh Kumar',
-    speedKmh: 0,
-    distanceKm: 0,
-    signalStrength: 92,
-    fuelPct: 65,
-    trafficLevel: 'LOW',
-    routePath: ['Dr. RML Hospital Depot', 'Pusa Road', 'Karol Bagh Metro Loop', 'Fire Zone Depot'],
-    timeline: [
-      { time: '11:02', title: 'ALLOCATION APPROVED', done: true },
-      { time: '11:05', title: 'VEHICLE ASSIGNED', done: true },
-      { time: '11:09', title: 'DISPATCH AUTHORIZED', done: true },
-      { time: '11:12', title: 'EN ROUTE TO TARGET', done: true },
-      { time: '11:25', title: 'DESTINATION ARRIVAL', done: true },
-      { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
-    ]
-  }
-];
+import { useOperationalState, type DispatchMission } from '../../context/OperationalStateContext';
 
 const HISTORY_MISSIONS = [
   { id: 'DSP-DEL-038', status: 'DELIVERED', dest: 'Rohini Sector 15 Shelter', resource: '500 blankets', time: '11:02' },
@@ -131,11 +28,10 @@ const HISTORY_MISSIONS = [
 ];
 
 export const Dispatch: React.FC = () => {
-  const { requests, vehicles, setVehicles, setRequests } = useOperationalState();
-
-  const [missions, setMissions] = useState<DispatchMission[]>(INITIAL_MISSIONS);
+  const { requests, vehicles, setVehicles, setRequests, missions, setMissions, deliveries, setDeliveries, addToast } = useOperationalState();
   const [selectedMissionId, setSelectedMissionId] = useState<string>('DSP-DEL-041');
   const [showCreatePanel, setShowCreatePanel] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // New Dispatch Form State
   const [formAllocationId, setFormAllocationId] = useState('');
@@ -204,8 +100,23 @@ export const Dispatch: React.FC = () => {
 
   // Trigger sync once on mount
   useEffect(() => {
-    syncMissionsToGlobalContext(INITIAL_MISSIONS);
+    syncMissionsToGlobalContext(missions);
   }, []); // Run once on mount to avoid infinite rendering loop
+
+  // Pre-fill from URL parameters if available
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const allocId = searchParams.get('allocationId');
+    if (allocId) {
+      setFormAllocationId(allocId);
+      setShowCreatePanel(true);
+      // Auto-assign first available vehicle
+      const availVeh = compatibleVehicles[0];
+      if (availVeh) {
+        setFormVehicleId(availVeh.id);
+      }
+    }
+  }, [searchParams, compatibleVehicles]);
 
   // Calculations for summary tiles
   const summaryStats = useMemo(() => {
@@ -293,48 +204,84 @@ export const Dispatch: React.FC = () => {
   // Create Dispatch Handler
   const handleCreateDispatch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formAllocationId || !formVehicleId) return;
+    if (!formAllocationId || !formVehicleId || isSubmitting) return;
 
     const request = requests.find(r => r.id === formAllocationId);
     const vehicle = vehicles.find(v => v.id === formVehicleId);
 
-    if (!request || !vehicle) return;
+    if (!request || !vehicle) {
+      addToast('ERROR', 'INVALID DISPATCH DATA: The selected request or vehicle is not valid.');
+      return;
+    }
 
-    const newMissionId = `DSP-DEL-0${missions.length + 41}`;
-    const newMission: DispatchMission = {
-      id: newMissionId,
-      requestId: request.id,
-      vehicleId: vehicle.id,
-      status: 'DISPATCHED',
-      destinationName: request.zoneName,
-      resourceType: request.itemNeeded,
-      quantity: request.quantity,
-      unit: request.unit,
-      etaMinutes: 22,
-      operatorName: formOperator,
-      speedKmh: 50,
-      distanceKm: 8.5,
-      signalStrength: 95,
-      fuelPct: 90,
-      trafficLevel: 'LOW',
-      routePath: ['Central Command Depot', 'Ring Road Bypass', request.zoneName.split(',')[0]],
-      timeline: [
-        { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'ALLOCATION APPROVED', done: true },
-        { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'VEHICLE ASSIGNED', done: true },
-        { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'DISPATCH AUTHORIZED', done: true },
-        { time: '--:--', title: 'EN ROUTE TO TARGET', done: false },
-        { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
-        { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
-      ]
-    };
+    // Validate that the vehicle is still available
+    if (vehicle.status !== 'AVAILABLE') {
+      addToast('ERROR', 'VEHICLE NO LONGER AVAILABLE: This vehicle is currently assigned to another mission.');
+      return;
+    }
 
-    const updatedMissions = [newMission, ...missions];
-    setMissions(updatedMissions);
-    syncMissionsToGlobalContext(updatedMissions);
-    setSelectedMissionId(newMissionId);
-    setShowCreatePanel(false);
-    setFormAllocationId('');
-    setFormVehicleId('');
+    setIsSubmitting(true);
+
+    // Simulate dispatch processing lag (800ms) to prevent double clicks and give a premium responsive feel
+    setTimeout(() => {
+      const newMissionId = `DSP-DEL-0${missions.length + 41}`;
+      const newMission: DispatchMission = {
+        id: newMissionId,
+        requestId: request.id,
+        vehicleId: vehicle.id,
+        status: 'DISPATCHED',
+        destinationName: request.zoneName,
+        resourceType: request.itemNeeded,
+        quantity: request.quantity,
+        unit: request.unit,
+        etaMinutes: 22,
+        operatorName: formOperator,
+        speedKmh: 50,
+        distanceKm: 8.5,
+        signalStrength: 95,
+        fuelPct: 90,
+        trafficLevel: 'LOW',
+        routePath: ['Central Command Depot', 'Ring Road Bypass', request.zoneName.split(',')[0]],
+        timeline: [
+          { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'ALLOCATION APPROVED', done: true },
+          { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'VEHICLE ASSIGNED', done: true },
+          { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'DISPATCH AUTHORIZED', done: true },
+          { time: '--:--', title: 'EN ROUTE TO TARGET', done: false },
+          { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
+          { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
+        ]
+      };
+
+      const updatedMissions = [newMission, ...missions];
+      setMissions(updatedMissions);
+      syncMissionsToGlobalContext(updatedMissions);
+
+      // Create and append a corresponding ReliefDelivery item
+      const newDeliveryId = `DEL-2026-0${deliveries.length + 81}`;
+      const newDelivery = {
+        id: newDeliveryId,
+        dispatchId: newMissionId,
+        demandId: request.id,
+        incidentId: request.incidentId || '',
+        resourceId: request.allocatedResourceId || '',
+        vehicleId: vehicle.id,
+        requestedQty: request.quantity,
+        allocatedQty: request.quantity,
+        deliveredQty: 0,
+        unit: request.unit,
+        status: 'PENDING' as const,
+        resourceType: request.itemNeeded,
+        destinationName: request.zoneName
+      };
+      setDeliveries(prev => [newDelivery, ...prev]);
+
+      addToast('SUCCESS', `✓ Vehicle ${vehicle.id} dispatched successfully to coordinate zone.`);
+      setSelectedMissionId(newMissionId);
+      setShowCreatePanel(false);
+      setFormAllocationId('');
+      setFormVehicleId('');
+      setIsSubmitting(false);
+    }, 800);
   };
 
   // Convert selected mission properties to draw lines on map
@@ -392,7 +339,10 @@ export const Dispatch: React.FC = () => {
       {/* ── Page Hero ── */}
       <header ref={heroRef} className={styles.hero}>
         <div className={styles.heroLeft}>
-          <span className={styles.heroEyebrow}>LOGISTICS EXECUTION</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>LOGISTICS EXECUTION</span>
+            <PageGuideTrigger />
+          </div>
           <h1 className={styles.heroTitle}>Dispatch &amp; Logistics</h1>
           <p className={styles.heroLead}>
             Coordinate approved resource allocations, field vehicles, routes, and live response missions from dispatch to arrival.
@@ -744,8 +694,8 @@ export const Dispatch: React.FC = () => {
                 <button type="button" className={styles.cpCancelBtn} onClick={() => setShowCreatePanel(false)}>
                   CANCEL
                 </button>
-                <button type="submit" className={styles.cpSubmitBtn}>
-                  AUTHORIZE DISPATCH →
+                <button type="submit" className={styles.cpSubmitBtn} disabled={isSubmitting}>
+                  {isSubmitting ? 'DISPATCHING...' : 'AUTHORIZE DISPATCH →'}
                 </button>
               </div>
             </form>
@@ -803,7 +753,8 @@ export const Dispatch: React.FC = () => {
           </Link>
         </div>
       </section>
-      
+
+      <PageGuidebook guideKey="dispatch" />
     </div>
   );
 };

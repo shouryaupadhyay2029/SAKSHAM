@@ -9,6 +9,7 @@ import { useOperationalState } from '../../context/OperationalStateContext';
 import { MapView } from '../../components/map/MapView';
 import type { Severity } from '../../types/common';
 import styles from './Incidents.module.css';
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 
 const incidentTypeLabel: Record<string, string> = {
   FLOOD: 'Flood Relief Operations',
@@ -178,7 +179,10 @@ export const Incidents: React.FC = () => {
       {/* ── 1. Page Header ── */}
       <header className={styles.pageHeader}>
         <div className={styles.headerTitles}>
-          <span className={styles.eyebrow}>INCIDENT MANAGEMENT</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span className={styles.eyebrow} style={{ marginBottom: 0 }}>INCIDENT MANAGEMENT</span>
+            <PageGuideTrigger />
+          </div>
           <h1 className={styles.title}>Incident Response Registry</h1>
           <p className={styles.lead}>Monitor, verify, prioritize and coordinate active regional disaster responses.</p>
         </div>
@@ -370,7 +374,7 @@ export const Incidents: React.FC = () => {
               {/* Context Actions */}
               <div className={styles.ledgerActions}>
                 <Link
-                  to={`/operations/incidents/${selectedIncident.id}/response`}
+                  to={`/operations/incidents/${selectedIncident.id}`}
                   className={styles.primaryActionBtn}
                   style={{ textDecoration: 'none', textAlign: 'center', display: 'block', backgroundColor: '#E86F16' }}
                 >
@@ -689,6 +693,7 @@ export const Incidents: React.FC = () => {
         </div>
       )}
 
+      <PageGuidebook guideKey="incidents" />
     </div>
   );
 };

@@ -15,6 +15,7 @@ import {
 import styles from './CommandCenter.module.css';
 
 import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -225,7 +226,10 @@ export const CommandCenter: React.FC = () => {
       <section ref={heroRef} className={styles.heroSection}>
         <div className={styles.heroHeader}>
           <div className={styles.heroTitles}>
-            <span className={styles.heroSubtitle}>SITUATION ROOM</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              <span className={styles.heroSubtitle} style={{ marginBottom: 0 }}>SITUATION ROOM</span>
+              <PageGuideTrigger />
+            </div>
             <div style={{ overflow: 'hidden' }}>
               <h1 className={styles.heroTitle}>Live Operational Overview</h1>
             </div>
@@ -408,7 +412,7 @@ export const CommandCenter: React.FC = () => {
 
                       <p className={styles.inspectorDesc}>{selectedItem.obj.description}</p>
 
-                      <Link to={`/operations/incidents/${selectedItem.obj.id}/response`} className={styles.inspectCta}>
+                      <Link to={`/operations/incidents/${selectedItem.obj.id}`} className={styles.inspectCta}>
                         Action Dispatch Workspace &rarr;
                       </Link>
                     </div>
@@ -460,6 +464,8 @@ export const CommandCenter: React.FC = () => {
 
         </div>
       </section>
+
+      <PageGuidebook guideKey="commandCentre" />
     </div>
   );
 };

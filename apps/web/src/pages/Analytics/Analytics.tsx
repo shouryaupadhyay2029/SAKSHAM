@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Analytics.module.css';
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 
 /* ───────────────────────────────────────────────
    STATIC INTELLIGENCE DATA (labelled DEMO MODEL)
@@ -211,7 +212,10 @@ export const Analytics: React.FC = () => {
       {/* ══ 1. PAGE HEADER ══ */}
       <header className={styles.pageHeader}>
         <div className={styles.headerLeft}>
-          <span className={styles.eyebrow}>RESPONSE INTELLIGENCE</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span className={styles.eyebrow} style={{ marginBottom: 0 }}>RESPONSE INTELLIGENCE</span>
+            <PageGuideTrigger />
+          </div>
           <h1 className={styles.title}>Operational Intelligence Center</h1>
           <p className={styles.lead}>
             Transforming live incidents, resource availability, demand signals and field activity into actionable response decisions.
@@ -769,6 +773,7 @@ export const Analytics: React.FC = () => {
         </div>
       </section>
 
+      <PageGuidebook guideKey="analytics" />
     </div>
   );
 };

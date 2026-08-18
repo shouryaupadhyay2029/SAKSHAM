@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
@@ -208,6 +209,8 @@ export const PublicLayout: React.FC = () => {
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, authUser, logout } = useAuth();
 
   const isHome = location.pathname === '/';
 
@@ -387,10 +390,75 @@ export const PublicLayout: React.FC = () => {
               Civilian SOS
             </Link>
 
-            {/* Enter Command Center pill */}
-            <Link to="/operations/command-center" className={styles.primaryCta}>
-              Enter Command Center &rarr;
-            </Link>
+            {/* Officer Login / authenticated user badge */}
+            {isAuthenticated && authUser ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Link to="/operations" className={styles.primaryCta}>
+                  Command Centre →
+                </Link>
+                <button
+                  onClick={() => { logout(); navigate('/'); }}
+                  style={{
+                    background: 'none',
+                    border: '1px solid rgba(26,47,35,0.2)',
+                    borderRadius: '3px',
+                    padding: '6px 12px',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    color: 'rgba(26,47,35,0.6)',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    textTransform: 'uppercase',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(26,47,35,0.06)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}
+                  aria-label="Sign out"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Enter Command Center pill */}
+                <Link to="/operations" className={styles.primaryCta}>
+                  Enter Command Center →
+                </Link>
+
+                {/* Officer Login — understated */}
+                <Link
+                  to="/officer/login"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    color: 'rgba(26,47,35,0.55)',
+                    textDecoration: 'none',
+                    textTransform: 'uppercase',
+                    fontFamily: 'Inter, sans-serif',
+                    border: '1px solid rgba(26,47,35,0.18)',
+                    borderRadius: '3px',
+                    padding: '6px 12px',
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLAnchorElement).style.color = '#1A2F23';
+                    (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(26,47,35,0.04)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(26,47,35,0.55)';
+                    (e.currentTarget as HTMLAnchorElement).style.background = 'none';
+                  }}
+                >
+                  Officer Login
+                </Link>
+              </>
+            )}
 
             {/* Search */}
             <button className={styles.searchCircleButton} aria-label="Search">
@@ -494,10 +562,35 @@ export const PublicLayout: React.FC = () => {
         </div>
 
         {/* Mobile Command Center CTA */}
-        <Link to="/operations/command-center" className={styles.mobileCtaButton} onClick={() => setIsMobileOpen(false)}>
+        <Link to="/operations" className={styles.mobileCtaButton} onClick={() => setIsMobileOpen(false)}>
           <span>ENTER COMMAND CENTER</span>
           <ArrowRightSideIcon />
         </Link>
+
+        {/* Officer Login (mobile) */}
+        {!isAuthenticated && (
+          <Link
+            to="/officer/login"
+            style={{
+              display: 'block',
+              textAlign: 'center',
+              padding: '12px',
+              marginTop: '8px',
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'rgba(26,47,35,0.55)',
+              textDecoration: 'none',
+              fontFamily: 'Inter, sans-serif',
+              border: '1px solid rgba(26,47,35,0.15)',
+              borderRadius: '3px',
+            }}
+            onClick={() => setIsMobileOpen(false)}
+          >
+            Officer Login
+          </Link>
+        )}
       </div>
 
       {/* ── PAGE CONTENT ── */}

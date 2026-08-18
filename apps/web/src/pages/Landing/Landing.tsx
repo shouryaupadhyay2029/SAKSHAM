@@ -4,6 +4,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { SituationalAwarenessMap } from '../../components/map/SituationalAwarenessMap';
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 
 gsap.registerPlugin(ScrollTrigger);
 import { 
@@ -525,7 +526,7 @@ export const Landing: React.FC = () => {
   return (
     <div ref={landingRef} className={styles.landingPage}>
       {/* 1. HOMEPAGE HERO — "See everything. Respond anywhere." with Live MapLibre Map */}
-      <section id="features" className={`${styles.heroSection} textureCream`}>
+      <section id="features" className={`${styles.heroSection} textureCream ${styles.stackedLayer}`}>
         <div className={styles.sectionContainer}>
           <div className={styles.editorialGrid}>
             
@@ -536,9 +537,12 @@ export const Landing: React.FC = () => {
                 <h3 className={`${styles.parallaxBackWatermark} parallax-back`}>RESPONSE</h3>
 
                 {/* Front Layer (Eyebrow text) */}
-                <span className={`${styles.eyebrowText} parallax-front`}>
-                  LIVE SITUATIONAL AWARENESS
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }} className="parallax-front">
+                  <span className={styles.eyebrowText} style={{ marginBottom: 0 }}>
+                    LIVE SITUATIONAL AWARENESS
+                  </span>
+                  <PageGuideTrigger />
+                </div>
                 
                 {/* Mid Layer (Actual Heading text) */}
                 <h1 className={`${styles.editorialHeading} parallax-mid`}>
@@ -651,7 +655,7 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* 2. ONE RESPONSE NETWORK. EVERYTHING CONNECTED. */}
-      <section id="network-flow" className={`${styles.networkFlowSection} textureCream`}>
+      <section id="network-flow" className={`${styles.networkFlowSection} textureCream ${styles.stackedLayer}`}>
         <div className={styles.sectionContainer}>
           <div className={styles.networkHeader}>
             <span className={styles.sectionSub}>SAKSHAM ECOSYSTEM</span>
@@ -695,7 +699,7 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* 3. FROM DISTRESS TO RELIEF IN SIX STEPS */}
-      <section id="how-it-works" className={`${styles.workflowSection} textureCream`}>
+      <section id="how-it-works" className={`${styles.workflowSection} textureCream ${styles.stackedLayer}`}>
         <div className={styles.sectionContainer}>
           <div className={styles.networkHeader}>
             <span className={styles.sectionSub}>OPERATIONAL RUNTIME</span>
@@ -738,7 +742,7 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* 4. OLD TELEMETRY / RADAR CONCEPT (Reused lower down as supporting section) */}
-      <section id="telemetry-radar" className={`${styles.radarSection} textureForest`}>
+      <section id="telemetry-radar" className={`${styles.radarSection} textureForest ${styles.stackedLayer}`}>
         <div className={styles.heroGlow} />
         
         {/* Background routing curves & coordinate geometry (3-6% opacity) */}
@@ -1066,6 +1070,8 @@ export const Landing: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <PageGuidebook guideKey="home" />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Vehicles.module.css';
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 
 const VEHICLE_TYPE_LABELS: Record<string, string> = {
   TRUCK: 'TRUCK',
@@ -91,7 +92,10 @@ export const Vehicles: React.FC = () => {
       {/* ── 1. Page Header ── */}
       <header className={styles.pageHeader}>
         <div className={styles.headerTitles}>
-          <span className={styles.eyebrow}>FLEET OPERATIONS</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span className={styles.eyebrow} style={{ marginBottom: 0 }}>FLEET OPERATIONS</span>
+            <PageGuideTrigger />
+          </div>
           <h1 className={styles.title}>Emergency Response Fleet</h1>
           <p className={styles.lead}>Live fleet availability, mission assignments and field movement across the response network.</p>
         </div>
@@ -373,8 +377,9 @@ export const Vehicles: React.FC = () => {
             </div>
           )}
         </div>
-
       </div>
+
+      <PageGuidebook guideKey="vehicles" />
     </div>
   );
 };

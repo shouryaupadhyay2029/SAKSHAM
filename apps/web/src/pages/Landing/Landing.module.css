@@ -1303,6 +1303,12 @@
   margin: 0;
 }
 
+.stackedLayer {
+  position: sticky;
+  top: 0;
+  will-change: transform;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .editorialGrid {

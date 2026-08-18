@@ -1,30 +1,50 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
-import { 
-  Bell, 
-  User, 
-  Clock, 
-  ShieldCheck
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import {
+  Bell,
+  Clock,
+  ShieldCheck,
+  ChevronDown,
+  Menu,
+  X,
+  LogOut,
+  User,
 } from 'lucide-react';
 import styles from './OperationsLayout.module.css';
+import { ConnectionIndicator } from '../components/ui/SystemStates';
+import { useOperationalState } from '../context/OperationalStateContext';
+import { useAuth } from '../context/AuthContext';
 
 export const OperationsLayout: React.FC = () => {
   const [time, setTime] = useState(new Date());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const notifRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const { isOffline } = useOperationalState();
+  const { authUser, logout } = useAuth();
 
-  // Close notification popover on outside click
+  // Close mobile drawer on route change
   useEffect(() => {
-    if (!notificationsOpen) return;
+    setIsMobileOpen(false);
+  }, [location.pathname]);
+
+  // Close popovers on outside click
+  useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotificationsOpen(false);
       }
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [notificationsOpen]);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -50,6 +70,11 @@ export const OperationsLayout: React.FC = () => {
     });
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
   const navItems: { path: string; label: string; badge?: string }[] = [
     { path: '/operations/command-center', label: 'Command Center' },
     { path: '/operations/matching', label: 'Matching' },
@@ -57,23 +82,23 @@ export const OperationsLayout: React.FC = () => {
     { path: '/operations/delivery', label: 'Delivery' }
   ];
 
+  // Role display label
+  const roleLabel = authUser?.role === 'REGIONAL_AUTHORITY'
+    ? 'REG. AUTHORITY'
+    : authUser?.role ?? 'OFFICER';
+
   return (
     <div className={styles.layout}>
-      {/* Top navigation system similar to public landing page */}
+      {/* Top navigation system */}
       <header className={styles.topbar}>
         <div className={styles.topbarLeft}>
-          <div className={styles.logoArea}>
-            <img src="/logo.png" alt="SAKSHAM Logo" className={styles.logoImg} />
-            <Link to="/" className={styles.logoText}>SAKSHAM</Link>
-          </div>
-          
           {/* Main Horizontal Operations Menu */}
           <nav className={styles.navMenu}>
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) => 
+                className={({ isActive }) =>
                   `${styles.navMenuLink} ${isActive ? styles.navMenuLinkActive : ''}`
                 }
               >
@@ -86,6 +111,8 @@ export const OperationsLayout: React.FC = () => {
         </div>
 
         <div className={styles.topbarRight}>
+          <ConnectionIndicator isOffline={isOffline} />
+
           {/* Delhi Operational Clock */}
           <div className={styles.clockArea}>
             <Clock size={13} className={styles.clockIcon} />
@@ -95,10 +122,10 @@ export const OperationsLayout: React.FC = () => {
             <span className={styles.clockDate}>{formatDelhiDate(time)}</span>
           </div>
 
-          {/* Notifications Alerts Popover */}
+          {/* Notifications */}
           <div className={styles.actionBtnWrapper} ref={notifRef}>
-            <button 
-              className={styles.iconBtn} 
+            <button
+              className={styles.iconBtn}
               onClick={() => setNotificationsOpen(!notificationsOpen)}
               aria-label="System Alerts"
             >
@@ -140,23 +167,78 @@ export const OperationsLayout: React.FC = () => {
             </div>
           </div>
 
-          {/* Officer badge */}
-          <div className={styles.profileArea}>
-            <div className={styles.profileBadge}>
-              <ShieldCheck size={12} className={styles.shieldIcon} />
-              <span>OFFICER</span>
-            </div>
-            <div className={styles.profileAvatar}>
-              <User size={13} />
+          {/* User profile dropdown */}
+          <div className={styles.actionBtnWrapper} ref={profileRef}>
+            <button
+              className={styles.profileTrigger}
+              onClick={() => setProfileOpen(!profileOpen)}
+              aria-expanded={profileOpen}
+              aria-label="User profile and logout"
+            >
+              <div className={styles.profileBadge}>
+                <ShieldCheck size={12} className={styles.shieldIcon} />
+                <span>{roleLabel}</span>
+              </div>
+              <div className={styles.profileAvatar}>
+                <User size={13} />
+              </div>
+              <ChevronDown size={11} className={`${styles.profileChevron} ${profileOpen ? styles.profileChevronOpen : ''}`} />
+            </button>
+
+            {/* Profile dropdown */}
+            <div className={`${styles.profileDropdown} ${profileOpen ? styles.profileDropdownOpen : ''}`}>
+              <div className={styles.profileDropdownInfo}>
+                <span className={styles.profileName}>{authUser?.name ?? 'Officer'}</span>
+                <span className={styles.profileRole}>{authUser?.role?.replace('_', ' ') ?? 'OPERATOR'}</span>
+                <span className={styles.profileRegion}>{authUser?.region ?? '—'}</span>
+                <span className={styles.profileOrg}>{authUser?.organization ?? '—'}</span>
+              </div>
+              <div className={styles.profileDropdownDivider} />
+              <button
+                className={styles.logoutBtn}
+                onClick={handleLogout}
+              >
+                <LogOut size={13} />
+                <span>Sign Out</span>
+              </button>
             </div>
           </div>
+
+          {/* Mobile menu toggle */}
+          <button
+            className={styles.mobileMenuToggle}
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+            aria-expanded={isMobileOpen}
+            aria-label="Toggle navigation"
+          >
+            {isMobileOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
         </div>
       </header>
 
-      {/* Main Content Area without sidebar */}
+      {/* Mobile Navigation Drawer */}
+      <div className={`${styles.mobileDrawer} ${isMobileOpen ? styles.mobileDrawerOpen : ''}`}>
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `${styles.mobileNavLink} ${isActive ? styles.mobileNavLinkActive : ''}`
+            }
+          >
+            {item.label}
+          </NavLink>
+        ))}
+        <button className={styles.mobileLogoutBtn} onClick={handleLogout}>
+          <LogOut size={13} />
+          Sign Out
+        </button>
+      </div>
+
+      {/* Main Content */}
       <div className={styles.bodyContainer}>
         <main className={styles.mainContent}>
-          <div 
+          <div
             key={location.pathname}
             className={`${styles.contentWrapper} ${styles.animatePageIn}`}
           >

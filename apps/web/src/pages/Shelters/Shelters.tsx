@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Shelters.module.css';
+import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 
 const STATUS_DISPLAY: Record<string, string> = {
   OPEN: 'OPEN',
@@ -62,7 +63,10 @@ export const Shelters: React.FC = () => {
       {/* ── 1. Page Header ── */}
       <header className={styles.pageHeader}>
         <div className={styles.headerTitles}>
-          <span className={styles.eyebrow}>SHELTER OPERATIONS</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span className={styles.eyebrow} style={{ marginBottom: 0 }}>SHELTER OPERATIONS</span>
+            <PageGuideTrigger />
+          </div>
           <h1 className={styles.title}>Emergency Shelter Network</h1>
           <p className={styles.lead}>Monitor shelter occupancy, available facilities and safe capacity across the response region.</p>
         </div>
@@ -417,6 +421,8 @@ export const Shelters: React.FC = () => {
           )}
         </div>
       </div>
+
+      <PageGuidebook guideKey="shelters" />
     </div>
   );
 };
