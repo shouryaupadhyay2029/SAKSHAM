@@ -15,6 +15,10 @@ import Requests from './pages/Requests/Requests';
 import Vehicles from './pages/Vehicles/Vehicles';
 import Shelters from './pages/Shelters/Shelters';
 import Analytics from './pages/Analytics/Analytics';
+import IncidentResponse from './pages/Incidents/IncidentResponse';
+import DemandMatching from './pages/Matching/DemandMatching';
+import Dispatch from './pages/Dispatch/Dispatch';
+import Delivery from './pages/Delivery/Delivery';
 import NotFound from './pages/NotFound/NotFound';
 
 import Report from './pages/Report/Report';
@@ -22,6 +26,8 @@ import Help from './pages/Help/Help';
 import { OperationalStateProvider } from './context/OperationalStateContext';
 import { SmoothScrollProvider } from './motion/scroll/LenisProvider';
 import BootScreen from './components/BootScreen/BootScreen';
+
+import PageTransition from './components/ui/PageTransition';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +37,44 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const AppRoutes: React.FC = () => {
+  return (
+    <PageTransition>
+      {(displayLocation) => (
+        <Routes location={displayLocation}>
+          {/* Public & Registry Routes (Main Website Navigation) */}
+          <Route path="/" element={<PublicLayout />}>
+            <Route index element={<Landing />} />
+            <Route path="report" element={<Report />} />
+            <Route path="help" element={<Help />} />
+            
+            {/* Standalone Registries under public navigation */}
+            <Route path="operations/incidents" element={<Incidents />} />
+            <Route path="operations/incidents/:incidentId/response" element={<IncidentResponse />} />
+            <Route path="operations/resources" element={<Resources />} />
+            <Route path="operations/requests" element={<Requests />} />
+            <Route path="operations/vehicles" element={<Vehicles />} />
+            <Route path="operations/shelters" element={<Shelters />} />
+            <Route path="operations/analytics" element={<Analytics />} />
+          </Route>
+
+          {/* Operations Command Board Execution Routes */}
+          <Route path="/operations" element={<OperationsLayout />}>
+            <Route index element={<Navigate to="/operations/command-center" replace />} />
+            <Route path="command-center" element={<CommandCenter />} />
+            <Route path="matching" element={<DemandMatching />} />
+            <Route path="dispatch" element={<Dispatch />} />
+            <Route path="delivery" element={<Delivery />} />
+          </Route>
+
+          {/* Fallback Area */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      )}
+    </PageTransition>
+  );
+};
 
 export const App: React.FC = () => {
   const [showBoot, setShowBoot] = useState(() => {
@@ -51,29 +95,7 @@ export const App: React.FC = () => {
         <SmoothScrollProvider>
           {showBoot && <BootScreen onComplete={handleBootComplete} />}
           <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<PublicLayout />}>
-                <Route index element={<Landing />} />
-                <Route path="report" element={<Report />} />
-                <Route path="help" element={<Help />} />
-              </Route>
-
-              {/* Operations / Command Board Routes */}
-              <Route path="/operations" element={<OperationsLayout />}>
-                <Route index element={<Navigate to="/operations/command-center" replace />} />
-                <Route path="command-center" element={<CommandCenter />} />
-                <Route path="incidents" element={<Incidents />} />
-                <Route path="resources" element={<Resources />} />
-                <Route path="requests" element={<Requests />} />
-                <Route path="vehicles" element={<Vehicles />} />
-                <Route path="shelters" element={<Shelters />} />
-                <Route path="analytics" element={<Analytics />} />
-              </Route>
-
-              {/* Fallback Area */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AppRoutes />
           </BrowserRouter>
         </SmoothScrollProvider>
       </OperationalStateProvider>

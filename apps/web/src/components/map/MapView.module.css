@@ -1,8 +1,13 @@
+/* ═══════════════════════════════════════════════════════════
+   SAKSHAM MAP VIEW — High-Precision Operational Styling
+   MapView.module.css
+   ═══════════════════════════════════════════════════════════ */
+
 .mapWrapper {
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: var(--color-bg-surface-raised);
+  background-color: #0E1A14;
 }
 
 .mapContainer {
@@ -17,228 +22,243 @@
   right: 0;
   bottom: 0;
   pointer-events: none;
-  box-shadow: inset 0 0 40px rgba(16, 21, 19, 0.05);
+  box-shadow: inset 0 0 40px rgba(16, 21, 19, 0.2);
 }
 
-/* Markers Baseline */
+/* Markers Baseline: Small, precise, Swiss-style dots */
 .marker {
-  width: 22px;
-  height: 22px;
-  border-radius: var(--radius-full);
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 1.5px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 0 0 0 2.5px rgba(255, 255, 255, 0.15), var(--shadow-md);
-  transition: var(--transition-fast);
+  border: 1.5px solid #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s;
 }
 
 .marker:hover {
-  transform: scale(1.2);
+  transform: scale(1.4) !important;
   z-index: 999;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25), 0 0 15px rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2), 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Hovered from the incident list (not map hover) */
+.markerHovered {
+  transform: scale(1.5) !important;
+  z-index: 900;
+  animation: markerHoverPulse 2.5s ease-in-out infinite !important;
+}
+
+/* Selected / Active incident marker */
+.markerActive {
+  transform: scale(1.6) !important;
+  z-index: 1000;
+  box-shadow: 0 0 0 4px rgba(232, 111, 22, 0.4), 0 2px 12px rgba(0, 0, 0, 0.6) !important;
+  animation: none !important;
+}
+
+/* Dimmed when focus mode is on and this marker is not selected */
+.markerDimmed {
+  opacity: 0.25;
+  filter: grayscale(0.8);
+  animation: none !important;
+  transform: scale(0.9) !important;
+  transition: opacity 0.4s ease, filter 0.4s ease, transform 0.4s ease;
 }
 
 .markerDot {
-  width: 8px;
-  height: 8px;
+  width: 3px;
+  height: 3px;
   background-color: #FFFFFF;
-  border-radius: var(--radius-full);
+  border-radius: 50%;
 }
 
 /* Severity Markers */
 .markerCritical {
-  background-color: var(--color-critical);
-  animation: pulseRed 2s infinite;
+  background-color: #EF4444;
+  animation: pulseRed 3s infinite ease-in-out;
 }
 
 .markerHigh {
-  background-color: var(--color-warning);
-  animation: pulseOrange 2s infinite;
+  background-color: #F97316;
 }
 
 .markerMedium {
-  background-color: #E7A72B;
+  background-color: #EAB308;
 }
 
 /* Shelter Markers */
 .markerShelter {
-  background-color: var(--color-success);
+  background-color: #10B981;
   color: #FFFFFF;
-  font-size: 11px;
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-mono);
-  box-shadow: 0 0 10px rgba(79, 143, 91, 0.4);
+  width: 13px;
+  height: 13px;
+  font-size: 8px;
+  font-weight: 800;
+  font-family: var(--font-mono), monospace;
 }
 
 .markerShelterFull {
-  background-color: var(--color-warning);
-  box-shadow: 0 0 10px rgba(231, 167, 43, 0.4);
+  background-color: #EAB308;
 }
 
 /* Vehicle Markers */
 .markerVehicle {
-  background-color: var(--color-primary);
-  width: 26px;
-  height: 26px;
-  box-shadow: 0 0 10px rgba(244, 124, 32, 0.4);
+  background-color: #3B82F6;
+  width: 13px;
+  height: 13px;
 }
 
 .vehicleInner {
   width: 0;
   height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 9px solid #FFFFFF;
-  transform: translateY(-1px);
-}
-
-.markerVehicleEN_ROUTE {
-  animation: pulseOrange 2s infinite;
+  border-left: 3.5px solid transparent;
+  border-right: 3.5px solid transparent;
+  border-bottom: 6px solid #FFFFFF;
+  transform: translateY(-0.5px);
 }
 
 /* Resource Markers */
 .markerResource {
-  background-color: var(--color-info);
+  background-color: #6366F1;
+  width: 11px;
+  height: 11px;
 }
 
 .markerResourceLOW {
-  background-color: var(--color-warning);
+  background-color: #EAB308;
 }
 
 .markerResourceDEPLETED {
-  background-color: var(--color-text-muted);
+  background-color: #6B7280;
 }
 
 /* Map Popup Overrides (applied in JS template injection) */
 :global(.maplibregl-popup-content) {
-  background-color: rgba(12, 29, 23, 0.88) !important; /* Premium semi-transparent forest green */
-  backdrop-filter: blur(10px) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35) !important;
-  border: 1px solid rgba(250, 248, 243, 0.1) !important;
-  padding: var(--space-3) !important;
+  background-color: rgba(16, 21, 19, 0.94) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(250, 248, 243, 0.08) !important;
+  padding: 10px !important;
 }
 
 :global(.maplibregl-popup-tip) {
-  border-top-color: rgba(12, 29, 23, 0.88) !important;
+  border-top-color: rgba(16, 21, 19, 0.94) !important;
 }
 
 :global(.mapPopup) {
-  font-family: var(--font-sans);
+  font-family: var(--font-sans), sans-serif;
   color: #FAF8F3;
-  min-width: 180px;
-  max-width: 240px;
+  min-width: 160px;
+  max-width: 220px;
 }
 
 :global(.popupBadge) {
   display: inline-block;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 8px;
-  font-weight: var(--font-weight-bold);
-  padding: 1px var(--space-2);
-  border-radius: var(--radius-xs);
-  margin-bottom: var(--space-2);
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-bottom: 6px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 :global(.badgeCRITICAL) {
-  background-color: rgba(217, 75, 61, 0.2);
+  background-color: rgba(239, 68, 68, 0.15);
   color: #FF8F85;
-  border: 1px solid rgba(217, 75, 61, 0.45);
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 :global(.badgeHIGH) {
-  background-color: rgba(244, 124, 32, 0.2);
+  background-color: rgba(249, 115, 22, 0.15);
   color: #FFB380;
-  border: 1px solid rgba(244, 124, 32, 0.45);
+  border: 1px solid rgba(249, 115, 22, 0.35);
 }
 
 :global(.badgeShelter) {
-  background-color: rgba(79, 143, 91, 0.2);
+  background-color: rgba(16, 185, 129, 0.15);
   color: #A3E2B2;
-  border: 1px solid rgba(79, 143, 91, 0.45);
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 :global(.badgeVehicle) {
-  background-color: rgba(244, 124, 32, 0.2);
-  color: #FFB380;
-  border: 1px solid rgba(244, 124, 32, 0.45);
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #93C5FD;
+  border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
 :global(.badgeResource) {
-  background-color: rgba(74, 130, 168, 0.2);
-  color: #9BD2F5;
-  border: 1px solid rgba(74, 130, 168, 0.45);
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #A5B4FC;
+  border: 1px solid rgba(99, 102, 241, 0.35);
 }
 
 :global(.popupTitle) {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
+  font-size: 12px;
+  font-weight: 800;
   margin-bottom: 2px;
   color: #FAF8F3;
 }
 
 :global(.popupLoc) {
-  font-size: 11px;
-  color: rgba(250, 248, 243, 0.7);
-  margin-bottom: var(--space-2);
+  font-size: 10px;
+  color: rgba(250, 248, 243, 0.6);
+  margin-bottom: 6px;
 }
 
 :global(.popupDesc) {
   font-size: 11px;
-  color: rgba(250, 248, 243, 0.75);
+  color: rgba(250, 248, 243, 0.8);
   line-height: 1.4;
-  margin-bottom: var(--space-1);
+  margin-bottom: 4px;
 }
 
 :global(.popupCapacityBar) {
   width: 100%;
-  height: 6px;
-  background-color: rgba(250, 248, 243, 0.15);
-  border-radius: var(--radius-full);
+  height: 4px;
+  background-color: rgba(250, 248, 243, 0.1);
+  border-radius: 20px;
   overflow: hidden;
-  margin: var(--space-2) 0 var(--space-1);
+  margin: 6px 0 4px;
 }
 
 :global(.popupCapacityFill) {
   height: 100%;
-  background-color: var(--color-success);
-  border-radius: var(--radius-full);
+  background-color: #10B981;
 }
 
 :global(.popupCapText) {
-  font-size: 10px;
-  color: rgba(250, 248, 243, 0.5);
-  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(250, 248, 243, 0.45);
+  font-family: var(--font-mono), monospace;
 }
 
 :global(.popupCargo) {
-  font-size: 11px;
-  background-color: rgba(250, 248, 243, 0.05);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-xs);
-  margin-top: var(--space-1);
-  border: 1px solid rgba(250, 248, 243, 0.1);
+  font-size: 10.5px;
+  background-color: rgba(250, 248, 243, 0.03);
+  padding: 4px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+  border: 1px solid rgba(250, 248, 243, 0.06);
 }
 
-/* Animations (Map-scoped) */
+/* Subtle, slow pulsing animations (CRITICAL only) */
 @keyframes pulseRed {
-  0% { box-shadow: 0 0 0 0 rgba(217, 75, 61, 0.6); }
-  70% { box-shadow: 0 0 0 12px rgba(217, 75, 61, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(217, 75, 61, 0); }
+  0%   { box-shadow: 0 0 0 0   rgba(239, 68, 68, 0.45); }
+  70%  { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0   rgba(239, 68, 68, 0); }
 }
 
-@keyframes pulseOrange {
-  0% { box-shadow: 0 0 0 0 rgba(244, 124, 32, 0.6); }
-  70% { box-shadow: 0 0 0 12px rgba(244, 124, 32, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(244, 124, 32, 0); }
-}
-
-@keyframes pulseGreen {
-  0% { box-shadow: 0 0 0 0 rgba(79, 143, 91, 0.6); }
-  70% { box-shadow: 0 0 0 12px rgba(79, 143, 91, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(79, 143, 91, 0); }
+/* Halo pulse for incident-list hovered marker */
+@keyframes markerHoverPulse {
+  0%   { box-shadow: 0 0 0 0px  rgba(250, 248, 243, 0.5), 0 2px 8px rgba(0,0,0,0.5); }
+  60%  { box-shadow: 0 0 0 8px  rgba(250, 248, 243, 0),   0 2px 8px rgba(0,0,0,0.5); }
+  100% { box-shadow: 0 0 0 0px  rgba(250, 248, 243, 0),   0 2px 8px rgba(0,0,0,0.5); }
 }

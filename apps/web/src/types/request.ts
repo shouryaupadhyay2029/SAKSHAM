@@ -1,9 +1,10 @@
 import type { Coordinates, RequestPriority } from './common';
 
-export type RequestStatus = 'PENDING' | 'ALLOCATED' | 'DISPATCHED' | 'FULFILLED' | 'CANCELLED';
+export type RequestStatus = 'PENDING' | 'MATCHED' | 'ALLOCATED' | 'DISPATCHED' | 'FULFILLING' | 'FULFILLED' | 'CANCELLED';
 
 export interface DemandRequest {
   id: string;
+  incidentId?: string;
   zoneName: string;
   coordinates: Coordinates;
   itemNeeded: string;

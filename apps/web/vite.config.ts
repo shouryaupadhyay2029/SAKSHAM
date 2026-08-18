@@ -6,5 +6,10 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     exclude: ['maplibre-gl']
+  },
+  server: {
+    headers: {
+      'Cache-Control': 'no-store',
+    }
   }
 })

@@ -2,7 +2,7 @@ import type { Coordinates } from './common';
 
 export type VehicleType = 'TRUCK' | 'AMBULANCE' | 'HELICOPTER' | 'RESCUE_BOAT' | 'DRONE' | 'SUV';
 
-export type VehicleStatus = 'AVAILABLE' | 'DISPATCHED' | 'EN_ROUTE' | 'MAINTENANCE';
+export type VehicleStatus = 'AVAILABLE' | 'DISPATCHED' | 'EN_ROUTE' | 'ARRIVED' | 'RETURNING' | 'MAINTENANCE';
 
 export interface Vehicle {
   id: string;
@@ -16,4 +16,7 @@ export interface Vehicle {
   driverName: string;
   driverContact: string;
   speedKmh?: number;
+  incidentId?: string; // Assigned incident
+  etaMinutes?: number; // Estimated arrival minutes
+  teamName?: string; // Team identifier e.g. "ALPHA"
 }

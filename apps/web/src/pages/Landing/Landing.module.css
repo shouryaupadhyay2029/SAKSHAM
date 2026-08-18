@@ -6,6 +6,31 @@
   font-family: var(--font-sans);
 }
 
+.stackedLayer {
+  position: relative;
+  will-change: transform, opacity;
+  background-color: inherit;
+}
+
+@media (min-width: 769px) {
+  .stackedLayer {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: 0 -15px 35px rgba(12, 29, 23, 0.08);
+  }
+}
+
+@media (max-width: 768px) {
+  .stackedLayer {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    box-shadow: none;
+  }
+}
+
 /* 1. Remastered Hero Section (See Everything. Respond Anywhere.) */
 .heroSection {
   position: relative;
@@ -19,17 +44,29 @@
 .radarSection {
   position: relative;
   padding: 100px var(--space-8);
-  background: linear-gradient(135deg, #10291F 0%, #173D2D 50%, #21583F 100%);
+  background: radial-gradient(circle at 20% 35%, rgba(27, 73, 53, 0.15) 0%, transparent 60%),
+              radial-gradient(circle at 80% 75%, rgba(20, 54, 40, 0.22) 0%, transparent 70%),
+              linear-gradient(135deg, #10291F 0%, #0B2119 100%);
   color: var(--color-text-on-dark);
   overflow: hidden;
   border-bottom: 1px solid rgba(23, 61, 45, 0.3);
+}
+
+.radarBgGeometry {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .radarLayoutGrid {
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: 1.15fr 0.85fr;
   gap: var(--space-12);
   align-items: center;
   position: relative;
@@ -60,17 +97,28 @@
 
 .radarHeading {
   font-family: var(--font-display);
-  font-size: 3rem;
+  font-size: 3.4rem;
   font-weight: 800;
   line-height: 1.15;
-  letter-spacing: -0.02em;
-  margin: 0 0 16px 0;
+  letter-spacing: -0.025em;
+  margin: 0 0 20px 0;
   color: var(--color-warm-white);
+}
+
+.radarHeadingLineMask {
+  display: block;
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+.radarHeadingLine {
+  display: inline-block;
+  will-change: transform;
 }
 
 .radarDesc {
   font-size: 1.15rem;
-  color: var(--color-text-muted);
+  color: rgba(250, 248, 243, 0.7);
   line-height: 1.6;
   margin: 0;
   max-width: 580px;
@@ -80,6 +128,21 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+}
+
+.radarCardBacking {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: -16px;
+  bottom: -16px;
+  border-radius: 20px;
+  background-color: rgba(11, 33, 25, 0.45);
+  border: 1px solid rgba(250, 248, 243, 0.04);
+  z-index: 1;
+  pointer-events: none;
+  transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Atmospheric soft radial lighting */
@@ -98,21 +161,37 @@
 
 /* Radar Instrument Preview Panel */
 .radarCard {
-  background: linear-gradient(180deg, #10291F 0%, #0c1f17 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(16, 41, 31, 0.85) 0%, rgba(12, 31, 23, 0.95) 100%);
+  border: 1px solid rgba(250, 248, 243, 0.08);
+  border-radius: 20px;
   width: 100%;
   max-width: 360px;
   overflow: hidden;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  z-index: 2;
+  position: relative;
+  transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1), 
+              border-color 350ms cubic-bezier(0.22, 1, 0.36, 1), 
+              box-shadow 350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.radarCard:hover {
+  border-color: rgba(250, 248, 243, 0.16);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+.radarCard:hover + .radarCardBacking {
+  transform: translate(3px, 3px);
 }
 
 .radarHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(250, 248, 243, 0.06);
 }
 
 .liveIndicator {
@@ -130,7 +209,12 @@
   height: 6px;
   background-color: var(--color-primary);
   border-radius: var(--radius-full);
-  animation: radarPulse 2s infinite;
+  animation: liveBreathing 3.5s infinite ease-in-out;
+}
+
+@keyframes liveBreathing {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }
 
 .techText {
@@ -141,40 +225,34 @@
 }
 
 .radarBody {
-  padding: var(--space-5);
+  padding: 20px;
 }
 
 .radarScope {
-  width: 180px;
-  height: 180px;
-  border-radius: var(--radius-full);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 1px solid rgba(250, 248, 243, 0.06);
   margin: 0 auto 20px;
   position: relative;
   overflow: hidden;
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.radarScope::before {
-  content: '';
-  width: 120px;
-  height: 120px;
-  border-radius: var(--radius-full);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+.radarCircle {
   position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(250, 248, 243, 0.04);
+  pointer-events: none;
 }
 
-.radarScope::after {
-  content: '';
-  width: 60px;
-  height: 60px;
-  border-radius: var(--radius-full);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  position: absolute;
-}
+.radarCircle:nth-child(1) { width: 160px; height: 160px; }
+.radarCircle:nth-child(2) { width: 120px; height: 120px; }
+.radarCircle:nth-child(3) { width: 80px; height: 80px; }
+.radarCircle:nth-child(4) { width: 40px; height: 40px; }
 
 .radarSweep {
   position: absolute;
@@ -182,73 +260,109 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: conic-gradient(from 0deg, rgba(244, 124, 32, 0.1) 0%, transparent 65%);
-  animation: sweep 6s linear infinite;
+  background: conic-gradient(from 0deg, rgba(244, 123, 32, 0.08) 0%, transparent 60%);
+  animation: sweep 10s linear infinite;
   transform-origin: center;
+  pointer-events: none;
+}
+
+.radarNodeConnections {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.radarMicroText {
+  position: absolute;
+  font-size: 8px;
+  color: rgba(250, 248, 243, 0.35);
+  letter-spacing: 0.05em;
+  pointer-events: none;
 }
 
 .radarPin {
   position: absolute;
-  width: 7px;
-  height: 7px;
-  border-radius: var(--radius-full);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   z-index: 5;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
 }
 
 .pinCritical {
-  background-color: var(--color-critical);
-  box-shadow: 0 0 6px var(--color-critical);
+  background-color: #EF4444;
 }
 
 .pinWarning {
-  background-color: var(--color-warning);
-  box-shadow: 0 0 6px var(--color-warning);
+  background-color: #F59E0B;
 }
 
 .pinShelter {
-  background-color: var(--color-success);
-  box-shadow: 0 0 6px var(--color-success);
+  background-color: #10B981;
 }
 
 .pinVehicle {
-  background-color: var(--color-primary);
-  box-shadow: 0 0 6px var(--color-primary);
+  background-color: #F47C20;
+}
+
+.pinGlow {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: inherit;
+  opacity: 0.15;
+  animation: pinPulse 3s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes pinPulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.12; }
+  50% { transform: scale(1.6); opacity: 0.28; }
 }
 
 .radarMetrics {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 16px;
+  gap: 12px;
+  border-top: 1px solid rgba(250, 248, 243, 0.08);
+  padding-top: 18px;
 }
 
 .metricRow {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
-  color: var(--color-text-muted);
+  align-items: center;
+  font-size: 13px;
+  color: rgba(250, 248, 243, 0.6);
 }
 
 .metricRow strong {
   font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .textCritical {
-  color: var(--color-critical);
+  color: #EF4444;
 }
 
 .textWarning {
-  color: var(--color-warning);
+  color: #F59E0B;
 }
 
 .textSuccess {
-  color: var(--color-success);
+  color: #10B981;
 }
 
 .textPrimary {
-  color: var(--color-primary);
+  color: #F47C20;
 }
 
 /* 2. Live Operational Indicators Strip (Cream Surface A) */
@@ -504,11 +618,23 @@
 /* 4. SOS Emergency Section */
 .sosSection {
   position: relative;
-  padding: 100px 0;
-  background: linear-gradient(180deg, #10291F 0%, #173D2D 100%);
+  padding: 100px var(--space-8);
+  background: radial-gradient(circle at 35% 35%, rgba(27, 73, 53, 0.15) 0%, transparent 60%),
+              radial-gradient(circle at 75% 75%, rgba(20, 54, 40, 0.22) 0%, transparent 70%),
+              linear-gradient(180deg, #10291F 0%, #0B2119 100%);
   color: var(--color-text-on-dark);
   overflow: hidden;
   border-bottom: 1px solid rgba(23, 61, 45, 0.3);
+}
+
+.sosBgGeometry {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .sosGlow {
@@ -531,12 +657,24 @@
   z-index: 2;
 }
 
+.sosHeadingLineMask {
+  display: block;
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+.sosHeadingLine {
+  display: inline-block;
+  will-change: transform;
+}
+
 .sosContent .sectionTitle {
   color: var(--color-warm-white);
+  margin-bottom: 20px;
 }
 
 .sosText {
-  color: var(--color-text-muted);
+  color: rgba(250, 248, 243, 0.7);
   font-size: 1.1rem;
   line-height: 1.6;
   margin-bottom: 24px;
@@ -556,20 +694,108 @@
   color: var(--color-cream);
 }
 
+.reassuranceBullet {
+  color: #F47C20;
+  font-size: 10px;
+  margin-right: 4px;
+}
+
+.sosFormCardBacking {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: -14px;
+  bottom: -14px;
+  border-radius: 22px;
+  background-color: rgba(11, 33, 25, 0.45);
+  border: 1px solid rgba(250, 248, 243, 0.04);
+  z-index: 1;
+  pointer-events: none;
+  transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sosFormCard:hover + .sosFormCardBacking {
+  transform: translate(2px, 2px);
+}
+
 /* Civilian SOS Card Remaster (Warm Paper Surface A) */
 .sosFormCard {
-  background-color: #FAF8F3;
-  border: 1px solid rgba(23, 61, 45, 0.1);
-  border-radius: var(--radius-md);
+  background-color: #F7F3EA;
+  border: 1px solid rgba(20, 41, 31, 0.12);
+  border-radius: 22px;
   padding: 35px;
   color: var(--color-dark);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+  position: relative;
+  z-index: 2;
+  transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 350ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sosFormCard:hover {
+  border-color: rgba(20, 41, 31, 0.22);
+  box-shadow: 0 25px 55px rgba(0, 0, 0, 0.42);
+  transform: translateY(-2px);
 }
 
 .form {
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+.formHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+}
+
+.formHeaderTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.formHeaderTitle span:nth-child(1) {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.05em;
+}
+
+.formHeaderTitle span:nth-child(2) {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-deep-forest);
+  letter-spacing: 0.02em;
+}
+
+.formHeaderStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--color-deep-forest);
+}
+
+.formLiveDot {
+  width: 5px;
+  height: 5px;
+  background-color: #10B981;
+  border-radius: 50%;
+  animation: liveBreathing 3s infinite;
+}
+
+.formDivider {
+  height: 1px;
+  background-color: rgba(20, 41, 31, 0.08);
+  margin-bottom: 20px;
 }
 
 .formGroup {
@@ -585,30 +811,72 @@
 }
 
 .formGroup label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--color-deep-forest);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 2px;
 }
 
 .formGroup input,
 .formGroup select,
 .formGroup textarea {
-  padding: 12px;
-  border: 1px solid rgba(23, 61, 45, 0.18);
-  border-radius: var(--radius-sm);
-  font-size: 0.95rem;
-  background-color: var(--color-cream);
+  padding: 10px 12px;
+  border: 1px solid rgba(16, 33, 25, 0.16);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background-color: #F2EEE4;
   color: var(--color-dark);
-  transition: border-color var(--transition-fast) ease;
+  transition: border-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 300ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.formGroup input::placeholder,
+.formGroup textarea::placeholder {
+  color: rgba(16, 33, 25, 0.45);
 }
 
 .formGroup input:focus,
 .formGroup select:focus,
 .formGroup textarea:focus {
   outline: none;
-  border-color: var(--color-primary);
-  background-color: var(--color-warm-white);
-  box-shadow: 0 0 0 3px rgba(244, 124, 32, 0.1);
+  border-color: #F47B20;
+  background-color: #FAF8F3;
+  box-shadow: 0 0 0 3px rgba(244, 123, 32, 0.08);
+}
+
+.fieldHelper {
+  font-size: 10px;
+  color: rgba(16, 33, 25, 0.45);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+.selectWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.selectWrapper::after {
+  content: '↓';
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--color-deep-forest);
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.selectWrapper select {
+  appearance: none;
+  padding-right: 28px;
 }
 
 .submitBtn {
@@ -616,21 +884,46 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background-color: var(--color-primary);
+  background-color: #F47B20;
   color: white;
-  padding: 14px;
-  border-radius: var(--radius-sm);
+  padding: 12px;
+  border-radius: 8px;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   width: 100%;
-  margin-top: 10px;
+  margin-top: 14px;
   cursor: pointer;
   border: none;
-  transition: background-color var(--transition-fast) ease;
+  transition: background-color 200ms ease, transform 200ms ease;
 }
 
 .submitBtn:hover {
   background-color: #e06b12;
+  transform: translateY(-1px);
+}
+
+.submitBtn:active {
+  transform: translateY(0) scale(0.995);
+}
+
+.submitBtn:disabled {
+  background-color: rgba(244, 123, 32, 0.6);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.buttonSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Success Card */
@@ -659,14 +952,27 @@
   line-height: 1.5;
 }
 
+.successBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: rgba(16, 33, 25, 0.5);
+}
+
+.successBadge strong {
+  color: #F47B20;
+}
+
 .successTicket {
-  background-color: var(--color-cream);
-  border: 1px dashed rgba(23, 61, 45, 0.2);
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
+  background-color: #F2EEE4;
+  border: 1px dashed rgba(20, 41, 31, 0.16);
+  padding: 10px 20px;
+  border-radius: 8px;
   font-size: 0.95rem;
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .successTicket strong {

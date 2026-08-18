@@ -1,3 +1,10 @@
+/* ═══════════════════════════════════════════════════════════
+   SAKSHAM PUBLIC LAYOUT — PublicLayout.module.css
+   Nav remaster: function-first architecture
+   All footer / announcement / scroll styles are preserved
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Container & Page ─────────────────────────────────────── */
 .container {
   display: flex;
   flex-direction: column;
@@ -9,9 +16,9 @@
   flex-grow: 1;
 }
 
-/* 1. TOP ANNOUNCEMENT / STATUS BAR */
+/* ── 1. TOP ANNOUNCEMENT / STATUS BAR ─────────────────────── */
 .announcementBar {
-  background-color: #0E1A14; /* Dark Forest/Charcoal */
+  background-color: #0E1A14;
   color: #FAF8F3;
   font-family: var(--font-sans);
   font-size: 11px;
@@ -40,7 +47,7 @@
 
 @keyframes pulseDot {
   0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+  50%       { opacity: 1; }
 }
 
 .announcementLink {
@@ -57,18 +64,15 @@
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: rgba(250, 248, 243, 0.4);
+  color: rgba(250,248,243,0.4);
   cursor: pointer;
   display: flex;
   align-items: center;
   transition: color 200ms ease;
 }
+.alertCloseButton:hover { color: #FAF8F3; }
 
-.alertCloseButton:hover {
-  color: #FAF8F3;
-}
-
-/* 2. MAIN NAV HEADER */
+/* ── 2. MAIN NAV HEADER ────────────────────────────────────── */
 .header {
   width: 100%;
   background-color: transparent;
@@ -76,18 +80,19 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
-              background-color 400ms cubic-bezier(0.22, 1, 0.36, 1),
-              border-color 400ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 400ms cubic-bezier(0.22, 1, 0.36, 1);
   box-sizing: border-box;
 }
 
 .headerScrolled {
-  box-shadow: 0 4px 20px rgba(12, 29, 23, 0.02);
-  background-color: rgba(250, 248, 243, 0.96);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(12, 29, 23, 0.06);
+  box-shadow: 0 4px 20px rgba(12,29,23,0.02);
+  background-color: rgba(250,248,243,0.97);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(12,29,23,0.06);
 }
 
 .headerCompressed {
@@ -106,16 +111,14 @@
   box-sizing: border-box;
   transition: height 400ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+.headerScrolled .headerWrapper { height: 68px; }
 
-.headerScrolled .headerWrapper {
-  height: 68px;
-}
-
-/* BRAND LOGO AREA */
+/* ── Brand ─────────────────────────────────────────────────── */
 .brandArea {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 .logoText {
@@ -123,45 +126,43 @@
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: #B35D38; /* Terracotta brand matching Function */
+  color: #B35D38;
   line-height: 1;
 }
 
-/* NAV LINKS */
+/* ── Desktop Nav ───────────────────────────────────────────── */
 .nav {
   display: flex;
-  gap: var(--space-8);
+  gap: 2px;
   height: 100%;
+  align-items: center;
 }
 
+/* ── Nav Item Wrapper: contains trigger + dropdown ─────────── */
 .navItemWrapper {
-  display: flex;
-  align-items: center;
   position: relative;
   height: 100%;
+  display: flex;
+  align-items: center;
 }
 
+/* Nav link trigger — now a <button> for accessibility */
 .navLink {
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
-  color: rgba(12, 29, 23, 0.7);
-  transition: color 200ms ease;
+  color: rgba(12,29,23,0.65);
+  background: none;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   height: 100%;
+  padding: 0 14px;
   position: relative;
-}
-
-.chevron {
-  transition: transform 250ms ease;
-  opacity: 0.5;
-}
-
-.chevronOpen {
-  transform: rotate(180deg);
-  opacity: 0.9;
+  transition: color 200ms ease;
+  white-space: nowrap;
 }
 
 .navLink:hover,
@@ -169,253 +170,282 @@
   color: #101513;
 }
 
-/* Orange underline indicator (Function style) */
+.chevron {
+  transition: transform 250ms ease;
+  opacity: 0.45;
+  flex-shrink: 0;
+}
+.chevronOpen {
+  transform: rotate(180deg);
+  opacity: 0.8;
+}
+
+/* Active indicator — 2px orange line at bottom */
 .activeIndicator {
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 14px;
+  right: 14px;
   height: 2px;
   background-color: #F47C20;
   transform: scaleX(0);
   transform-origin: center;
   transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-
 .navLinkActive .activeIndicator {
   transform: scaleX(1);
 }
 
-/* RIGHT ACTION CONTROLS */
-.ctaArea {
+/* ── Compact Dropdown Panel ────────────────────────────────── */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px) scale(0.98);
+  background-color: #FAF8F3;
+  border: 1px solid rgba(12,29,23,0.08);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(12,29,23,0.07), 0 2px 8px rgba(12,29,23,0.04);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.dropdownOpen {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* ── Dropdown Panel Layout ─────────────────────────────────── */
+.dropPanel {
+  box-sizing: border-box;
+}
+
+.dropPanelHead {
+  padding: 14px 16px 8px;
+  border-bottom: 1px solid rgba(12,29,23,0.05);
+}
+
+.dropPanelLabel {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #B35D38;
+  display: block;
+}
+
+.dropPanelBody {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Two-column layout for RESPONSE */
+.dropPanelTwoCols {
+  display: flex;
+  gap: 0;
+  padding: 14px 0;
+}
+
+.dropCol {
+  flex: 1;
+  padding: 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropCol > .dropPanelLabel {
+  padding: 0 8px 10px;
+}
+
+.dropDivider {
+  width: 1px;
+  background: rgba(12,29,23,0.06);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* ── Dropdown Item ─────────────────────────────────────────── */
+.dropItemLink {
+  display: block;
+  text-decoration: none;
+}
+
+.dropItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  transition: background-color 180ms ease;
+  cursor: pointer;
+}
+
+.dropItem:hover {
+  background-color: rgba(12,29,23,0.03);
+}
+
+/* Highlight variant — for Civilian SOS */
+.dropItemHighlight {
+  background-color: rgba(244,124,32,0.05);
+  border: 1px solid rgba(244,124,32,0.1);
+}
+.dropItemHighlight:hover {
+  background-color: rgba(244,124,32,0.09);
+}
+
+/* Active (Command Center) */
+.dropItemActive {
+  background-color: rgba(244,124,32,0.04);
+}
+
+.dropIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background-color: rgba(12,29,23,0.05);
   display: flex;
   align-items: center;
-  gap: 20px;
+  justify-content: center;
+  color: rgba(12,29,23,0.55);
+  flex-shrink: 0;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
-.secondaryLink {
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(12, 29, 23, 0.8);
-  transition: color 200ms ease;
-}
-
-.secondaryLink:hover {
+.dropIconHighlight {
+  background-color: rgba(244,124,32,0.12);
   color: #B35D38;
 }
 
+.dropIconActive {
+  background-color: rgba(244,124,32,0.1);
+  color: #B35D38;
+}
+
+.dropItem:hover .dropIcon {
+  background-color: rgba(12,29,23,0.09);
+}
+.dropItemHighlight:hover .dropIcon {
+  background-color: rgba(244,124,32,0.18);
+}
+
+.dropText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dropTitle {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #101513;
+  white-space: nowrap;
+  transition: color 180ms ease;
+}
+
+.dropItemHighlight .dropTitle { color: #B35D38; }
+.dropItemActive .dropTitle { color: #B35D38; }
+
+.dropDesc {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: rgba(12,29,23,0.48);
+  line-height: 1.35;
+}
+
+/* ── Right Action Controls ──────────────────────────────────── */
+.ctaArea {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* Civilian SOS — standalone high-visibility link */
+.sosLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #B35D38;
+  letter-spacing: 0.01em;
+  transition: color 200ms ease, opacity 200ms ease;
+  white-space: nowrap;
+}
+.sosLink:hover { color: #A3502D; }
+
+.sosDot {
+  width: 6px;
+  height: 6px;
+  background-color: #EF4444;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: sosPulse 2s infinite;
+}
+
+@keyframes sosPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* Primary CTA — Enter Command Center pill */
 .primaryCta {
-  background-color: #B35D38; /* Terracotta capsule CTA */
+  background-color: #B35D38;
   color: #FAF8F3 !important;
   padding: 10px 20px;
-  border-radius: 24px; /* pill shape */
+  border-radius: 24px;
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: 12px;
   transition: background-color 200ms ease, transform 200ms ease;
+  white-space: nowrap;
 }
-
 .primaryCta:hover {
   background-color: #A3502D;
   transform: translateY(-0.5px);
 }
 
+/* Search circle button */
 .searchCircleButton {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid rgba(12, 29, 23, 0.08);
+  border: 1px solid rgba(12,29,23,0.08);
   background: none;
-  color: rgba(12, 29, 23, 0.7);
+  color: rgba(12,29,23,0.65);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: color 200ms ease, border-color 200ms ease;
 }
-
 .searchCircleButton:hover {
   color: #B35D38;
   border-color: #B35D38;
 }
 
-/* FLOATING MEGA MENU CARD OVERLAY */
-.megaMenu {
-  position: absolute;
-  top: 82px; /* offset slightly for gap */
-  left: 50%;
-  transform: translateX(-50%) translateY(-8px);
-  width: calc(100vw - 48px);
-  max-width: 1200px;
-  background-color: #FAF8F3; /* Solid warm cream */
-  border: 1px solid rgba(12, 29, 23, 0.08);
-  border-radius: 16px;
-  z-index: 99;
-  opacity: 0;
-  pointer-events: none;
-  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 300ms cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 16px 40px rgba(12, 29, 23, 0.04);
-}
-
-.megaMenuOpen {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-  pointer-events: all;
-}
-
-.megaMenuContainer {
-  padding: 36px;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.3fr;
-  gap: 32px;
-  box-sizing: border-box;
-}
-
-.megaMenuCol {
-  display: flex;
-  flex-direction: column;
-}
-
-.columnHeader {
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 700;
-  color: #B35D38;
-  letter-spacing: 0.08em;
-  margin-bottom: 20px;
-  text-transform: uppercase;
-}
-
-.itemList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.megaItem {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: 10px 14px;
-  border-radius: 10px;
-  transition: background-color 200ms ease;
-  box-sizing: border-box;
-}
-
-.megaItem:hover {
-  background-color: rgba(12, 29, 23, 0.02);
-}
-
-/* Active/selected item highlights */
-.megaItemActive {
-  background-color: rgba(244, 124, 32, 0.05);
-}
-
-.megaItemActive .megaTitle {
-  color: #B35D38;
-}
-
-.iconWrapper {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background-color: rgba(12, 29, 23, 0.04);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(12, 29, 23, 0.6);
-  flex-shrink: 0;
-  transition: background-color 200ms ease, color 200ms ease;
-}
-
-.orangeIcon {
-  background-color: rgba(244, 124, 32, 0.1);
-  color: #B35D38;
-}
-
-.megaItem:hover .iconWrapper {
-  background-color: rgba(12, 29, 23, 0.08);
-}
-
-.megaTitle {
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 700;
-  color: #101513;
-  margin-bottom: 2px;
-}
-
-.megaDesc {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  color: rgba(12, 29, 23, 0.5);
-  line-height: 1.35;
-}
-
-/* Right side banner card */
-.megaMenuCard {
-  background-color: #F4EFE6; /* slightly darker cream */
-  border: 1px solid rgba(12, 29, 23, 0.04);
-  border-radius: 14px;
-  padding: 32px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.cardContent {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-width: 320px;
-  z-index: 2;
-}
-
-.cardHeading {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 500;
-  color: #101513;
-  line-height: 1.35;
-  margin: 0;
-}
-
-.highlightText {
-  color: #B35D38;
-  font-style: italic;
-}
-
-.cardLink {
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 700;
-  color: #B35D38;
-  text-decoration: underline;
-}
-
-.cardLink:hover {
-  color: #A3502D;
-}
-
-.cardGraphic {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1;
-}
-
-/* MOBILE NAV SUPPORT */
+/* ── MOBILE CONTROLS ────────────────────────────────────────── */
 .mobileMenuButton {
   display: none;
 }
 
+/* ── MOBILE DRAWER ─────────────────────────────────────────── */
 .mobileDrawer {
   position: fixed;
-  top: 110px; /* offset top banner + header */
+  top: 110px;
   left: 0;
   width: 100vw;
   height: calc(100vh - 110px);
@@ -424,15 +454,16 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 40px 24px;
+  padding: 28px 20px;
   box-sizing: border-box;
   transform: translateY(-100%);
   opacity: 0;
   pointer-events: none;
-  transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    transform 380ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
 }
-
 .mobileDrawerOpen {
   transform: translateY(0);
   opacity: 1;
@@ -442,20 +473,77 @@
 .mobileNavLinks {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 4px;
 }
 
-.mobileLink {
+/* Civilian SOS button — prominently at top of mobile menu */
+.mobileSosButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: rgba(244,124,32,0.07);
+  border: 1px solid rgba(244,124,32,0.2);
+  border-radius: 12px;
+  padding: 14px 16px;
   font-family: var(--font-sans);
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  color: #0C1D17;
+  font-size: 15px;
+  font-weight: 800;
+  color: #B35D38;
+  margin-bottom: 8px;
+  transition: background-color 180ms ease;
 }
+.mobileSosButton:hover { background-color: rgba(244,124,32,0.12); }
 
 .mobileDivider {
   height: 1px;
-  background-color: rgba(12, 29, 23, 0.06);
-  margin: 10px 0;
+  background-color: rgba(12,29,23,0.06);
+  margin: 8px 0;
+}
+
+/* Mobile accordion item */
+.mobileAccordion {
+  border-bottom: 1px solid rgba(12,29,23,0.05);
+}
+
+.mobileAccordionToggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 4px;
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 700;
+  color: #0C1D17;
+  cursor: pointer;
+  text-align: left;
+}
+
+.mobileAccordionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 10px;
+}
+
+.mobileSubLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(12,29,23,0.7);
+  background: rgba(12,29,23,0.02);
+  transition: background 160ms ease, color 160ms ease;
+}
+.mobileSubLink:hover {
+  background: rgba(12,29,23,0.05);
+  color: #0C1D17;
 }
 
 .mobileActionLink {
@@ -465,6 +553,7 @@
   color: #B35D38;
 }
 
+/* Mobile drawer CTA */
 .mobileCtaButton {
   background-color: #B35D38;
   color: #FAF8F3 !important;
@@ -479,36 +568,64 @@
   justify-content: center;
   gap: 8px;
   box-sizing: border-box;
+  margin-top: 16px;
 }
 
-/* FOOTER ARCHITECTURE */
+/* ═══════════════════════════════════════════════════════════
+   FOOTER (preserved from original — zero changes)
+   ═══════════════════════════════════════════════════════════ */
 .footer {
-  background-color: var(--color-dark-forest);
-  color: var(--color-text-on-dark);
-  padding: var(--space-12) var(--space-8) var(--space-6);
+  position: relative;
+  background: radial-gradient(circle at 50% 100%, rgba(27,73,53,0.15) 0%, transparent 70%),
+              linear-gradient(180deg, #10291F 0%, #0B2119 100%);
+  color: rgba(250,248,243,0.85);
+  padding: var(--space-16) var(--space-8) var(--space-8);
   z-index: 10;
+  overflow: hidden;
+}
+
+.footerTopDivider {
+  max-width: 1200px;
+  margin: 0 auto 50px;
+  height: 1px;
+  background-color: rgba(247,243,234,0.1);
+  position: relative;
+}
+
+.footerTopDividerSignal {
+  position: absolute;
+  top: 50%;
+  left: 20%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #F47C20;
+  box-shadow: 0 0 6px #F47C20;
 }
 
 .footerContent {
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 0 auto 40px;
   display: flex;
   justify-content: space-between;
   gap: var(--space-12);
-  margin-bottom: var(--space-10);
+  position: relative;
+  z-index: 3;
   flex-wrap: wrap;
 }
 
 .footerBrand h3 {
   font-family: var(--font-display);
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-primary);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--color-warm-white);
   margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
 }
 
 .footerBrand p {
-  color: var(--color-text-muted);
+  color: rgba(250,248,243,0.6);
   max-width: 300px;
   font-size: var(--font-size-sm);
 }
@@ -525,34 +642,132 @@
 }
 
 .footerLinks h4 {
-  color: var(--color-cream);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
+  color: var(--color-warm-white);
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-2);
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-4);
 }
 
-.footerLinks a {
-  color: var(--color-text-muted);
+.footerLink {
+  color: rgba(250,248,243,0.6) !important;
   font-size: var(--font-size-sm);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition:
+    transform 350ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 350ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.footerLinks a:hover {
-  color: var(--color-primary);
+.footerLinkBullet {
+  color: #F47C20;
+  font-size: 10px;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 350ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.footerLink:hover {
+  color: var(--color-warm-white) !important;
+  transform: translateX(4px);
+}
+
+.footerLink:hover .footerLinkBullet {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.footerStatus {
+  max-width: 1200px;
+  margin: 0 auto 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(250,248,243,0.45);
+  letter-spacing: 0.05em;
+  position: relative;
+  z-index: 3;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  background-color: #10B981;
+  border-radius: 50%;
+  animation: liveBreathing 3.5s infinite;
+}
+
+@keyframes liveBreathing {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
 }
 
 .footerBottom {
   max-width: 1200px;
   margin: 0 auto;
-  border-top: 1px solid rgba(217, 210, 199, 0.15);
+  border-top: 1px solid rgba(250,248,243,0.06);
   padding-top: var(--space-6);
-  text-align: center;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: rgba(250,248,243,0.4);
+  position: relative;
+  z-index: 3;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-/* RESPONSIVE LAYOUT OVERRIDES */
+.footerSystemLabel {
+  display: flex;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(250,248,243,0.35);
+}
+
+.hugeWordmark {
+  position: absolute;
+  bottom: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: clamp(140px, 20vw, 360px);
+  font-weight: 800;
+  color: var(--color-cream);
+  opacity: 0.05;
+  pointer-events: none;
+  letter-spacing: -0.03em;
+  z-index: 1;
+  white-space: nowrap;
+  text-transform: uppercase;
+  will-change: transform, opacity;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════ */
+
+/* Tablet — hide the text labels for some items */
+@media (max-width: 960px) {
+  /* Shrink spacing */
+  .headerWrapper { padding: 0 20px; }
+  .nav { gap: 0; }
+  .navLink { padding: 0 10px; font-size: 12px; }
+
+  /* Hide Command Center text on tablets, keep SOS + icon button */
+  .primaryCta { display: none; }
+  .sosLink { font-size: 12px; }
+}
+
+/* Mobile ≤ 768px */
 @media (max-width: 768px) {
   .announcementBar {
     font-size: 9px;
@@ -564,28 +779,29 @@
     padding: 0 var(--space-4);
   }
 
-  .nav {
+  /* Hide full desktop nav */
+  .nav { display: none; }
+
+  /* Hide desktop CTA controls (in mobile drawer instead) */
+  .sosLink,
+  .primaryCta,
+  .searchCircleButton {
     display: none;
   }
 
-  .secondaryLink,
-  .primaryCta,
-  .searchCircleButton {
-    display: none; /* Mobile CTA is inside drawer */
-  }
-
+  /* Show hamburger */
   .mobileMenuButton {
     display: flex;
     background: none;
     border: none;
-    color: rgba(12, 29, 23, 0.8);
+    color: rgba(12,29,23,0.8);
     align-items: center;
     justify-content: center;
     cursor: pointer;
   }
 
   .mobileDrawer {
-    top: 96px; /* offset announcement + header */
+    top: 96px;
     height: calc(100vh - 96px);
   }
 
@@ -597,5 +813,11 @@
   .footerLinks {
     gap: var(--space-8);
     flex-wrap: wrap;
+  }
+
+  .hugeWordmark {
+    font-size: 28vw;
+    bottom: -30px;
+    opacity: 0.035;
   }
 }

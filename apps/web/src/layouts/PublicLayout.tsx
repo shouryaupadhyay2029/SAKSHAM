@@ -1,38 +1,227 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { 
-  Menu, X, Search, ChevronDown, LayoutGrid, 
-  AlertTriangle, Package, 
-  Truck, Home, AlertCircle, FileText 
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import {
+  Menu, X, Search, ChevronDown, LayoutGrid,
+  AlertTriangle, Package, Truck, Home, AlertCircle,
+  FileText, Phone, Info, Zap, Activity, BookOpen,
 } from 'lucide-react';
 import styles from './PublicLayout.module.css';
 
+gsap.registerPlugin(ScrollTrigger);
+
+// ─── Dropdown data ─────────────────────────────────────────────────────────
+const GET_HELP_ITEMS = [
+  {
+    icon: AlertCircle,
+    to: '/report',
+    title: 'Civilian SOS',
+    desc: 'Report an emergency or request assistance',
+    highlight: true,
+  },
+  {
+    icon: Home,
+    to: '/operations/shelters',
+    title: 'Shelter Network',
+    desc: 'Find nearby shelters and available capacity',
+    highlight: false,
+  },
+  {
+    icon: Phone,
+    to: '/help',
+    title: 'Help & Helplines',
+    desc: 'Emergency contacts, protocols and useful information',
+    highlight: false,
+  },
+];
+
+const RESPONSE_ITEMS = [
+  {
+    icon: LayoutGrid,
+    to: '/operations/command-center',
+    title: 'Command Centre',
+    desc: 'Live operational situational overview',
+  },
+  {
+    icon: AlertTriangle,
+    to: '/operations/incidents',
+    title: 'Incident Monitoring',
+    desc: 'Live threat & incident tracking',
+  },
+  {
+    icon: Zap,
+    to: '/operations/requests',
+    title: 'Demand Requests',
+    desc: 'Track and review active requests',
+  },
+  {
+    icon: FileText,
+    to: '/operations/analytics',
+    title: 'Response Overview',
+    desc: 'Analytics, metrics and reports',
+  },
+];
+
+const RESOURCES_ITEMS = [
+  {
+    icon: Package,
+    to: '/operations/resources',
+    title: 'Resource Registry',
+    desc: 'Available equipment and supplies',
+  },
+  {
+    icon: Truck,
+    to: '/operations/vehicles',
+    title: 'Vehicle Fleet',
+    desc: 'Deploy and track field vehicles',
+  },
+  {
+    icon: Home,
+    to: '/operations/shelters',
+    title: 'Shelter Network',
+    desc: 'Shelter locations & capacity',
+  },
+  {
+    icon: FileText,
+    to: '/help',
+    title: 'Help & Documentation',
+    desc: 'Protocols, guides and emergency contacts',
+  },
+];
+
+const ABOUT_ITEMS = [
+  {
+    icon: Activity,
+    anchor: '#how-it-works',
+    title: 'How It Works',
+    desc: 'Understand the SAKSHAM response workflow',
+  },
+  {
+    icon: BookOpen,
+    anchor: '#metrics',
+    title: 'Impact',
+    desc: 'Network reach and response statistics',
+  },
+  {
+    icon: Info,
+    anchor: '#about',
+    title: 'About SAKSHAM',
+    desc: 'Mission, team and operational mandate',
+  },
+];
+
+// ─── Dropdown hook ───────────────────────────────────────────────────────────
+function useDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  const timeout = useRef<number | null>(null);
+
+  const open = () => {
+    if (timeout.current) { window.clearTimeout(timeout.current); timeout.current = null; }
+    setIsOpen(true);
+  };
+
+  const close = () => {
+    timeout.current = window.setTimeout(() => setIsOpen(false), 160);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => () => { if (timeout.current) window.clearTimeout(timeout.current); }, []);
+
+  return { isOpen, open, close };
+}
+
+// ─── NavItem + compact dropdown ─────────────────────────────────────────────
+interface NavItemProps {
+  label: string;
+  children: React.ReactNode;
+  isActive?: boolean;
+}
+const NavItem: React.FC<NavItemProps> = ({ label, children, isActive }) => {
+  const { isOpen, open, close } = useDropdown();
+
+  return (
+    <div
+      className={styles.navItemWrapper}
+      onMouseEnter={open}
+      onMouseLeave={close}
+    >
+      <button
+        className={`${styles.navLink} ${isActive || isOpen ? styles.navLinkActive : ''}`}
+        onClick={() => (isOpen ? close() : open())}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+      >
+        {label}
+        <ChevronDown size={12} className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} />
+        <span className={styles.activeIndicator} />
+      </button>
+
+      <div
+        className={`${styles.dropdown} ${isOpen ? styles.dropdownOpen : ''}`}
+        onMouseEnter={open}
+        onMouseLeave={close}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// ─── Dropdown Item ────────────────────────────────────────────────────────────
+interface DropItemProps {
+  icon: React.FC<{ size?: number }>;
+  to?: string;
+  anchor?: string;
+  title: string;
+  desc: string;
+  highlight?: boolean;
+  active?: boolean;
+  onClick?: () => void;
+}
+const DropItem: React.FC<DropItemProps> = ({ icon: Icon, to, anchor, title, desc, highlight, active, onClick }) => {
+  const inner = (
+    <div className={`${styles.dropItem} ${highlight ? styles.dropItemHighlight : ''} ${active ? styles.dropItemActive : ''}`}>
+      <div className={`${styles.dropIcon} ${highlight ? styles.dropIconHighlight : active ? styles.dropIconActive : ''}`}>
+        <Icon size={14} />
+      </div>
+      <div className={styles.dropText}>
+        <span className={styles.dropTitle}>{title}</span>
+        <span className={styles.dropDesc}>{desc}</span>
+      </div>
+    </div>
+  );
+
+  if (anchor) {
+    return <a href={anchor} className={styles.dropItemLink} onClick={onClick}>{inner}</a>;
+  }
+  return <Link to={to!} className={styles.dropItemLink} onClick={onClick}>{inner}</Link>;
+};
+
+// ─── Main Layout ─────────────────────────────────────────────────────────────
 export const PublicLayout: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isCompressed, setIsCompressed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isMegaOpen, setIsMegaOpen] = useState(false);
   const [isAlertVisible, setIsAlertVisible] = useState(true);
   const [activeSection, setActiveSection] = useState('');
-  const closeTimeout = useRef<number | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
   const isHome = location.pathname === '/';
 
-  // Scroll handler with compression based on direction
+  // Close mobile menu on route change
+  useEffect(() => { setIsMobileOpen(false); }, [location.pathname]);
+
+  // Scroll handler
   useEffect(() => {
     let lastY = window.scrollY;
-    
     const handleScroll = () => {
       const currentY = window.scrollY;
       setIsScrolled(currentY > 40);
-
       if (currentY > 120) {
-        if (currentY > lastY) {
-          setIsCompressed(true); // scrolling down: compress
-        } else {
-          setIsCompressed(false); // scrolling up: expand
-        }
+        setIsCompressed(currentY > lastY);
       } else {
         setIsCompressed(false);
       }
@@ -42,64 +231,67 @@ export const PublicLayout: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Intersection Observer for scroll highlights
+  // Footer animations (unchanged)
   useEffect(() => {
-    if (!isHome) {
-      setActiveSection('');
+    const footer = footerRef.current;
+    if (!footer) return;
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mediaQuery.matches) {
+      gsap.set(footer.querySelectorAll('.footer-animate'), { opacity: 1, y: 0 });
+      gsap.set(footer.querySelector(`.${styles.hugeWordmark}`), { opacity: 0.05, y: 0 });
       return;
     }
 
+    gsap.set(footer.querySelectorAll('.footer-animate'), { opacity: 0, y: 15 });
+    gsap.set(footer.querySelector(`.${styles.hugeWordmark}`), { opacity: 0, y: 40 });
+
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: footer, start: 'top 92%', once: true }
+    });
+
+    tl.to(footer.querySelector(`.${styles.footerTopDivider}`), { opacity: 1, y: 0, duration: 0.4 })
+      .to(footer.querySelector(`.${styles.footerBrand}`), { opacity: 1, y: 0, duration: 0.5 }, '-=0.1')
+      .to(footer.querySelectorAll(`.${styles.footerLinks} > div`), { opacity: 1, y: 0, duration: 0.5, stagger: 0.1 }, '-=0.35')
+      .to(footer.querySelector(`.${styles.footerStatus}`), { opacity: 1, y: 0, duration: 0.4 }, '-=0.25')
+      .to(footer.querySelector(`.${styles.footerBottom}`), { opacity: 1, y: 0, duration: 0.5 }, '-=0.2')
+      .to(footer.querySelector(`.${styles.hugeWordmark}`), { opacity: 0.05, y: 0, duration: 0.9, ease: 'power3.out' }, '-=0.4');
+
+    gsap.to(footer.querySelector(`.${styles.hugeWordmark}`), {
+      y: -15,
+      scrollTrigger: { trigger: footer, start: 'top bottom', end: 'bottom top', scrub: true }
+    });
+  }, []);
+
+  // Active section intersection observer
+  useEffect(() => {
+    if (!isHome) { setActiveSection(''); return; }
     const sections = ['features', 'how-it-works', 'metrics', 'about'];
     const observers = sections.map(id => {
       const el = document.getElementById(id);
       if (!el) return null;
-
       const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              setActiveSection(`#${id}`);
-            }
-          });
-        },
+        (entries) => { entries.forEach(e => { if (e.isIntersecting) setActiveSection(`#${id}`); }); },
         { rootMargin: '-40% 0px -50% 0px' }
       );
       observer.observe(el);
       return { observer, el };
     });
-
-    return () => {
-      observers.forEach(obs => {
-        if (obs) obs.observer.unobserve(obs.el);
-      });
-    };
+    return () => observers.forEach(obs => obs && obs.observer.unobserve(obs.el));
   }, [isHome]);
 
-  const handleMegaEnter = () => {
-    if (closeTimeout.current) {
-      window.clearTimeout(closeTimeout.current);
-      closeTimeout.current = null;
-    }
-    setIsMegaOpen(true);
-  };
-
-  const handleMegaLeave = () => {
-    closeTimeout.current = window.setTimeout(() => {
-      setIsMegaOpen(false);
-    }, 180);
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileOpen(!isMobileOpen);
-  };
+  const toggleMobile = (key: string) =>
+    setMobileExpanded(prev => (prev === key ? null : key));
 
   return (
     <div className={styles.container}>
-      {/* 1. TOP ANNOUNCEMENT / STATUS BAR (Dark Charcoal/Green with dismiss close icon) */}
+
+      {/* ── ANNOUNCEMENT BAR ── */}
       {isAlertVisible && (
         <div className={styles.announcementBar}>
           <div className={styles.announcementContent}>
-            <span className={styles.alertPulseDot}>●</span> SAKSHAM OPERATIONS ALERT: RESPONSE CHANNELS &amp; LOGISTICS DELEGATION ONLINE.{' '}
+            <span className={styles.alertPulseDot}>●</span>
+            SAKSHAM OPERATIONS ALERT: RESPONSE CHANNELS &amp; LOGISTICS DELEGATION ONLINE.{' '}
             <Link to="/operations/command-center" className={styles.announcementLink}>
               ENTER COMMAND CENTER &rarr;
             </Link>
@@ -110,255 +302,268 @@ export const PublicLayout: React.FC = () => {
         </div>
       )}
 
-      {/* 2. MAIN NAV HEADER */}
+      {/* ── MAIN NAV HEADER ── */}
       <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''} ${isCompressed ? styles.headerCompressed : ''}`}>
         <div className={styles.headerWrapper}>
-          {/* Brand Logo & Wordmark */}
+
+          {/* Brand */}
           <div className={styles.brandArea}>
             <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', marginRight: '14px' }} />
             <Link to="/" className={styles.logoText}>SAKSHAM</Link>
           </div>
 
-          {/* Desktop Navigation Links */}
-          <nav className={styles.nav}>
-            <div 
-              className={styles.navItemWrapper}
-              onMouseEnter={handleMegaEnter}
-              onMouseLeave={handleMegaLeave}
+          {/* ── Desktop Nav ── */}
+          <nav className={styles.nav} aria-label="Primary navigation">
+
+            {/* GET HELP */}
+            <NavItem label="Get Help" isActive={location.pathname === '/report' || location.pathname === '/help'}>
+              <div className={styles.dropPanel} style={{ minWidth: 280 }}>
+                <div className={styles.dropPanelHead}>
+                  <span className={styles.dropPanelLabel}>CIVILIAN EMERGENCY</span>
+                </div>
+                <div className={styles.dropPanelBody}>
+                  {GET_HELP_ITEMS.map(item => (
+                    <DropItem key={item.to} {...item} />
+                  ))}
+                </div>
+              </div>
+            </NavItem>
+
+            {/* RESPONSE */}
+            <NavItem
+              label="Response"
+              isActive={location.pathname.startsWith('/operations')}
             >
-              <a 
-                href="#features" 
-                className={`${styles.navLink} ${activeSection === '#features' || isMegaOpen ? styles.navLinkActive : ''}`}
-              >
-                Platform <ChevronDown size={12} className={`${styles.chevron} ${isMegaOpen ? styles.chevronOpen : ''}`} />
-                <span className={styles.activeIndicator} />
-              </a>
-            </div>
+              <div className={styles.dropPanel} style={{ minWidth: 320 }}>
+                <div className={styles.dropPanelHead}>
+                  <span className={styles.dropPanelLabel}>OPERATIONAL RESPONSE</span>
+                </div>
+                <div className={styles.dropPanelBody}>
+                  {RESPONSE_ITEMS.map(item => (
+                    <DropItem key={item.to} {...item} />
+                  ))}
+                </div>
+              </div>
+            </NavItem>
 
-            <div className={styles.navItemWrapper}>
-              <a 
-                href="#how-it-works" 
-                className={`${styles.navLink} ${activeSection === '#how-it-works' ? styles.navLinkActive : ''}`}
-              >
-                How It Works
-                <span className={styles.activeIndicator} />
-              </a>
-            </div>
+            {/* RESOURCES */}
+            <NavItem label="Resources">
+              <div className={styles.dropPanel} style={{ minWidth: 300 }}>
+                <div className={styles.dropPanelHead}>
+                  <span className={styles.dropPanelLabel}>AVAILABLE RESOURCES</span>
+                </div>
+                <div className={styles.dropPanelBody}>
+                  {RESOURCES_ITEMS.map(item => (
+                    <DropItem key={item.to} {...item} />
+                  ))}
+                </div>
+              </div>
+            </NavItem>
 
-            <div className={styles.navItemWrapper}>
-              <a 
-                href="#metrics" 
-                className={`${styles.navLink} ${activeSection === '#metrics' ? styles.navLinkActive : ''}`}
-              >
-                Impact
-                <span className={styles.activeIndicator} />
-              </a>
-            </div>
+            {/* ABOUT */}
+            <NavItem
+              label="About"
+              isActive={activeSection === '#about' || activeSection === '#metrics' || activeSection === '#how-it-works'}
+            >
+              <div className={styles.dropPanel} style={{ minWidth: 260 }}>
+                <div className={styles.dropPanelHead}>
+                  <span className={styles.dropPanelLabel}>ABOUT SAKSHAM</span>
+                </div>
+                <div className={styles.dropPanelBody}>
+                  {ABOUT_ITEMS.map(item => (
+                    <DropItem key={item.anchor} {...item} />
+                  ))}
+                </div>
+              </div>
+            </NavItem>
 
-            <div className={styles.navItemWrapper}>
-              <a 
-                href="#about" 
-                className={`${styles.navLink} ${activeSection === '#about' ? styles.navLinkActive : ''}`}
-              >
-                About
-                <span className={styles.activeIndicator} />
-              </a>
-            </div>
           </nav>
 
-          {/* Right Action Controls */}
+          {/* ── Right action area ── */}
           <div className={styles.ctaArea}>
-            <Link to="/report" className={styles.secondaryLink}>
+            {/* Civilian SOS — high-visibility standalone link */}
+            <Link to="/report" className={styles.sosLink} aria-label="Civilian SOS — report an emergency">
+              <span className={styles.sosDot} />
               Civilian SOS
             </Link>
-            
+
+            {/* Enter Command Center pill */}
             <Link to="/operations/command-center" className={styles.primaryCta}>
               Enter Command Center &rarr;
             </Link>
 
-            <button className={styles.searchCircleButton}>
+            {/* Search */}
+            <button className={styles.searchCircleButton} aria-label="Search">
               <Search size={14} />
             </button>
 
-            <button className={styles.mobileMenuButton} onClick={toggleMobileMenu}>
+            {/* Mobile hamburger */}
+            <button
+              className={styles.mobileMenuButton}
+              onClick={() => setIsMobileOpen(v => !v)}
+              aria-label={isMobileOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isMobileOpen}
+            >
               {isMobileOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
         </div>
-
-        {/* Floating Mega Menu Dropdown */}
-        <div 
-          className={`${styles.megaMenu} ${isMegaOpen ? styles.megaMenuOpen : ''}`}
-          onMouseEnter={handleMegaEnter}
-          onMouseLeave={handleMegaLeave}
-        >
-          <div className={styles.megaMenuContainer}>
-            {/* Column 1: Core Operations */}
-            <div className={styles.megaMenuCol}>
-              <div className={styles.columnHeader}>CORE OPERATIONS</div>
-              <div className={styles.itemList}>
-                <Link to="/operations/command-center" className={`${styles.megaItem} ${styles.megaItemActive}`} onClick={() => setIsMegaOpen(false)}>
-                  <div className={`${styles.iconWrapper} ${styles.orangeIcon}`}>
-                    <LayoutGrid size={16} />
-                  </div>
-                  <div>
-                    <div className={styles.megaTitle}>Command Center</div>
-                    <div className={styles.megaDesc}>Real-time situational overview</div>
-                  </div>
-                </Link>
-                <Link to="/operations/incidents" className={styles.megaItem} onClick={() => setIsMegaOpen(false)}>
-                  <div className={styles.iconWrapper}>
-                    <AlertTriangle size={16} />
-                  </div>
-                  <div>
-                    <div className={styles.megaTitle}>Incident Monitoring</div>
-                    <div className={styles.megaDesc}>Live threat &amp; incident tracking</div>
-                  </div>
-                </Link>
-                <Link to="/operations/resources" className={styles.megaItem} onClick={() => setIsMegaOpen(false)}>
-                  <div className={styles.iconWrapper}>
-                    <Package size={16} />
-                  </div>
-                  <div>
-                    <div className={styles.megaTitle}>Resource Registry</div>
-                    <div className={styles.megaDesc}>People, equipment &amp; supplies</div>
-                  </div>
-                </Link>
-                <Link to="/operations/requests" className={styles.megaItem} onClick={() => setIsMegaOpen(false)}>
-                  <div className={styles.iconWrapper}>
-                    <ArrowRightSideIcon />
-                  </div>
-                  <div>
-                    <div className={styles.megaTitle}>Demand Matching</div>
-                    <div className={styles.megaDesc}>Match needs with available resources</div>
-                  </div>
-                </Link>
-              </div>
-            </div>
-
-            {/* Column 2: Field Operations */}
-            <div className={styles.megaMenuCol}>
-              <div className={styles.columnHeader}>FIELD OPERATIONS</div>
-              <div className={styles.itemList}>
-                <Link to="/operations/vehicles" className={styles.megaItem} onClick={() => setIsMegaOpen(false)}>
-                  <div className={styles.iconWrapper}>
-                    <Truck size={16} />
-                  </div>
-                  <div>
-                    <div className={styles.megaTitle}>Vehicle Fleet</div>
-                    <div className={styles.megaDesc}>Deploy &amp; track field vehicles</div>
-                  </div>
-                </Link>
-                <Link to="/operations/shelters" className={styles.megaItem} onClick={() => setIsMegaOpen(false)}>
-                  <div className={styles.iconWrapper}>
-                    <Home size={16} />
-                  </div>
-                  <div>
-                    <div className={styles.megaTitle}>Shelter Network</div>
-                    <div className={styles.megaDesc}>Shelter locations &amp; capacity</div>
-                  </div>
-                </Link>
-                <Link to="/report" className={styles.megaItem} onClick={() => setIsMegaOpen(false)}>
-                  <div className={styles.iconWrapper}>
-                    <AlertCircle size={16} />
-                  </div>
-                  <div>
-                    <div className={styles.megaTitle}>Civilian SOS Form</div>
-                    <div className={styles.megaDesc}>Report incidents &amp; request help</div>
-                  </div>
-                </Link>
-                <Link to="/help" className={styles.megaItem} onClick={() => setIsMegaOpen(false)}>
-                  <div className={styles.iconWrapper}>
-                    <FileText size={16} />
-                  </div>
-                  <div>
-                    <div className={styles.megaTitle}>Helplines &amp; Docs</div>
-                    <div className={styles.megaDesc}>Guides, protocols &amp; contacts</div>
-                  </div>
-                </Link>
-              </div>
-            </div>
-
-            {/* Column 3: Banner Card */}
-            <div className={styles.megaMenuCard}>
-              <div className={styles.cardContent}>
-                <h3 className={styles.cardHeading}>
-                  Satellite links are active. Now they're <span className={styles.highlightText}>operational,</span> too.
-                </h3>
-                <Link to="/operations/command-center" className={styles.cardLink} onClick={() => setIsMegaOpen(false)}>
-                  Learn more &rarr;
-                </Link>
-              </div>
-              <div className={styles.cardGraphic}>
-                <svg width="76" height="76" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="50" cy="50" r="40" stroke="#FAF8F3" strokeWidth="1" />
-                  <circle cx="50" cy="50" r="40" stroke="#B35D38" strokeWidth="1" strokeDasharray="3 3" opacity="0.3" />
-                  <circle cx="50" cy="50" r="24" stroke="#B35D38" strokeWidth="1.5" opacity="0.5" />
-                  <circle cx="50" cy="50" r="8" fill="#F47C20" />
-                  <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(12, 29, 23, 0.08)" strokeWidth="1" />
-                  <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(12, 29, 23, 0.08)" strokeWidth="1" />
-                  <path d="M 50,50 L 74,26" stroke="#F47C20" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
       </header>
 
-      {/* Mobile Drawer Overlay */}
-      <div className={`${styles.mobileDrawer} ${isMobileOpen ? styles.mobileDrawerOpen : ''}`}>
+      {/* ── MOBILE DRAWER ── */}
+      <div className={`${styles.mobileDrawer} ${isMobileOpen ? styles.mobileDrawerOpen : ''}`} role="dialog" aria-modal="true" aria-label="Navigation menu">
+
         <div className={styles.mobileNavLinks}>
-          <a href="#features" className={styles.mobileLink} onClick={toggleMobileMenu}>Platform</a>
-          <a href="#how-it-works" className={styles.mobileLink} onClick={toggleMobileMenu}>How It Works</a>
-          <a href="#metrics" className={styles.mobileLink} onClick={toggleMobileMenu}>Impact</a>
-          <a href="#about" className={styles.mobileLink} onClick={toggleMobileMenu}>About</a>
-          
+
+          {/* EMERGENCY FIRST */}
+          <Link to="/report" className={styles.mobileSosButton} onClick={() => setIsMobileOpen(false)}>
+            <AlertCircle size={16} />
+            Civilian SOS — Report an Emergency
+          </Link>
+
           <div className={styles.mobileDivider} />
-          
-          <Link to="/report" className={styles.mobileActionLink} onClick={toggleMobileMenu}>Report an Incident (SOS)</Link>
-          <Link to="/help" className={styles.mobileActionLink} onClick={toggleMobileMenu}>Help &amp; Helplines</Link>
+
+          {/* GET HELP accordion */}
+          <div className={styles.mobileAccordion}>
+            <button className={styles.mobileAccordionToggle} onClick={() => toggleMobile('help')}>
+              <span>Get Help</span>
+              <ChevronDown size={14} className={mobileExpanded === 'help' ? styles.chevronOpen : ''} />
+            </button>
+            {mobileExpanded === 'help' && (
+              <div className={styles.mobileAccordionBody}>
+                {GET_HELP_ITEMS.map(item => (
+                  <Link key={item.to} to={item.to} className={styles.mobileSubLink} onClick={() => setIsMobileOpen(false)}>
+                    <item.icon size={13} /> {item.title}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* RESPONSE accordion */}
+          <div className={styles.mobileAccordion}>
+            <button className={styles.mobileAccordionToggle} onClick={() => toggleMobile('response')}>
+              <span>Response</span>
+              <ChevronDown size={14} className={mobileExpanded === 'response' ? styles.chevronOpen : ''} />
+            </button>
+            {mobileExpanded === 'response' && (
+              <div className={styles.mobileAccordionBody}>
+                {RESPONSE_ITEMS.map(item => (
+                  <Link key={item.to} to={item.to} className={styles.mobileSubLink} onClick={() => setIsMobileOpen(false)}>
+                    <item.icon size={13} /> {item.title}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* RESOURCES accordion */}
+          <div className={styles.mobileAccordion}>
+            <button className={styles.mobileAccordionToggle} onClick={() => toggleMobile('resources')}>
+              <span>Resources</span>
+              <ChevronDown size={14} className={mobileExpanded === 'resources' ? styles.chevronOpen : ''} />
+            </button>
+            {mobileExpanded === 'resources' && (
+              <div className={styles.mobileAccordionBody}>
+                {RESOURCES_ITEMS.map(item => (
+                  <Link key={item.to} to={item.to} className={styles.mobileSubLink} onClick={() => setIsMobileOpen(false)}>
+                    <item.icon size={13} /> {item.title}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ABOUT accordion */}
+          <div className={styles.mobileAccordion}>
+            <button className={styles.mobileAccordionToggle} onClick={() => toggleMobile('about')}>
+              <span>About</span>
+              <ChevronDown size={14} className={mobileExpanded === 'about' ? styles.chevronOpen : ''} />
+            </button>
+            {mobileExpanded === 'about' && (
+              <div className={styles.mobileAccordionBody}>
+                {ABOUT_ITEMS.map(item => (
+                  <a key={item.anchor} href={item.anchor} className={styles.mobileSubLink} onClick={() => setIsMobileOpen(false)}>
+                    <item.icon size={13} /> {item.title}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
 
-        <Link to="/operations/command-center" className={styles.mobileCtaButton} onClick={toggleMobileMenu}>
+        {/* Mobile Command Center CTA */}
+        <Link to="/operations/command-center" className={styles.mobileCtaButton} onClick={() => setIsMobileOpen(false)}>
           <span>ENTER COMMAND CENTER</span>
           <ArrowRightSideIcon />
         </Link>
       </div>
-      
+
+      {/* ── PAGE CONTENT ── */}
       <main className={styles.main}>
         <Outlet />
       </main>
 
-      <footer className={styles.footer}>
+      {/* ── FOOTER (unchanged) ── */}
+      <footer ref={footerRef} className={`${styles.footer} textureForest`}>
+        <div className={`${styles.footerTopDivider} footer-animate`}>
+          <div className={styles.footerTopDividerSignal} />
+        </div>
+
         <div className={styles.footerContent}>
-          <div className={styles.footerBrand}>
+          <div className={`${styles.footerBrand} footer-animate`}>
             <h3>SAKSHAM</h3>
             <p>Resilient Disaster Relief &amp; Logistics Systems</p>
           </div>
           <div className={styles.footerLinks}>
-            <div>
-              <h4>Operations</h4>
-              <Link to="/operations/command-center">Command Center</Link>
-              <Link to="/operations/incidents">Live Incidents</Link>
-              <Link to="/operations/resources">Resource Registry</Link>
+            <div className="footer-animate">
+              <h4>OPERATIONS</h4>
+              <Link to="/operations/command-center" className={styles.footerLink}>
+                <span className={styles.footerLinkBullet}>→</span> Command Center
+              </Link>
+              <Link to="/operations/incidents" className={styles.footerLink}>
+                <span className={styles.footerLinkBullet}>→</span> Live Incidents
+              </Link>
+              <Link to="/operations/resources" className={styles.footerLink}>
+                <span className={styles.footerLinkBullet}>→</span> Resource Registry
+              </Link>
             </div>
-            <div>
-              <h4>Resources</h4>
-              <Link to="/help">Helplines</Link>
-              <Link to="/report">File SOS Report</Link>
-              <a href="#">System Status</a>
+            <div className="footer-animate">
+              <h4>RESOURCES</h4>
+              <Link to="/help" className={styles.footerLink}>
+                <span className={styles.footerLinkBullet}>→</span> Helplines
+              </Link>
+              <Link to="/report" className={styles.footerLink}>
+                <span className={styles.footerLinkBullet}>→</span> File SOS Report
+              </Link>
+              <a href="#" className={styles.footerLink}>
+                <span className={styles.footerLinkBullet}>→</span> System Status
+              </a>
             </div>
           </div>
         </div>
-        <div className={styles.footerBottom}>
-          <p>&copy; {new Date().getFullYear()} SAKSHAM. Designed for SIH 2026. All rights reserved.</p>
+
+        <div className={`${styles.footerStatus} footer-animate`}>
+          <span className={styles.statusDot} />
+          <span>RESPONSE NETWORK ONLINE</span>
         </div>
+
+        <div className={`${styles.footerBottom} footer-animate`}>
+          <p>&copy; {new Date().getFullYear()} SAKSHAM. Designed for SIH 2026. All rights reserved.</p>
+          <div className={styles.footerSystemLabel}>
+            <span>SAKSHAM RESPONSE NETWORK</span>
+            <span>SYSTEM STATUS / ONLINE</span>
+          </div>
+        </div>
+
+        <div className={styles.hugeWordmark} aria-hidden="true">SAKSHAM</div>
       </footer>
     </div>
   );
 };
 
-// Helper SVG Arrow left/right icon to avoid compiling conflicts
+// Helper icon
 const ArrowRightSideIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="m18 8 4 4-4 4M2 12h20M6 8l-4 4 4 4" />

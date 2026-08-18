@@ -14,6 +14,8 @@ interface MapViewProps {
   shelters?: Shelter[];
   selectedIncident?: Incident | null;
   selectedVehicle?: Vehicle | null;
+  hoveredIncidentId?: string | null;
+  focusMode?: boolean;
   onSelectIncident?: (incident: Incident) => void;
   onSelectShelter?: (shelter: Shelter) => void;
   onSelectVehicle?: (vehicle: Vehicle) => void;
@@ -33,6 +35,8 @@ export const MapView: React.FC<MapViewProps> = ({
   shelters = [],
   selectedIncident,
   selectedVehicle,
+  hoveredIncidentId,
+  focusMode = false,
   onSelectIncident,
   onSelectShelter,
   onSelectVehicle,
@@ -41,29 +45,26 @@ export const MapView: React.FC<MapViewProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  // Map from incident ID → marker DOM element, for imperative class management
+  const incidentMarkerEls = useRef<Map<string, HTMLElement>>(new Map());
 
   // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    // CartoDB Positron is a beautiful, light, clean styled map, perfect for dashboards.
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-      center: [77.22, 28.61], // Center of Delhi (lng, lat)
+      center: [77.22, 28.61],
       zoom: 11,
       minZoom: 9,
       maxZoom: 18
     });
 
-    // Add navigation controls
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-
     mapRef.current = map;
 
-    return () => {
-      map.remove();
-    };
+    return () => { map.remove(); };
   }, []);
 
   // Update Markers when data or filters change
@@ -71,41 +72,39 @@ export const MapView: React.FC<MapViewProps> = ({
     const map = mapRef.current;
     if (!map) return;
 
-    // Clear existing markers
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
+    incidentMarkerEls.current.clear();
 
     // 1. Draw Incidents
     if (layerFilters.incidents) {
       incidents.forEach(incident => {
         const el = document.createElement('div');
         el.className = `${styles.marker} ${
-          incident.severity === 'CRITICAL' 
-            ? styles.markerCritical 
-            : incident.severity === 'HIGH' 
-              ? styles.markerHigh 
-              : styles.markerMedium 
+          incident.severity === 'CRITICAL'
+            ? styles.markerCritical
+            : incident.severity === 'HIGH'
+              ? styles.markerHigh
+              : styles.markerMedium
         }`;
-        
-        // Add dot inside
+        el.setAttribute('data-incident-id', incident.id);
+
         const dot = document.createElement('div');
         dot.className = styles.markerDot;
         el.appendChild(dot);
 
-        // Click handler
         el.addEventListener('click', (e) => {
           e.stopPropagation();
           onSelectIncident?.(incident);
         });
 
-        // Tooltip popup
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
             <div class="${styles.mapPopup}">
               <span class="${styles.popupBadge} ${styles['badge' + incident.severity]}">${incident.severity}</span>
-              <h4 class="${styles.popupTitle}">${incident.type.replace('_', ' ')}</h4>
+              <h4 class="${styles.popupTitle}">${incident.type.replace(/_/g, ' ')}</h4>
               <p class="${styles.popupLoc}">${incident.location}</p>
-              <p class="${styles.popupDesc}">${incident.description.substring(0, 80)}...</p>
+              ${incident.displacedCount ? `<p class="${styles.popupCapText}">~${incident.displacedCount} displaced</p>` : ''}
             </div>
           `);
 
@@ -115,6 +114,7 @@ export const MapView: React.FC<MapViewProps> = ({
           .addTo(map);
 
         markersRef.current.push(marker);
+        incidentMarkerEls.current.set(incident.id, el);
       });
     }
 
@@ -125,7 +125,7 @@ export const MapView: React.FC<MapViewProps> = ({
         el.className = `${styles.marker} ${styles.markerShelter} ${
           shelter.status === 'FULL' ? styles.markerShelterFull : ''
         }`;
-        
+
         const label = document.createElement('span');
         label.innerText = 'S';
         el.appendChild(label);
@@ -139,13 +139,13 @@ export const MapView: React.FC<MapViewProps> = ({
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
             <div class="${styles.mapPopup}">
-              <span class="${styles.popupBadge} ${styles.badgeShelter}">SHELTER: ${shelter.status}</span>
+              <span class="${styles.popupBadge} ${styles.badgeShelter}">SHELTER · ${shelter.status}</span>
               <h4 class="${styles.popupTitle}">${shelter.name}</h4>
               <p class="${styles.popupLoc}">${shelter.locationName}</p>
               <div class="${styles.popupCapacityBar}">
                 <div class="${styles.popupCapacityFill}" style="width: ${pct}%"></div>
               </div>
-              <p class="${styles.popupCapText}">Capacity: ${shelter.capacityOccupied}/${shelter.capacityTotal} (${pct}% full)</p>
+              <p class="${styles.popupCapText}">${shelter.capacityOccupied}/${shelter.capacityTotal} occupied · ${pct}% full</p>
             </div>
           `);
 
@@ -163,7 +163,7 @@ export const MapView: React.FC<MapViewProps> = ({
       vehicles.forEach(vehicle => {
         const el = document.createElement('div');
         el.className = `${styles.marker} ${styles.markerVehicle} ${
-          styles['markerVehicle' + vehicle.status]
+          styles['markerVehicle' + vehicle.status] || ''
         }`;
 
         const arrow = document.createElement('div');
@@ -178,11 +178,10 @@ export const MapView: React.FC<MapViewProps> = ({
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
             <div class="${styles.mapPopup}">
-              <span class="${styles.popupBadge} ${styles.badgeVehicle}">${vehicle.type} / ${vehicle.status}</span>
+              <span class="${styles.popupBadge} ${styles.badgeVehicle}">${vehicle.type} · ${vehicle.status}</span>
               <h4 class="${styles.popupTitle}">${vehicle.name}</h4>
-              <p class="${styles.popupDesc}">Capacity: ${vehicle.capacity}</p>
+              <p class="${styles.popupCapText}">Capacity: ${vehicle.capacity}</p>
               ${vehicle.cargo ? `<p class="${styles.popupCargo}">Cargo: <strong>${vehicle.cargo}</strong></p>` : ''}
-              <p class="${styles.popupCapText}">Contact: ${vehicle.driverName} (${vehicle.driverContact})</p>
             </div>
           `);
 
@@ -201,7 +200,7 @@ export const MapView: React.FC<MapViewProps> = ({
         if (!res.coordinates) return;
         const el = document.createElement('div');
         el.className = `${styles.marker} ${styles.markerResource} ${
-          styles['markerResource' + res.status]
+          styles['markerResource' + res.status] || ''
         }`;
 
         const dot = document.createElement('div');
@@ -211,7 +210,7 @@ export const MapView: React.FC<MapViewProps> = ({
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
             <div class="${styles.mapPopup}">
-              <span class="${styles.popupBadge} ${styles.badgeResource}">${res.category} / ${res.status}</span>
+              <span class="${styles.popupBadge} ${styles.badgeResource}">${res.category} · ${res.status}</span>
               <h4 class="${styles.popupTitle}">${res.name}</h4>
               <p class="${styles.popupLoc}">${res.locationName}</p>
               <p class="${styles.popupCapText}">Stock: ${res.quantity} ${res.unit}</p>
@@ -229,39 +228,67 @@ export const MapView: React.FC<MapViewProps> = ({
 
   }, [incidents, resources, vehicles, shelters, layerFilters, onSelectIncident, onSelectShelter, onSelectVehicle]);
 
-  // Fly to selected incident
+  // ── Hover effect: highlight hovered incident marker ─────────────────────────
+  useEffect(() => {
+    incidentMarkerEls.current.forEach((el, id) => {
+      if (id === hoveredIncidentId) {
+        el.classList.add(styles.markerHovered);
+      } else {
+        el.classList.remove(styles.markerHovered);
+      }
+    });
+  }, [hoveredIncidentId]);
+
+  // ── Focus mode: dim unrelated markers ──────────────────────────────────────
+  useEffect(() => {
+    incidentMarkerEls.current.forEach((el, id) => {
+      if (!focusMode) {
+        el.classList.remove(styles.markerDimmed);
+        el.classList.remove(styles.markerActive);
+      } else {
+        if (selectedIncident && id === selectedIncident.id) {
+          el.classList.remove(styles.markerDimmed);
+          el.classList.add(styles.markerActive);
+        } else {
+          el.classList.add(styles.markerDimmed);
+          el.classList.remove(styles.markerActive);
+        }
+      }
+    });
+  }, [focusMode, selectedIncident]);
+
+  // ── Fly to selected incident ─────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedIncident) return;
-
     map.flyTo({
       center: [selectedIncident.coordinates.lng, selectedIncident.coordinates.lat],
       zoom: 14,
       essential: true,
-      duration: 1500
+      duration: 1000,
+      easing: (t) => 1 - Math.pow(1 - t, 3), // ease-out cubic
     });
   }, [selectedIncident]);
 
-  // Fly to selected vehicle
+  // ── Fly to selected vehicle ─────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedVehicle) return;
-
     map.flyTo({
       center: [selectedVehicle.location.lng, selectedVehicle.location.lat],
       zoom: 14,
       essential: true,
-      duration: 1500
+      duration: 1000,
+      easing: (t) => 1 - Math.pow(1 - t, 3),
     });
   }, [selectedVehicle]);
 
-  // Draw Route overlays when routes layer and vehicles destinations are active
+  // ── Draw route overlays ─────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
     const drawRoutes = () => {
-      // Remove existing routes layers
       vehicles.forEach(vehicle => {
         const sourceId = `route-source-${vehicle.id}`;
         const layerId = `route-layer-${vehicle.id}`;
@@ -272,7 +299,7 @@ export const MapView: React.FC<MapViewProps> = ({
       if (!layerFilters.routes) return;
 
       vehicles.forEach(vehicle => {
-        if (!vehicle.destination || vehicle.status !== 'EN_ROUTE' && vehicle.status !== 'DISPATCHED') return;
+        if (!vehicle.destination || (vehicle.status !== 'EN_ROUTE' && vehicle.status !== 'DISPATCHED')) return;
 
         const sourceId = `route-source-${vehicle.id}`;
         const layerId = `route-layer-${vehicle.id}`;
@@ -286,8 +313,10 @@ export const MapView: React.FC<MapViewProps> = ({
               type: 'LineString',
               coordinates: [
                 [vehicle.location.lng, vehicle.location.lat],
-                // Add a slight curve so it looks like realistic road routing
-                [(vehicle.location.lng + vehicle.destination.lng) / 2 + 0.015, (vehicle.location.lat + vehicle.destination.lat) / 2 - 0.005],
+                [
+                  (vehicle.location.lng + vehicle.destination.lng) / 2 + 0.015,
+                  (vehicle.location.lat + vehicle.destination.lat) / 2 - 0.005,
+                ],
                 [vehicle.destination.lng, vehicle.destination.lat]
               ]
             }
@@ -298,15 +327,12 @@ export const MapView: React.FC<MapViewProps> = ({
           id: layerId,
           type: 'line',
           source: sourceId,
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round'
-          },
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: {
-            'line-color': '#F47C20',
-            'line-width': 3,
-            'line-dasharray': [3, 2],
-            'line-opacity': 0.75
+            'line-color': '#E86F16',
+            'line-width': 2.5,
+            'line-dasharray': [4, 3],
+            'line-opacity': 0.65
           }
         });
       });

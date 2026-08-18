@@ -1,122 +1,1254 @@
+/* ═══════════════════════════════════════════════════════════
+   SAKSHAM RESPONSE INTELLIGENCE — OPERATIONAL ANALYTICS
+   Analytics.module.css
+   ═══════════════════════════════════════════════════════════ */
+
 .container {
-  padding: 40px 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
   background-color: #FAF8F3;
-  min-height: 100%;
+  color: #101513;
+  padding: 40px 24px;
+  gap: 0;
+  flex: 1;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
 }
 
-.header h2 {
-  font-family: var(--font-sans);
-  font-size: 1.8rem;
+.container.mounted {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Tooltip ── */
+.tooltip {
+  background: #FAF8F3;
+  border: 1px solid rgba(11,33,25,0.12);
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+}
+
+.tooltipTime {
+  display: block;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(11,33,25,0.4);
+  margin-bottom: 6px;
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.tooltipDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── 1. PAGE HEADER ── */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.08);
+  padding-bottom: 28px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.headerLeft {
+  max-width: 620px;
+}
+
+.eyebrow {
+  font-size: 11px;
   font-weight: 800;
-  color: var(--color-deep-forest);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #E86F16;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 40px;
+  font-weight: 900;
+  color: #0B2119;
   letter-spacing: -0.02em;
+  margin: 0 0 12px 0;
+  line-height: 1.05;
 }
 
-.subtext {
-  font-size: 0.95rem;
-  color: var(--color-muted);
+.lead {
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(11, 33, 25, 0.62);
+  margin: 0;
 }
 
-/* Metric highlights */
-.metricsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
+.headerRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
 }
 
-.cardStat {
-  background-color: #FAF8F3;
-  border: 1px solid rgba(23, 61, 45, 0.1);
-  border-radius: var(--radius-sm);
-  padding: 20px;
+.systemLive {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  background-color: #22C55E;
+  border-radius: 50%;
+  animation: pulseGreen 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseGreen {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.7); opacity: 0.3; }
+}
+
+.liveText {
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  color: #0B2119;
+}
+
+.lastAnalysis {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-end;
+}
+
+.lastAnalysisRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.laLabel {
+  font-size: 8.5px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(11,33,25,0.35);
+}
+
+.laValue {
+  font-size: 10px;
+  font-weight: 750;
+  color: #059669;
+}
+
+.laTime {
+  font-size: 10px;
+  font-weight: 750;
+  font-family: 'Courier New', monospace;
+  color: #0B2119;
+}
+
+.dataFreshness {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.dfLabel {
+  font-size: 8.5px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(11,33,25,0.35);
+}
+
+.dfSources {
+  font-size: 10px;
+  color: rgba(11,33,25,0.55);
+}
+
+/* ── CONTROL BAR ── */
+.controlBar {
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  padding: 12px 16px;
+  background-color: rgba(11,33,25,0.02);
+  border: 1px solid rgba(11,33,25,0.07);
+  border-radius: 5px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
 }
 
-.statIconWrapper {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-full);
+.controlGroup {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
 }
 
-/* Threat statistics class */
-.statThreat {
-  background-color: rgba(217, 75, 61, 0.08);
-  color: var(--color-critical);
+.controlLabel {
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(11,33,25,0.38);
+  white-space: nowrap;
 }
 
-/* Occupancy statistics class */
-.statOccupancy {
-  background-color: rgba(79, 143, 91, 0.08);
-  color: var(--color-success);
+.segmented {
+  display: flex;
+  border: 1px solid rgba(11,33,25,0.12);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-/* Supply pipeline class */
-.statSupply {
-  background-color: rgba(244, 124, 32, 0.08);
-  color: var(--color-primary);
+.segBtn {
+  font-size: 9.5px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  color: rgba(11,33,25,0.5);
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(11,33,25,0.10);
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.statLabel {
-  font-size: 11px;
-  color: var(--color-muted);
+.segBtn:last-child {
+  border-right: none;
+}
+
+.segBtnActive {
+  background-color: #0B2119;
+  color: #FAF8F3;
+}
+
+.regionSelect {
+  font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  display: block;
+  color: #0B2119;
+  background: transparent;
+  border: 1px solid rgba(11,33,25,0.12);
+  border-radius: 4px;
+  padding: 5px 8px;
+  cursor: pointer;
+  outline: none;
 }
 
-.statVal {
-  font-size: 1.6rem;
+.controlDivider {
+  width: 1px;
+  height: 20px;
+  background-color: rgba(11,33,25,0.10);
+}
+
+.controlRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.refreshBtn {
+  font-size: 10px;
   font-weight: 800;
-  color: var(--color-deep-forest);
+  letter-spacing: 0.06em;
+  color: #0B2119;
+  background: transparent;
+  border: 1px solid rgba(11,33,25,0.15);
+  border-radius: 4px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.refreshBtn:hover {
+  background-color: rgba(11,33,25,0.04);
+}
+
+.controlTime {
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  color: rgba(11,33,25,0.45);
+}
+
+/* ── SECTION COMMON ── */
+.section {
+  padding: 40px 0;
+  border-bottom: 1px solid rgba(11,33,25,0.07);
+}
+
+.sectionLast {
+  border-bottom: none;
+}
+
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sectionEyebrow {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  color: rgba(11,33,25,0.35);
+  margin-bottom: 6px;
+}
+
+.demoTag {
+  color: #E86F16;
+  font-size: 8.5px;
+}
+
+.sectionTitle {
+  font-size: 26px;
+  font-weight: 900;
+  color: #0B2119;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.sectionDesc {
+  font-size: 13px;
+  color: rgba(11,33,25,0.55);
+  margin: 0;
+  max-width: 460px;
+  line-height: 1.55;
+}
+
+/* ── 2. RESPONSE PULSE ── */
+.pulseStrip {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid rgba(11,33,25,0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.pulseCell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  gap: 6px;
+  border-right: 1px solid rgba(11,33,25,0.07);
+  transition: background-color 0.2s ease;
+}
+
+.pulseCell:last-child { border-right: none; }
+
+.pulseCellCritical { border-top: 2px solid #DC2626; }
+.pulseCellWarning  { border-top: 2px solid #E86F16; }
+.pulseCellOrange   { border-top: 2px solid #E86F16; }
+.pulseCellGreen    { border-top: 2px solid #059669; }
+
+.pulseNum {
+  font-size: 42px;
+  font-weight: 900;
+  color: #0B2119;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pulseCellCritical .pulseNum { color: #DC2626; }
+.pulseCellWarning .pulseNum  { color: #E86F16; }
+
+.pulseLabel {
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  color: rgba(11,33,25,0.45);
+  text-transform: uppercase;
+}
+
+.pulseTrend {
+  font-size: 10.5px;
+  color: rgba(11,33,25,0.5);
   margin-top: 2px;
 }
 
-/* Charts Grid layout */
-.chartsGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+.pulseDivider {
+  width: 0;
 }
 
-.chartCard {
-  background-color: #FAF8F3;
-  border: 1px solid rgba(23, 61, 45, 0.1);
-  border-radius: var(--radius-sm);
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+/* ── 3. PRESSURE MAP ── */
+.pressureLayout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.pressureZones {
   display: flex;
   flex-direction: column;
+  gap: 0;
+  border: 1px solid rgba(11,33,25,0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.zonesTitle {
+  display: block;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  color: rgba(11,33,25,0.4);
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(11,33,25,0.07);
+  background-color: rgba(11,33,25,0.02);
+}
+
+.zoneRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(11,33,25,0.06);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.zoneRow:last-child { border-bottom: none; }
+
+.zoneRow:hover {
+  background-color: rgba(11,33,25,0.02);
+}
+
+.zoneRowSelected {
+  background-color: rgba(232,111,22,0.04) !important;
+}
+
+.zoneRank {
+  font-size: 11px;
+  font-weight: 850;
+  font-family: 'Courier New', monospace;
+  color: rgba(11,33,25,0.3);
+  flex-shrink: 0;
+}
+
+.zoneMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.zoneNameRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.zoneName {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0B2119;
+}
+
+.zoneArea {
+  font-size: 10px;
+  color: rgba(11,33,25,0.4);
+}
+
+.zoneMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.zoneMetaItem {
+  font-size: 9px;
+  color: rgba(11,33,25,0.5);
+  font-family: 'Courier New', monospace;
+}
+
+.zoneRisk {
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.zoneRiskDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+/* Map panel */
+.mapPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mapLegend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: rgba(11,33,25,0.55);
+  font-weight: 600;
+}
+
+.legendDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.mapSvg {
+  width: 100%;
+  border: 1px solid rgba(11,33,25,0.07);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+@keyframes pulseSvg {
+  0%, 100% { r: 20; opacity: 0.15; }
+  50% { r: 28; opacity: 0.05; }
+}
+
+.pulseCircle {
+  animation: pulseSvg 2.5s infinite ease-in-out;
+}
+
+/* ── 4. RESPONSE VELOCITY ── */
+.velocityLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.velocityMeta {
+  display: flex;
+  gap: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(11,33,25,0.07);
+  flex-wrap: wrap;
+}
+
+.velocityMetaCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.velMetaVal {
+  font-size: 22px;
+  font-weight: 900;
+  color: #0B2119;
+  letter-spacing: -0.02em;
+}
+
+.velMetaLabel {
+  font-size: 8.5px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(11,33,25,0.38);
+}
+
+.velocityControls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lineToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(11,33,25,0.45);
+  background: transparent;
+  border: 1px solid rgba(11,33,25,0.12);
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lineToggle:hover {
+  color: #0B2119;
+  border-color: rgba(11,33,25,0.25);
+}
+
+.lineToggleActive {
+  color: #0B2119;
+  border-color: rgba(11,33,25,0.25);
+  background-color: rgba(11,33,25,0.03);
+}
+
+.lineToggleDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.velocityChart {
+  border: 1px solid rgba(11,33,25,0.06);
+  border-radius: 5px;
+  padding: 16px 8px 8px;
+}
+
+/* ── 5. RESOURCE PRESSURE ── */
+.resourcePressureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
-.chartCard h4 {
-  font-family: var(--font-sans);
-  font-size: 14px;
+.resPressCard {
+  border: 1px solid rgba(11,33,25,0.08);
+  border-radius: 5px;
+  padding: 16px;
+  background-color: #FAF8F3;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.2s ease;
+}
+
+.resPressCardCritical {
+  border-color: rgba(220,38,38,0.2);
+  background-color: rgba(220,38,38,0.015);
+}
+
+.resPressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.resPressName {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0B2119;
+}
+
+.resStatus {
+  font-size: 8.5px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.resStatus_OK       { background: rgba(5,150,105,0.1); color: #059669; }
+.resStatus_TIGHT    { background: rgba(234,179,8,0.1); color: #CA8A04; }
+.resStatus_CRITICAL { background: rgba(220,38,38,0.1); color: #DC2626; }
+.resStatus_DEPLETED { background: rgba(220,38,38,0.1); color: #DC2626; }
+
+.resBarsLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resBarGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resBarLabel {
+  font-size: 8px;
+  font-weight: 850;
+  color: rgba(11,33,25,0.35);
+  letter-spacing: 0.06em;
+  width: 56px;
+  flex-shrink: 0;
+}
+
+.resBarTrack {
+  flex: 1;
+  height: 4px;
+  background-color: rgba(11,33,25,0.07);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.resBarFill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.resBarVal {
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
   font-weight: 700;
-  color: var(--color-deep-forest);
-  border-bottom: 1px solid rgba(23, 61, 45, 0.08);
-  padding-bottom: 8px;
-  text-transform: uppercase;
+  color: rgba(11,33,25,0.6);
+  white-space: nowrap;
+  width: 80px;
+  text-align: right;
+}
+
+.resGap {
+  padding-top: 4px;
+  border-top: 1px solid rgba(11,33,25,0.06);
+}
+
+.resGapCrit {
+  font-size: 9.5px;
+  font-weight: 850;
+  color: #DC2626;
+  letter-spacing: 0.02em;
+}
+
+.resGapOk {
+  font-size: 9.5px;
+  font-weight: 750;
+  color: #059669;
+}
+
+/* ── 6. PREDICTIVE RISK ── */
+.riskGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.riskCard {
+  border: 1px solid rgba(11,33,25,0.08);
+  border-radius: 5px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: #FAF8F3;
+}
+
+.riskCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.riskZone {
+  display: block;
+  font-size: 15px;
+  font-weight: 900;
+  color: #0B2119;
+  letter-spacing: -0.01em;
+}
+
+.riskType {
+  display: block;
+  font-size: 11px;
+  color: rgba(11,33,25,0.5);
+  margin-top: 2px;
+}
+
+.riskRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.riskLevel {
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+}
+
+.riskTrend {
+  font-size: 10px;
+  font-weight: 750;
+  font-family: 'Courier New', monospace;
+}
+
+.riskMetrics {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.riskMetricCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.riskMetricNum {
+  font-size: 20px;
+  font-weight: 900;
+  color: #0B2119;
+  letter-spacing: -0.02em;
+}
+
+.riskMetricLabel {
+  font-size: 7.5px;
+  font-weight: 850;
+  color: rgba(11,33,25,0.35);
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.riskArrow {
+  font-size: 14px;
+  color: rgba(11,33,25,0.25);
+  flex-shrink: 0;
+}
+
+.riskMeter {
+  position: relative;
+  height: 5px;
+  background-color: rgba(11,33,25,0.07);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.riskMeterCurrent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: rgba(11,33,25,0.18);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.riskMeterForecast {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 3px;
+  opacity: 0.35;
+  transition: width 0.5s ease;
+}
+
+.riskLabel {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(11,33,25,0.55);
+  margin: 0;
+}
+
+/* ── 7. SHELTER FORECAST ── */
+.shelterForecastLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.shelterAlert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: rgba(220,38,38,0.04);
+  border: 1px solid rgba(220,38,38,0.15);
+  border-radius: 5px;
+  padding: 12px 16px;
+}
+
+.shelterAlertBadge {
+  font-size: 9px;
+  font-weight: 850;
+  color: #DC2626;
+  background-color: rgba(220,38,38,0.08);
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.shelterAlert p {
+  font-size: 13px;
+  color: #0B2119;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.shelterChartBlock {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.shelterBarChart,
+.shelterForecastChart {
+  border: 1px solid rgba(11,33,25,0.06);
+  border-radius: 5px;
+  padding: 16px 8px 8px;
+}
+
+.forecastLabel {
+  display: block;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(11,33,25,0.35);
+  margin-bottom: 8px;
+  padding: 0 8px;
+}
+
+/* ── 8. FLEET PERFORMANCE ── */
+.fleetLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fleetMetrics {
+  display: flex;
+  gap: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(11,33,25,0.07);
+  flex-wrap: wrap;
+}
+
+.fleetMetricCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fleetMetricNum {
+  font-size: 28px;
+  font-weight: 900;
+  color: #0B2119;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.fleetMetricLabel {
+  font-size: 8.5px;
+  font-weight: 850;
+  color: rgba(11,33,25,0.38);
+  letter-spacing: 0.08em;
+}
+
+.fleetTable {
+  border: 1px solid rgba(11,33,25,0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.fleetTableHead {
+  display: grid;
+  grid-template-columns: 140px 1fr 120px 80px;
+  gap: 12px;
+  padding: 10px 16px;
+  background-color: rgba(11,33,25,0.02);
+  border-bottom: 1px solid rgba(11,33,25,0.07);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(11,33,25,0.4);
+}
+
+.fleetTableRow {
+  display: grid;
+  grid-template-columns: 140px 1fr 120px 80px;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(11,33,25,0.05);
+  align-items: center;
+  transition: background-color 0.15s ease;
+}
+
+.fleetTableRow:last-child { border-bottom: none; }
+.fleetTableRow:hover { background-color: rgba(11,33,25,0.015); }
+
+.fleetVehId {
+  font-size: 11.5px;
+  font-weight: 750;
+  font-family: 'Courier New', monospace;
+  color: rgba(11,33,25,0.65);
+}
+
+.fleetCargo {
+  font-size: 12.5px;
+  color: rgba(11,33,25,0.75);
+}
+
+.fleetStatus {
+  font-size: 9px;
+  font-weight: 850;
   letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  display: inline-block;
 }
 
-.chartWrapper {
-  width: 100%;
-  height: 280px;
+.fStatus_EN_ROUTE    { background: rgba(232,111,22,0.1); color: #E86F16; }
+.fStatus_DISPATCHED  { background: rgba(99,102,241,0.1); color: #6366F1; }
+.fStatus_AVAILABLE   { background: rgba(5,150,105,0.1); color: #059669; }
+.fStatus_MAINTENANCE { background: rgba(156,163,175,0.1); color: #9CA3AF; }
+.fStatus_RETURNING   { background: rgba(59,130,246,0.1); color: #3B82F6; }
+
+.fleetEta {
+  font-size: 11.5px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  color: rgba(11,33,25,0.6);
 }
 
-@media (max-width: 1024px) {
-  .chartsGrid {
-    grid-template-columns: 1fr;
-  }
+/* ── 9. BOTTLENECKS ── */
+.bottleneckList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid rgba(11,33,25,0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.bottleneck {
+  display: flex;
+  gap: 20px;
+  padding: 20px 22px;
+  border-bottom: 1px solid rgba(11,33,25,0.06);
+  background-color: #FAF8F3;
+  transition: background-color 0.15s ease;
+}
+
+.bottleneck:last-child { border-bottom: none; }
+
+.bottleneckCritical {
+  background-color: rgba(220,38,38,0.02);
+  border-left: 3px solid #DC2626;
+}
+
+.bottleneckRank {
+  font-size: 28px;
+  font-weight: 900;
+  color: rgba(11,33,25,0.1);
+  line-height: 1;
+  flex-shrink: 0;
+  width: 36px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bottleneckBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bottleneckHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bottleneckTitle {
+  font-size: 14px;
+  font-weight: 850;
+  color: #0B2119;
+  letter-spacing: 0.01em;
+}
+
+.bottleneckSeverity {
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+
+.sevCrit { background: rgba(220,38,38,0.1); color: #DC2626; }
+.sevHigh { background: rgba(232,111,22,0.1); color: #E86F16; }
+
+.bottleneckLoc {
+  font-size: 11px;
+  color: rgba(11,33,25,0.45);
+  font-weight: 600;
+}
+
+.bottleneckDetail {
+  font-size: 12.5px;
+  color: rgba(11,33,25,0.7);
+  margin: 0;
+  font-family: 'Courier New', monospace;
+}
+
+.recommendationBlock {
+  margin-top: 4px;
+  padding: 8px 10px;
+  background-color: rgba(11,33,25,0.025);
+  border: 1px solid rgba(11,33,25,0.06);
+  border-radius: 4px;
+}
+
+.recLabel {
+  display: block;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(11,33,25,0.38);
+  margin-bottom: 4px;
+}
+
+.recText {
+  font-size: 12px;
+  color: #0B2119;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── 10. DECISION SUPPORT ── */
+.decisionList {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.decisionCard {
+  border: 1px solid rgba(11,33,25,0.08);
+  border-radius: 5px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: #FAF8F3;
+  animation: decisionReveal 0.5s ease both;
+}
+
+@keyframes decisionReveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.decisionTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.decisionRank {
+  font-size: 11px;
+  font-weight: 850;
+  font-family: 'Courier New', monospace;
+  color: rgba(11,33,25,0.25);
+}
+
+.decisionPriority {
+  font-size: 8.5px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+
+.decPriHigh { background: rgba(220,38,38,0.08); color: #DC2626; }
+.decPriMed  { background: rgba(232,111,22,0.08); color: #E86F16; }
+
+.decisionAction {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0B2119;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.decisionImpact {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  background-color: rgba(11,33,25,0.02);
+  border: 1px solid rgba(11,33,25,0.06);
+  border-radius: 4px;
+}
+
+.impactLabel {
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: rgba(11,33,25,0.35);
+}
+
+.impactText {
+  font-size: 11.5px;
+  color: rgba(11,33,25,0.7);
+  line-height: 1.4;
+}
+
+.decisionBtn {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background-color: #0B2119;
+  color: #FAF8F3;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  text-align: left;
+  margin-top: auto;
+}
+
+.decisionBtn:hover { opacity: 0.88; }
+
+.decisionDisclaimer {
+  font-size: 10.5px;
+  color: rgba(11,33,25,0.35);
+  line-height: 1.6;
+  padding: 14px 16px;
+  border: 1px dashed rgba(11,33,25,0.1);
+  border-radius: 4px;
+  font-style: italic;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1100px) {
+  .resourcePressureGrid { grid-template-columns: repeat(2, 1fr); }
+  .decisionList { grid-template-columns: repeat(2, 1fr); }
+  .shelterChartBlock { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 780px) {
+  .pressureLayout { grid-template-columns: 1fr; }
+  .riskGrid { grid-template-columns: 1fr; }
+  .resourcePressureGrid { grid-template-columns: 1fr; }
+  .decisionList { grid-template-columns: 1fr; }
+  .pulseStrip { flex-direction: column; }
+  .pulseDivider { width: 100%; height: 1px; background-color: rgba(11,33,25,0.07); }
+  .fleetTableHead, .fleetTableRow { grid-template-columns: 120px 1fr 100px; }
+  .fleetEta { display: none; }
+  .title { font-size: 28px; }
 }

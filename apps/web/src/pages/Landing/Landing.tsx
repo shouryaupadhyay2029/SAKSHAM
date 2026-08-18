@@ -11,7 +11,6 @@ import {
   MapPin, 
   ArrowRight, 
   Send,
-  CheckCircle,
   FileCheck,
   Truck,
   CloudSun,
@@ -24,6 +23,7 @@ import styles from './Landing.module.css';
 export const Landing: React.FC = () => {
   const { incidents, vehicles, shelters, addIncidentFromSOS } = useOperationalState();
   const [sosSubmitted, setSosSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [ticketId, setTicketId] = useState('');
   
   const [sosForm, setSosForm] = useState({
@@ -54,18 +54,23 @@ export const Landing: React.FC = () => {
     e.preventDefault();
     if (!sosForm.name || !sosForm.phone || !sosForm.details) return;
     
-    // Dispatch to global Operational State Store
-    const reqId = addIncidentFromSOS({
-      name: sosForm.name,
-      phone: sosForm.phone,
-      zone: sosForm.zone,
-      need: sosForm.need,
-      details: sosForm.details
-    });
+    setIsSubmitting(true);
 
-    setTicketId(reqId);
-    setSosSubmitted(true);
-    setSosForm({ name: '', phone: '', zone: 'East Delhi', need: 'Drinking Water', details: '' });
+    setTimeout(() => {
+      // Dispatch to global Operational State Store
+      const reqId = addIncidentFromSOS({
+        name: sosForm.name,
+        phone: sosForm.phone,
+        zone: sosForm.zone,
+        need: sosForm.need,
+        details: sosForm.details
+      });
+
+      setTicketId(reqId);
+      setIsSubmitting(false);
+      setSosSubmitted(true);
+      setSosForm({ name: '', phone: '', zone: 'East Delhi', need: 'Drinking Water', details: '' });
+    }, 1500); // 1.5s elegant matching delay
   };
 
   const landingRef = useRef<HTMLDivElement>(null);
@@ -88,7 +93,16 @@ export const Landing: React.FC = () => {
         '.map-legend-overlay',
         '.map-right-overlay',
         '.map-team-overlay',
-        '.parallax-back'
+        '.parallax-back',
+        '.radar-eyebrow',
+        `.${styles.radarHeadingLine}`,
+        '.radar-description',
+        '.radar-card-container',
+        '.sos-eyebrow',
+        `.${styles.sosHeadingLine}`,
+        '.sos-description',
+        '.sos-reassurance-item',
+        '.sos-form-card-container'
       ], { opacity: 1, y: 0, scale: 1 });
       return;
     }
@@ -103,6 +117,19 @@ export const Landing: React.FC = () => {
     gsap.set(`.${styles.editorialDesc}`, { opacity: 0, y: 14 });
     gsap.set(`.${styles.featureRow}`, { opacity: 0, y: 14 });
     
+    // Telemetry section initial states
+    gsap.set('.radar-eyebrow', { opacity: 0, y: 15 });
+    gsap.set(`.${styles.radarHeadingLine}`, { opacity: 0, y: '105%' });
+    gsap.set('.radar-description', { opacity: 0, y: 16 });
+    gsap.set('.radar-card-container', { opacity: 0, y: 35 });
+
+    // SOS section initial states
+    gsap.set('.sos-eyebrow', { opacity: 0, y: 15 });
+    gsap.set(`.${styles.sosHeadingLine}`, { opacity: 0, y: '105%' });
+    gsap.set('.sos-description', { opacity: 0, y: 16 });
+    gsap.set('.sos-reassurance-item', { opacity: 0, y: 12 });
+    gsap.set('.sos-form-card-container', { opacity: 0, y: 24 });
+
     // Child targets inside rows
     gsap.set(`.${styles.featureRow} .${styles.featureIconContainer}`, { opacity: 0, x: -4 });
     gsap.set(`.${styles.featureRow} .${styles.featureRowText}`, { opacity: 0, y: 8 });
@@ -417,6 +444,74 @@ export const Landing: React.FC = () => {
         });
       });
 
+      // 12. Telemetry Radar Section (Building Resilient Communities) entrance
+      const radarTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: '#telemetry-radar',
+          start: 'top 75%',
+          once: true
+        }
+      });
+
+      radarTl
+        .to('.radar-eyebrow', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' })
+        
+        .to(gsap.utils.toArray(`.${styles.radarHeadingLine}`) as any[], {
+          opacity: 1,
+          y: 0,
+          duration: 0.9,
+          stagger: 0.12,
+          ease: 'power3.out'
+        }, '-=0.35')
+        
+        .to('.radar-description', { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, '-=0.55')
+        .to('.radar-card-container', { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' }, '-=0.45');
+
+
+
+      // 13. Civilian SOS Section (Section 6) entrance
+      const sosTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: '#sos-section',
+          start: 'top 78%',
+          once: true
+        }
+      });
+
+      sosTl
+        .to('.sos-eyebrow', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' })
+        
+        .to(gsap.utils.toArray(`.${styles.sosHeadingLine}`) as any[], {
+          opacity: 1,
+          y: 0,
+          duration: 0.9,
+          stagger: 0.12,
+          ease: 'power3.out'
+        }, '-=0.35')
+        
+        .to('.sos-description', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' }, '-=0.55')
+        
+        .to(gsap.utils.toArray('.sos-reassurance-item') as any[], {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          stagger: 0.14,
+          ease: 'power2.out'
+        }, '-=0.35')
+        
+        .to('.sos-form-card-container', { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' }, '-=0.55');
+
+
+
+      // Premium Layered Stacking Scroll System (non-destructive local sticky animations)
+      // Apply only to desktop/large tablet screens to ensure mobile/touch scroll accessibility
+      if (window.innerWidth > 768) {
+        const layers = gsap.utils.toArray(`.${styles.stackedLayer}`) as HTMLElement[];
+        layers.forEach((layer, i) => {
+          layer.style.zIndex = `${(i + 1) * 10}`;
+        });
+      }
+
     }, landingRef);
 
     return () => ctx.revert();
@@ -645,17 +740,37 @@ export const Landing: React.FC = () => {
       {/* 4. OLD TELEMETRY / RADAR CONCEPT (Reused lower down as supporting section) */}
       <section id="telemetry-radar" className={`${styles.radarSection} textureForest`}>
         <div className={styles.heroGlow} />
+        
+        {/* Background routing curves & coordinate geometry (3-6% opacity) */}
+        <svg className={styles.radarBgGeometry} viewBox="0 0 1000 500" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="150" cy="180" r="3" fill="#FAF8F3" opacity="0.12" />
+          <circle cx="850" cy="320" r="3" fill="#FAF8F3" opacity="0.12" />
+          <path d="M 150,180 Q 500,120 850,320" stroke="rgba(250, 248, 243, 0.05)" strokeWidth="1" fill="none" strokeDasharray="5 5" />
+          <path d="M 220,410 Q 480,260 780,180" stroke="rgba(250, 248, 243, 0.03)" strokeWidth="1" fill="none" />
+          <path d="M 80,100 L 920,400" stroke="rgba(250, 248, 243, 0.02)" strokeWidth="0.8" fill="none" />
+        </svg>
+
         <div className={styles.sectionContainer}>
           <div className={styles.radarLayoutGrid}>
             <div className={styles.radarText}>
-              <span className={styles.badgeText}>[ ● LIVE ] RESPONSE MATRIX</span>
-              <h2 className={styles.radarHeading}>Building Resilient Communities.</h2>
-              <p className={styles.radarDesc}>
+              <span className={`${styles.badgeText} radar-eyebrow`}>[ ● LIVE ] RESPONSE MATRIX</span>
+              <h2 className={styles.radarHeading}>
+                <span className={styles.radarHeadingLineMask}>
+                  <span className={styles.radarHeadingLine}>Building Resilient</span>
+                </span>
+                <span className={styles.radarHeadingLineMask}>
+                  <span className={styles.radarHeadingLine}>Communities.</span>
+                </span>
+              </h2>
+              <p className={`${styles.radarDesc} radar-description`}>
                 Our telemetry radar and incident routing loops coordinate relief depots and fleet deployment protocols synchronously.
               </p>
             </div>
             
-            <div className={styles.radarCardWrapper}>
+            <div className={`${styles.radarCardWrapper} radar-card-container`}>
+              {/* Backing layer for visual depth */}
+              <div className={styles.radarCardBacking} />
+              
               <div className={`${styles.radarCard} textureDark`}>
                 <div className={styles.radarHeader}>
                   <div className={styles.liveIndicator}>
@@ -666,11 +781,36 @@ export const Landing: React.FC = () => {
                 </div>
                 <div className={styles.radarBody}>
                   <div className={styles.radarScope}>
+                    <div className={styles.radarCircle} />
+                    <div className={styles.radarCircle} />
+                    <div className={styles.radarCircle} />
+                    <div className={styles.radarCircle} />
                     <div className={styles.radarSweep} />
-                    <div className={`${styles.radarPin} ${styles.pinCritical}`} style={{ top: '35%', left: '42%' }} />
-                    <div className={`${styles.radarPin} ${styles.pinWarning}`} style={{ top: '60%', left: '70%' }} />
-                    <div className={`${styles.radarPin} ${styles.pinShelter}`} style={{ top: '25%', left: '68%' }} />
-                    <div className={`${styles.radarPin} ${styles.pinVehicle}`} style={{ top: '50%', left: '25%' }} />
+                    
+                    {/* SVG lines for network connections */}
+                    <svg className={styles.radarNodeConnections} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                      <line x1="84" y1="70" x2="140" y2="120" stroke="rgba(250, 248, 243, 0.08)" strokeWidth="0.8" strokeDasharray="3 3" />
+                      <line x1="84" y1="70" x2="50" y2="100" stroke="rgba(250, 248, 243, 0.08)" strokeWidth="0.8" strokeDasharray="3 3" />
+                      <line x1="140" y1="120" x2="136" y2="50" stroke="rgba(250, 248, 243, 0.08)" strokeWidth="0.8" strokeDasharray="3 3" />
+                    </svg>
+                    
+                    {/* Micro Telemetry metadata */}
+                    <span className={`${styles.radarMicroText} tech-code`} style={{ top: '8px', left: '10px' }}>LAT 28.61</span>
+                    <span className={`${styles.radarMicroText} tech-code`} style={{ bottom: '8px', right: '10px' }}>LON 77.21</span>
+                    <span className={`${styles.radarMicroText} tech-code`} style={{ bottom: '8px', left: '10px' }}>SYNC 98.4%</span>
+
+                    <div className={`${styles.radarPin} ${styles.pinCritical}`} style={{ top: '35%', left: '42%' }}>
+                      <div className={styles.pinGlow} />
+                    </div>
+                    <div className={`${styles.radarPin} ${styles.pinWarning}`} style={{ top: '60%', left: '70%' }}>
+                      <div className={styles.pinGlow} />
+                    </div>
+                    <div className={`${styles.radarPin} ${styles.pinShelter}`} style={{ top: '25%', left: '68%' }}>
+                      <div className={styles.pinGlow} />
+                    </div>
+                    <div className={`${styles.radarPin} ${styles.pinVehicle}`} style={{ top: '50%', left: '25%' }}>
+                      <div className={styles.pinGlow} />
+                    </div>
                   </div>
                   
                   <div className={styles.radarMetrics}>
@@ -695,7 +835,7 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* 5. IMPACT & LIVE NETWORK STRIP */}
-      <section id="metrics" className={`${styles.metricsSection} textureCream`}>
+      <section id="metrics" className={`${styles.metricsSection} textureCream ${styles.stackedLayer}`}>
         <div className={styles.sectionContainer}>
           {/* Moved stats strip here */}
           <div className={styles.indicatorBar}>
@@ -741,123 +881,180 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* 6. CIVILIAN SUPPORT EMERGENCY PORTAL */}
-      <section id="sos-section" className={`${styles.sosSection} textureForest`}>
+      <section id="sos-section" className={`${styles.sosSection} textureForest ${styles.stackedLayer}`}>
         <div className={styles.sosGlow} />
+
+        {/* Subtle background coordinate lines & grid geometry */}
+        <svg className={styles.sosBgGeometry} viewBox="0 0 1000 500" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="250" cy="120" r="3" fill="#FAF8F3" opacity="0.1" />
+          <circle cx="750" cy="380" r="3" fill="#FAF8F3" opacity="0.1" />
+          <path d="M 250,120 L 750,380" stroke="rgba(250, 248, 243, 0.04)" strokeWidth="0.8" fill="none" strokeDasharray="3 3" />
+          <path d="M 120,430 C 350,350 650,450 880,150" stroke="rgba(250, 248, 243, 0.03)" strokeWidth="1" fill="none" />
+        </svg>
+
         <div className={styles.sectionContainer}>
           <div className={styles.sosGrid}>
             <div className={styles.sosContent}>
-              <span className={styles.sectionSub}>CIVILIAN EMERGENCY PORTAL</span>
-              <h2 className={styles.sectionTitle}>Need Assistance? File an SOS Request</h2>
-              <p className={styles.sosText}>
+              <span className={`${styles.sectionSub} sos-eyebrow`}>CIVILIAN EMERGENCY PORTAL ● PRIORITY CHANNEL</span>
+              <h2 className={styles.sectionTitle}>
+                <span className={styles.sosHeadingLineMask}>
+                  <span className={styles.sosHeadingLine}>Need Assistance?</span>
+                </span>
+                <span className={styles.sosHeadingLineMask}>
+                  <span className={styles.sosHeadingLine}>File an SOS Request</span>
+                </span>
+              </h2>
+              <p className={`${styles.sosText} sos-description`}>
                 Are you an affected civilian, NGO worker, or volunteer? Submit your zone demand immediately. SAKSHAM's matching engine pairs incoming requests with the nearest available depot.
               </p>
               <div className={styles.sosBenefits}>
-                <div className={styles.sosBenefitItem}>
-                  <CheckCircle size={16} className="text-emerald-300" />
+                <div className={`${styles.sosBenefitItem} sos-reassurance-item`}>
+                  <span className={styles.reassuranceBullet}>◉</span>
                   <span>Immediate notification to Delhi NDRF Control Room</span>
                 </div>
-                <div className={styles.sosBenefitItem}>
-                  <CheckCircle size={16} className="text-emerald-300" />
+                <div className={`${styles.sosBenefitItem} sos-reassurance-item`}>
+                  <span className={styles.reassuranceBullet}>◉</span>
                   <span>Automated tracking ID generated on submission</span>
                 </div>
               </div>
             </div>
 
-            <div className={`${styles.sosFormCard} textureCream`}>
-              {sosSubmitted ? (
-                <div className={styles.formSuccess}>
-                  <FileCheck size={48} className={styles.successIcon} />
-                  <h3>SOS Request Registered</h3>
-                  <p>Your emergency demand has been logged into the SAKSHAM Command Center. First responders have been notified.</p>
-                  <div className={styles.successTicket}>
-                    <span>REQUEST ID:</span>
-                    <strong>{ticketId}</strong>
+            <div className="sos-form-card-container" style={{ position: 'relative', width: '100%', maxWidth: '440px', justifySelf: 'center' }}>
+              {/* Backing layer for visual depth */}
+              <div className={styles.sosFormCardBacking} />
+
+              <div className={`${styles.sosFormCard} textureCream`}>
+                {sosSubmitted ? (
+                  <div className={styles.formSuccess}>
+                    <FileCheck size={48} className={styles.successIcon} />
+                    <h3>SOS Request Registered</h3>
+                    <p>Your emergency demand has been logged into the SAKSHAM Command Center.</p>
+                    <div className={styles.successBadge}>
+                      <span>STATUS:</span>
+                      <strong className={styles.textPrimary}>RESPONSE NETWORK NOTIFIED</strong>
+                    </div>
+                    <div className={styles.successTicket}>
+                      <span>REQUEST ID:</span>
+                      <strong>{ticketId}</strong>
+                    </div>
+                    <button 
+                      onClick={() => setSosSubmitted(false)} 
+                      className={styles.resetBtn}
+                    >
+                      File Another Request
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => setSosSubmitted(false)} 
-                    className={styles.resetBtn}
-                  >
-                    File Another Request
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleSosSubmit} className={styles.form}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="name">Reporter Full Name</label>
-                    <input 
-                      id="name"
-                      type="text" 
-                      placeholder="e.g., Rajesh Khanna" 
-                      value={sosForm.name} 
-                      onChange={(e) => setSosForm({...sosForm, name: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="phone">Contact Number</label>
-                    <input 
-                      id="phone"
-                      type="tel" 
-                      placeholder="e.g., +91-98765-XXXXX" 
-                      value={sosForm.phone} 
-                      onChange={(e) => setSosForm({...sosForm, phone: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div className={styles.formRow}>
+                ) : (
+                  <form onSubmit={handleSosSubmit} className={styles.form}>
+                    <div className={styles.formHeader}>
+                      <div className={styles.formHeaderTitle}>
+                        <span>EMERGENCY REQUEST</span>
+                        <span>SAKSHAM CIVILIAN CHANNEL</span>
+                      </div>
+                      <div className={styles.formHeaderStatus}>
+                        <span className={styles.formLiveDot} />
+                        <span>SECURE INTAKE</span>
+                      </div>
+                    </div>
+                    
+                    <div className={styles.formDivider} />
+
                     <div className={styles.formGroup}>
-                      <label htmlFor="zone">Affected Zone</label>
-                      <select 
-                        id="zone"
-                        value={sosForm.zone} 
-                        onChange={(e) => setSosForm({...sosForm, zone: e.target.value})}
-                      >
-                        <option value="East Delhi">East Delhi</option>
-                        <option value="West Delhi">West Delhi</option>
-                        <option value="North Delhi">North Delhi</option>
-                        <option value="South Delhi">South Delhi</option>
-                        <option value="Central Delhi">Central Delhi</option>
-                      </select>
+                      <label htmlFor="name">Reporter Full Name</label>
+                      <input 
+                        id="name"
+                        type="text" 
+                        placeholder="e.g., Rajesh Khanna" 
+                        value={sosForm.name} 
+                        onChange={(e) => setSosForm({...sosForm, name: e.target.value})}
+                        required
+                        disabled={isSubmitting}
+                      />
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="need">Primary Need</label>
-                      <select 
-                        id="need"
-                        value={sosForm.need} 
-                        onChange={(e) => setSosForm({...sosForm, need: e.target.value})}
-                      >
-                        <option value="Drinking Water">Drinking Water</option>
-                        <option value="Dry Ration Packets">Dry Ration Packets</option>
-                        <option value="Medical Assistance">Medical Assistance</option>
-                        <option value="Emergency Tents">Emergency Tents</option>
-                        <option value="Rescue Boat Dispatch">Rescue Boat Dispatch</option>
-                      </select>
+                      <label htmlFor="phone">Contact Number</label>
+                      <input 
+                        id="phone"
+                        type="tel" 
+                        placeholder="e.g., +91-98765-XXXXX" 
+                        value={sosForm.phone} 
+                        onChange={(e) => setSosForm({...sosForm, phone: e.target.value})}
+                        required
+                        disabled={isSubmitting}
+                      />
                     </div>
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="details">Situation Details</label>
-                    <textarea 
-                      id="details"
-                      rows={3} 
-                      placeholder="Describe the number of people affected and current safety levels..."
-                      value={sosForm.details} 
-                      onChange={(e) => setSosForm({...sosForm, details: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <button type="submit" className={styles.submitBtn}>
-                    Submit Emergency SOS
-                    <Send size={15} />
-                  </button>
-                </form>
-              )}
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label htmlFor="zone">Affected Zone</label>
+                        <div className={styles.selectWrapper}>
+                          <select 
+                            id="zone"
+                            value={sosForm.zone} 
+                            onChange={(e) => setSosForm({...sosForm, zone: e.target.value})}
+                            disabled={isSubmitting}
+                          >
+                            <option value="East Delhi">East Delhi</option>
+                            <option value="West Delhi">West Delhi</option>
+                            <option value="North Delhi">North Delhi</option>
+                            <option value="South Delhi">South Delhi</option>
+                            <option value="Central Delhi">Central Delhi</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label htmlFor="need">Primary Need</label>
+                        <div className={styles.selectWrapper}>
+                          <select 
+                            id="need"
+                            value={sosForm.need} 
+                            onChange={(e) => setSosForm({...sosForm, need: e.target.value})}
+                            disabled={isSubmitting}
+                          >
+                            <option value="Drinking Water">Drinking Water</option>
+                            <option value="Dry Ration Packets">Dry Ration Packets</option>
+                            <option value="Medical Assistance">Medical Assistance</option>
+                            <option value="Emergency Tents">Emergency Tents</option>
+                            <option value="Rescue Boat Dispatch">Rescue Boat Dispatch</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="details">Situation Details</label>
+                      <textarea 
+                        id="details"
+                        rows={3} 
+                        placeholder="Describe the number of people affected and current safety levels..."
+                        value={sosForm.details} 
+                        onChange={(e) => setSosForm({...sosForm, details: e.target.value})}
+                        required
+                        disabled={isSubmitting}
+                      />
+                      <span className={styles.fieldHelper}>Describe who needs help, what happened, and current safety conditions.</span>
+                    </div>
+                    <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          Submitting SOS Request...
+                          <span className={styles.buttonSpinner} />
+                        </>
+                      ) : (
+                        <>
+                          Submit Emergency SOS
+                          <Send size={15} />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* 7. Bottom Call-To-Action (FINAL CTA) */}
-      <section className={`${styles.ctaSection} textureForest`}>
+      <section className={`${styles.ctaSection} textureForest ${styles.stackedLayer}`}>
         <div className={styles.sectionContainer}>
           <div className={styles.ctaWrapper}>
             <h2>Ready to Respond.</h2>

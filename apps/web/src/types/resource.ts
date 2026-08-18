@@ -10,13 +10,14 @@ export type ResourceCategory =
   | 'VEHICLES'
   | 'OTHER';
 
-export type ResourceStatus = 'AVAILABLE' | 'LOW' | 'RESERVED' | 'IN_TRANSIT' | 'DEPLETED';
+export type ResourceStatus = 'AVAILABLE' | 'LOW' | 'RESERVED' | 'IN_TRANSIT' | 'DEPLOYED' | 'DEPLETED';
 
 export interface ResourceItem {
   id: string;
   name: string;
   category: ResourceCategory;
-  quantity: number;
+  quantity: number;             // Currently available stock
+  allocatedQuantity?: number;  // Quantity already allocated/committed
   unit: string;
   locationName: string;
   coordinates: Coordinates;
@@ -24,4 +25,5 @@ export interface ResourceItem {
   lastUpdated: string;
   contactPerson: string;
   contactNumber: string;
+  allocationId?: string;       // Most recent allocation reference
 }

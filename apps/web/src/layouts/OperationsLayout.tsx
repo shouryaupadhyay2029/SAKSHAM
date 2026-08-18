@@ -1,30 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
-import { useOperationalState } from '../context/OperationalStateContext';
 import { 
-  Activity, 
-  AlertTriangle, 
-  Layers, 
-  FileText, 
-  Truck, 
-  Home, 
-  BarChart3, 
   Bell, 
   User, 
-  Menu, 
-  X, 
   Clock, 
-  ChevronRight,
   ShieldCheck
 } from 'lucide-react';
 import styles from './OperationsLayout.module.css';
 
 export const OperationsLayout: React.FC = () => {
-  const { incidents, requests } = useOperationalState();
   const [time, setTime] = useState(new Date());
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const location = useLocation();
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // Close notification popover on outside click
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [notificationsOpen]);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -50,167 +50,116 @@ export const OperationsLayout: React.FC = () => {
     });
   };
 
-  // Dynamically count active incidents and pending requests from our global context
-  const activeIncidentsCount = incidents.filter(i => i.status === 'ACTIVE' || i.status === 'UNDER_RESPONSE').length;
-  const pendingRequestsCount = requests.filter(r => r.status === 'PENDING').length;
-
-  const navItems = [
-    { path: '/operations/command-center', label: 'Command Center', icon: Activity },
-    { path: '/operations/incidents', label: 'Incidents Registry', icon: AlertTriangle, badge: activeIncidentsCount > 0 ? String(activeIncidentsCount) : undefined },
-    { path: '/operations/resources', label: 'Resource Registry', icon: Layers },
-    { path: '/operations/requests', label: 'Demand Requests', icon: FileText, badge: pendingRequestsCount > 0 ? String(pendingRequestsCount) : undefined },
-    { path: '/operations/vehicles', label: 'Vehicle Fleet', icon: Truck },
-    { path: '/operations/shelters', label: 'Shelter Network', icon: Home },
-    { path: '/operations/analytics', label: 'Analytics & Reports', icon: BarChart3 },
+  const navItems: { path: string; label: string; badge?: string }[] = [
+    { path: '/operations/command-center', label: 'Command Center' },
+    { path: '/operations/matching', label: 'Matching' },
+    { path: '/operations/dispatch', label: 'Dispatch' },
+    { path: '/operations/delivery', label: 'Delivery' }
   ];
-
-  const getPageTitle = () => {
-    const activeItem = navItems.find(item => location.pathname.startsWith(item.path));
-    return activeItem ? activeItem.label : 'Operations Board';
-  };
 
   return (
     <div className={styles.layout}>
-      {/* Topbar */}
-      <header className={`${styles.topbar} textureDark`}>
+      {/* Top navigation system similar to public landing page */}
+      <header className={styles.topbar}>
         <div className={styles.topbarLeft}>
-          <button 
-            className={styles.menuToggle} 
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label="Toggle Sidebar"
-          >
-            {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
           <div className={styles.logoArea}>
-            <div className={styles.logoAccent} />
+            <img src="/logo.png" alt="SAKSHAM Logo" className={styles.logoImg} />
             <Link to="/" className={styles.logoText}>SAKSHAM</Link>
           </div>
-          <span className={styles.divider} />
-          <div className={styles.systemStatus}>
-            <span className={styles.statusDot} />
-            <span className={styles.statusText}>SYS STATUS: ACTIVE / LIVE</span>
-          </div>
+          
+          {/* Main Horizontal Operations Menu */}
+          <nav className={styles.navMenu}>
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) => 
+                  `${styles.navMenuLink} ${isActive ? styles.navMenuLinkActive : ''}`
+                }
+              >
+                {item.label}
+                {item.badge && <span className={styles.navMenuBadge}>{item.badge}</span>}
+                <span className={styles.activeIndicator} />
+              </NavLink>
+            ))}
+          </nav>
         </div>
 
         <div className={styles.topbarRight}>
           {/* Delhi Operational Clock */}
           <div className={styles.clockArea}>
-            <Clock size={15} className={styles.clockIcon} />
-            <div className={styles.clockTimes}>
-              <span className={`${styles.clockTime} tech-code`}>{formatDelhiTime(time)}</span>
-              <span className={styles.clockZone}>IST (DELHI)</span>
-            </div>
+            <Clock size={13} className={styles.clockIcon} />
+            <span className={`${styles.clockTime} tech-code`}>{formatDelhiTime(time)}</span>
+            <span className={styles.clockZone}>IST</span>
+            <span className={styles.clockDivider}>|</span>
             <span className={styles.clockDate}>{formatDelhiDate(time)}</span>
           </div>
 
-          <div className={styles.divider} />
-
-          {/* Notifications */}
-          <div className={styles.actionBtnWrapper}>
+          {/* Notifications Alerts Popover */}
+          <div className={styles.actionBtnWrapper} ref={notifRef}>
             <button 
               className={styles.iconBtn} 
               onClick={() => setNotificationsOpen(!notificationsOpen)}
-              aria-label="Notifications"
+              aria-label="System Alerts"
             >
-              <Bell size={18} />
+              <Bell size={15} />
               <span className={styles.notificationBadge}>3</span>
             </button>
 
-            {notificationsOpen && (
-              <div className={styles.notificationsDropdown}>
-                <div className={styles.dropdownHeader}>
-                  <h4>System Alerts</h4>
-                  <button onClick={() => setNotificationsOpen(false)}>Close</button>
+            <div className={`${styles.notificationsDropdown} ${notificationsOpen ? styles.notificationsDropdownOpen : ''}`}>
+              <div className={styles.dropdownHeader}>
+                <h4>SYSTEM ALERTS</h4>
+                <button onClick={() => setNotificationsOpen(false)}>Close</button>
+              </div>
+              <div className={styles.dropdownContent}>
+                <div className={`${styles.alertItem} ${styles.alertCritical}`}>
+                  <span className={styles.alertDot} />
+                  <div className={styles.alertBody}>
+                    <p><strong>CRITICAL INCIDENT</strong></p>
+                    <p>Evacuation initiated at Yamuna Bank, East Delhi.</p>
+                    <span className={styles.alertTime}>5 mins ago</span>
+                  </div>
                 </div>
-                <div className={styles.dropdownContent}>
-                  <div className={`${styles.alertItem} ${styles.alertCritical}`}>
-                    <span className={styles.alertDot} />
-                    <div className={styles.alertBody}>
-                      <p><strong>CRITICAL INCIDENT:</strong> Evacuation initiated at Yamuna Bank, East Delhi due to surge.</p>
-                      <span className={styles.alertTime}>5 mins ago</span>
-                    </div>
+                <div className={`${styles.alertItem} ${styles.alertWarning}`}>
+                  <span className={styles.alertDot} />
+                  <div className={styles.alertBody}>
+                    <p><strong>WARNING</strong></p>
+                    <p>South Depot trauma kit stocks running LOW.</p>
+                    <span className={styles.alertTime}>12 mins ago</span>
                   </div>
-                  <div className={`${styles.alertItem} ${styles.alertWarning}`}>
-                    <span className={styles.alertDot} />
-                    <div className={styles.alertBody}>
-                      <p><strong>WARNING:</strong> South Depot trauma kit stocks running LOW.</p>
-                      <span className={styles.alertTime}>12 mins ago</span>
-                    </div>
-                  </div>
-                  <div className={`${styles.alertItem} ${styles.alertInfo}`}>
-                    <span className={styles.alertDot} />
-                    <div className={styles.alertBody}>
-                      <p><strong>INFO:</strong> Rescue Boat VEH-BT-401 dispatched to East Delhi.</p>
-                      <span className={styles.alertTime}>18 mins ago</span>
-                    </div>
+                </div>
+                <div className={`${styles.alertItem} ${styles.alertInfo}`}>
+                  <span className={styles.alertDot} />
+                  <div className={styles.alertBody}>
+                    <p><strong>INFO</strong></p>
+                    <p>Rescue Boat VEH-BT-401 dispatched to East Delhi.</p>
+                    <span className={styles.alertTime}>18 mins ago</span>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* User Profile Info */}
+          {/* Officer badge */}
           <div className={styles.profileArea}>
             <div className={styles.profileBadge}>
-              <ShieldCheck size={13} className={styles.shieldIcon} />
-              <span>NDRF OFFICER</span>
+              <ShieldCheck size={12} className={styles.shieldIcon} />
+              <span>OFFICER</span>
             </div>
             <div className={styles.profileAvatar}>
-              <User size={15} />
+              <User size={13} />
             </div>
           </div>
         </div>
       </header>
 
+      {/* Main Content Area without sidebar */}
       <div className={styles.bodyContainer}>
-        {/* Mobile Sidebar Backdrop Overlay */}
-        {sidebarOpen && (
-          <div 
-            className={styles.sidebarOverlay} 
-            onClick={() => setSidebarOpen(false)} 
-          />
-        )}
-
-        {/* Sidebar */}
-        <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed} textureDark`}>
-          <nav className={styles.sidebarNav}>
-            {navItems.map((item) => {
-              const IconComponent = item.icon;
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) => 
-                    `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
-                  }
-                >
-                  <IconComponent size={16} className={styles.navIcon} />
-                  <span className={styles.navLabel}>{item.label}</span>
-                  {item.badge && <span className={styles.navBadge}>{item.badge}</span>}
-                  <ChevronRight size={13} className={styles.navArrow} />
-                </NavLink>
-              );
-            })}
-          </nav>
-
-          <div className={styles.sidebarFooter}>
-            <div className={styles.hqText}>DELHI OPERATIONS HQ</div>
-            <div className={styles.latLngText}>28.6139° N, 77.2090° E</div>
-          </div>
-        </aside>
-
-        {/* Main Content Area */}
         <main className={styles.mainContent}>
-          <div className={styles.pageHeader}>
-            <div className={styles.breadcrumbs}>
-              <Link to="/">Home</Link>
-              <ChevronRight size={11} />
-              <span>Operations</span>
-              <ChevronRight size={11} />
-              <span className={styles.currentBreadcrumb}>{getPageTitle()}</span>
-            </div>
-          </div>
-          <div className={styles.contentWrapper}>
+          <div 
+            key={location.pathname}
+            className={`${styles.contentWrapper} ${styles.animatePageIn}`}
+          >
             <Outlet />
           </div>
         </main>

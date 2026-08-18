@@ -1,113 +1,409 @@
-import React, { useState } from 'react';
-import { Search, Filter, Truck, Radio, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Vehicles.module.css';
+
+const VEHICLE_TYPE_LABELS: Record<string, string> = {
+  TRUCK: 'TRUCK',
+  AMBULANCE: 'AMBULANCE',
+  HELICOPTER: 'HELICOPTER',
+  RESCUE_BOAT: 'RESCUE BOAT',
+  DRONE: 'DRONE',
+};
+
+const DEPOT_NAME: Record<string, string> = {
+  'VEH-TR-101': 'East Delhi Depot',
+  'VEH-TR-102': 'South Delhi Depot',
+  'VEH-AM-201': 'Central Command HQ',
+  'VEH-HL-301': 'Safdarjung Helipad',
+  'VEH-BT-401': 'Yamuna River Station',
+  'VEH-DR-501': 'Connaught Place Depot',
+};
+
+const DEST_NAME: Record<string, string> = {
+  'VEH-TR-101': 'Rohini Sector 15 Shelter',
+  'VEH-TR-102': 'Okhla Flood Zone',
+  'VEH-AM-201': 'Karol Bagh Medical Triage',
+  'VEH-HL-301': '—',
+  'VEH-BT-401': 'Yamuna Flood Zone Alpha',
+  'VEH-DR-501': '—',
+};
+
+const ROUTE_DIST: Record<string, string> = {
+  'VEH-TR-101': '8.4 km',
+  'VEH-TR-102': '11.2 km',
+  'VEH-AM-201': '5.1 km',
+  'VEH-HL-301': '—',
+  'VEH-BT-401': '3.7 km',
+  'VEH-DR-501': '—',
+};
+
+const STATUS_DISPLAY: Record<string, string> = {
+  EN_ROUTE: 'EN ROUTE',
+  DISPATCHED: 'DISPATCHED',
+  AVAILABLE: 'AVAILABLE',
+  MAINTENANCE: 'MAINTENANCE',
+  RETURNING: 'RETURNING',
+  ARRIVED: 'ARRIVED',
+};
 
 export const Vehicles: React.FC = () => {
   const { vehicles } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(t);
+  }, []);
 
   const filteredVehicles = vehicles.filter(veh => {
-    const matchesSearch = veh.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          veh.driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          veh.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      veh.name.toLowerCase().includes(q) ||
+      veh.driverName.toLowerCase().includes(q) ||
+      veh.id.toLowerCase().includes(q) ||
+      veh.type.toLowerCase().includes(q) ||
+      (veh.cargo && veh.cargo.toLowerCase().includes(q));
     const matchesStatus = statusFilter === 'ALL' || veh.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesType = typeFilter === 'ALL' || veh.type === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
   });
 
+  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId) || null;
+
+  const statusCounts = {
+    total: vehicles.length,
+    enRoute: vehicles.filter(v => v.status === 'EN_ROUTE').length,
+    dispatched: vehicles.filter(v => v.status === 'DISPATCHED').length,
+    available: vehicles.filter(v => v.status === 'AVAILABLE').length,
+    critical: vehicles.filter(v => v.status === 'DISPATCHED' || v.status === 'EN_ROUTE').length,
+  };
+
+  const statusPills = ['ALL', 'AVAILABLE', 'EN_ROUTE', 'DISPATCHED', 'MAINTENANCE'];
+  const typePills = ['ALL', 'TRUCK', 'AMBULANCE', 'HELICOPTER', 'RESCUE_BOAT', 'DRONE'];
+
   return (
-    <div className={`${styles.container} textureCream`}>
-      <div className={styles.header}>
-        <div>
-          <h2>Emergency Fleet Log</h2>
-          <p className={styles.subtext}>Live GPS monitoring and mission dispatch database for NDRF & SDRF transportation units.</p>
+    <div className={`${styles.container} ${mounted ? styles.mounted : ''}`}>
+
+      {/* ── 1. Page Header ── */}
+      <header className={styles.pageHeader}>
+        <div className={styles.headerTitles}>
+          <span className={styles.eyebrow}>FLEET OPERATIONS</span>
+          <h1 className={styles.title}>Emergency Response Fleet</h1>
+          <p className={styles.lead}>Live fleet availability, mission assignments and field movement across the response network.</p>
         </div>
-        <span className={`${styles.counter} tech-code`}>{filteredVehicles.length} Units</span>
+        <div className={styles.headerActions}>
+          <div className={styles.liveStatus}>
+            <span className={styles.liveDot} />
+            <span className={styles.liveLabel}>FLEET NETWORK LIVE</span>
+          </div>
+          <div className={styles.unitCount}>
+            <span className={styles.unitNum}>{String(vehicles.length).padStart(2, '0')}</span>
+            <span className={styles.unitLabel}>UNITS TRACKED</span>
+          </div>
+        </div>
+      </header>
+
+      {/* ── 2. Summary Strip ── */}
+      <div className={styles.statsStrip}>
+        <div className={styles.statCell}>
+          <span className={styles.statNum}>{String(statusCounts.total).padStart(2, '0')}</span>
+          <span className={styles.statLabel}>UNITS TRACKED</span>
+        </div>
+        <div className={styles.statDivider} />
+        <div className={styles.statCell}>
+          <span className={`${styles.statNum} ${styles.warningAccent}`}>{String(statusCounts.enRoute).padStart(2, '0')}</span>
+          <span className={styles.statLabel}>EN ROUTE</span>
+        </div>
+        <div className={styles.statDivider} />
+        <div className={styles.statCell}>
+          <span className={`${styles.statNum} ${styles.dispatchAccent}`}>{String(statusCounts.dispatched).padStart(2, '0')}</span>
+          <span className={styles.statLabel}>DISPATCHED</span>
+        </div>
+        <div className={styles.statDivider} />
+        <div className={styles.statCell}>
+          <span className={`${styles.statNum} ${styles.successAccent}`}>{String(statusCounts.available).padStart(2, '0')}</span>
+          <span className={styles.statLabel}>AVAILABLE</span>
+        </div>
+        <div className={styles.statDivider} />
+        <div className={styles.statCell}>
+          <span className={`${styles.statNum} ${styles.criticalAccent}`}>{String(statusCounts.critical).padStart(2, '0')}</span>
+          <span className={styles.statLabel}>ON MISSION</span>
+        </div>
       </div>
 
-      {/* Controls */}
-      <div className={styles.controls}>
-        <div className={styles.searchBox}>
-          <Search size={18} className={styles.searchIcon} />
-          <input 
-            type="text" 
-            placeholder="Search by vehicle ID, name, driver..." 
+      {/* ── 3. Filter Bar ── */}
+      <div className={styles.filterBar}>
+        <div className={styles.searchWrapper}>
+          <SearchIcon className={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder="Search vehicle ID, type, driver, mission..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-
-        <div className={styles.filterGroup}>
-          <div className={styles.filterItem}>
-            <Filter size={14} />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="ALL">All Statuses</option>
-              <option value="AVAILABLE">Available</option>
-              <option value="DISPATCHED">Dispatched</option>
-              <option value="EN_ROUTE">En Route</option>
-              <option value="MAINTENANCE">Maintenance</option>
-            </select>
+        <div className={styles.filterGroups}>
+          <div className={styles.filterPills}>
+            {statusPills.map(s => (
+              <button
+                key={s}
+                className={`${styles.filterPill} ${statusFilter === s ? styles.filterPillActive : ''}`}
+                onClick={() => setStatusFilter(s)}
+              >
+                {s === 'EN_ROUTE' ? 'EN ROUTE' : s}
+              </button>
+            ))}
+          </div>
+          <div className={styles.pillDivider} />
+          <div className={styles.filterPills}>
+            {typePills.map(t => (
+              <button
+                key={t}
+                className={`${styles.filterPill} ${typeFilter === t ? styles.filterPillActive : ''}`}
+                onClick={() => setTypeFilter(t)}
+              >
+                {t === 'RESCUE_BOAT' ? 'RESCUE BOAT' : t}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Grid of Vehicles */}
-      <div className={styles.grid}>
-        {filteredVehicles.length === 0 ? (
-          <div className={styles.noRecords}>No fleet vehicles found.</div>
-        ) : (
-          filteredVehicles.map(veh => (
-            <div key={veh.id} className={styles.card}>
-              <div className={styles.cardHeader}>
-                <span className={`${styles.statusLabel} ${styles['status' + veh.status]}`}>
-                  {veh.status.replace('_', ' ')}
-                </span>
-                <span className="tech-code font-bold">{veh.id}</span>
+      {/* ── 4. Main Split Workspace ── */}
+      <div className={styles.splitWorkspace}>
+
+        {/* Left: Fleet Registry */}
+        <div className={styles.registryColumn}>
+          {filteredVehicles.length === 0 ? (
+            <div className={styles.emptyState}>
+              <TruckIcon />
+              <p>No fleet units match current filter criteria.</p>
+            </div>
+          ) : (
+            <div className={styles.fleetList}>
+              {filteredVehicles.map((veh, i) => {
+                const isSelected = veh.id === selectedVehicleId;
+                return (
+                  <div
+                    key={veh.id}
+                    className={`${styles.fleetUnit} ${isSelected ? styles.fleetUnitSelected : ''}`}
+                    style={{ animationDelay: `${i * 70}ms` }}
+                    onClick={() => setSelectedVehicleId(isSelected ? null : veh.id)}
+                  >
+                    <div className={styles.unitTop}>
+                      <span className={`${styles.unitStatus} ${styles['vStatus_' + veh.status]}`}>
+                        {veh.status === 'EN_ROUTE' || veh.status === 'DISPATCHED' ? (
+                          <span className={styles.statusPulse} />
+                        ) : null}
+                        {STATUS_DISPLAY[veh.status] || veh.status}
+                      </span>
+                      <span className={styles.unitId}>{veh.id}</span>
+                    </div>
+
+                    <div className={styles.unitMain}>
+                      <h3 className={styles.unitName}>{veh.name}</h3>
+                      <div className={styles.unitMeta}>
+                        <span className={styles.unitType}>{VEHICLE_TYPE_LABELS[veh.type] || veh.type}</span>
+                        <span className={styles.metaDot}>·</span>
+                        <span>Capacity {veh.capacity}</span>
+                      </div>
+                    </div>
+
+                    {veh.cargo && (
+                      <div className={styles.unitCargo}>
+                        <span className={styles.cargoLabel}>ACTIVE MISSION</span>
+                        <span className={styles.cargoValue}>{veh.cargo}</span>
+                      </div>
+                    )}
+
+                    <div className={styles.unitFooter}>
+                      <div className={styles.footerLeft}>
+                        <div className={styles.coordLine}>
+                          <PinIcon />
+                          <span className="tech-code">{veh.location.lat.toFixed(4)}° N, {veh.location.lng.toFixed(4)}° E</span>
+                        </div>
+                        {veh.speedKmh && (
+                          <span className={styles.speedChip}>{veh.speedKmh} km/h</span>
+                        )}
+                      </div>
+                      <div className={styles.footerRight}>
+                        <div className={styles.driverLine}>
+                          <span className={styles.radioLabel}>RADIO {veh.driverContact}</span>
+                          <span className={styles.driverName}>{veh.driverName}</span>
+                        </div>
+                        <span className={styles.viewArrow}>VIEW UNIT →</span>
+                      </div>
+                    </div>
+
+                    {isSelected && <div className={styles.selectedAccent} />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Detail Panel */}
+        <div className={styles.ledgerColumn}>
+          {selectedVehicle ? (
+            <div className={styles.ledgerContent}>
+              <div className={styles.ledgerHeader}>
+                <div className={styles.titleArea}>
+                  <div className={styles.metaRow}>
+                    <span className="tech-code font-bold">{selectedVehicle.id}</span>
+                    <span className={`${styles.detailStatus} ${styles['vStatus_' + selectedVehicle.status]}`}>
+                      {selectedVehicle.status === 'EN_ROUTE' || selectedVehicle.status === 'DISPATCHED' ? (
+                        <span className={styles.statusPulse} />
+                      ) : null}
+                      {STATUS_DISPLAY[selectedVehicle.status] || selectedVehicle.status}
+                    </span>
+                  </div>
+                  <h3 className={styles.ledgerName}>{selectedVehicle.name}</h3>
+                </div>
+                <button className={styles.closeLedgerBtn} onClick={() => setSelectedVehicleId(null)}>
+                  <CloseIcon />
+                </button>
               </div>
 
-              <div className={styles.cardBody}>
-                <div className={styles.titleWrapper}>
-                  <Truck size={20} className={styles.truckIcon} />
-                  <div>
-                    <h3 className={styles.vehName}>{veh.name}</h3>
-                    <span className={styles.vehType}>{veh.type} • Capacity: {veh.capacity}</span>
+              {/* Mission */}
+              {selectedVehicle.cargo && (
+                <div className={styles.ledgerSection}>
+                  <span className={styles.sectionTitle}>CURRENT MISSION</span>
+                  <div className={styles.missionBlock}>
+                    <p className={styles.missionCargo}>{selectedVehicle.cargo}</p>
                   </div>
                 </div>
+              )}
 
-                <div className={styles.cargoSection}>
-                  <strong>Active Cargo Manifest:</strong>
-                  <p>{veh.cargo || 'Empty / No cargo loaded.'}</p>
-                </div>
-
-                <div className={styles.gpsSection}>
-                  <div className={styles.gpsRow}>
-                    <MapPin size={14} className={styles.gpsIcon} />
-                    <span>Location: {veh.location.lat.toFixed(4)}° N, {veh.location.lng.toFixed(4)}° E</span>
+              {/* Route Diagram */}
+              <div className={styles.ledgerSection}>
+                <span className={styles.sectionTitle}>ROUTE VISUALIZATION</span>
+                <div className={styles.routeDiagram}>
+                  <div className={styles.routeNode}>
+                    <span className={styles.routeNodeLabel}>ORIGIN DEPOT</span>
+                    <span className={styles.routeNodeValue}>{DEPOT_NAME[selectedVehicle.id] || '—'}</span>
                   </div>
-                  {veh.speedKmh && (
-                    <div className={styles.speedBadge}>
-                      Speed: <strong>{veh.speedKmh} km/h</strong>
+                  <div className={styles.routeConnector}>
+                    <div className={styles.routeLine} />
+                    <span className={styles.routeDist}>{ROUTE_DIST[selectedVehicle.id] || '—'}</span>
+                    <div className={styles.routeLine} />
+                  </div>
+                  <div className={`${styles.routeNode} ${styles.routeNodeActive}`}>
+                    <span className={styles.routeNodeLabel}>VEHICLE NOW</span>
+                    <span className={styles.routeNodeValue}>{selectedVehicle.id}</span>
+                    {selectedVehicle.speedKmh && (
+                      <span className={styles.routeSpeed}>{selectedVehicle.speedKmh} km/h</span>
+                    )}
+                  </div>
+                  {selectedVehicle.destination && (
+                    <>
+                      <div className={styles.routeConnector}>
+                        <div className={styles.routeLine} />
+                        {selectedVehicle.etaMinutes ? (
+                          <span className={styles.routeEta}>ETA {selectedVehicle.etaMinutes} MIN</span>
+                        ) : <span className={styles.routeDist}>IN TRANSIT</span>}
+                        <div className={styles.routeLine} />
+                      </div>
+                      <div className={styles.routeNode}>
+                        <span className={styles.routeNodeLabel}>DESTINATION</span>
+                        <span className={styles.routeNodeValue}>{DEST_NAME[selectedVehicle.id] || 'Active Zone'}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className={styles.ledgerSection}>
+                <span className={styles.sectionTitle}>LIVE COORDINATES</span>
+                <div className={styles.gridData}>
+                  <div className={styles.gridRow}>
+                    <span className={styles.gridLabel}>LATITUDE</span>
+                    <span className="tech-code">{selectedVehicle.location.lat.toFixed(4)}° N</span>
+                  </div>
+                  <div className={styles.gridRow}>
+                    <span className={styles.gridLabel}>LONGITUDE</span>
+                    <span className="tech-code">{selectedVehicle.location.lng.toFixed(4)}° E</span>
+                  </div>
+                  {selectedVehicle.speedKmh && (
+                    <div className={styles.gridRow}>
+                      <span className={styles.gridLabel}>GROUND SPEED</span>
+                      <span className="tech-code">{selectedVehicle.speedKmh} km/h</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className={styles.cardFooter}>
-                <div className={styles.comms}>
-                  <Radio size={14} />
-                  <span>Radio: {veh.driverContact}</span>
-                </div>
-                <div className={styles.driverName}>
-                  <strong>{veh.driverName}</strong>
+              {/* Driver */}
+              <div className={styles.ledgerSection}>
+                <span className={styles.sectionTitle}>OPERATOR</span>
+                <div className={styles.gridData}>
+                  <div className={styles.gridRow}>
+                    <span className={styles.gridLabel}>DRIVER / PILOT</span>
+                    <span style={{ fontWeight: 700 }}>{selectedVehicle.driverName}</span>
+                  </div>
+                  <div className={styles.gridRow}>
+                    <span className={styles.gridLabel}>RADIO FREQUENCY</span>
+                    <span className="tech-code">{selectedVehicle.driverContact}</span>
+                  </div>
+                  <div className={styles.gridRow}>
+                    <span className={styles.gridLabel}>VEHICLE TYPE</span>
+                    <span>{VEHICLE_TYPE_LABELS[selectedVehicle.type] || selectedVehicle.type}</span>
+                  </div>
+                  <div className={styles.gridRow}>
+                    <span className={styles.gridLabel}>CAPACITY</span>
+                    <span>{selectedVehicle.capacity}</span>
+                  </div>
                 </div>
               </div>
+
+              <div className={styles.ledgerActions}>
+                <button className={styles.primaryActionBtn}>TRACK LIVE UNIT</button>
+              </div>
             </div>
-          ))
-        )}
+          ) : (
+            <div className={styles.emptyLedger}>
+              <TruckIcon size={32} />
+              <h4>SELECT A UNIT</h4>
+              <p>Click any fleet unit from the registry to view live mission details and route visualization.</p>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
 };
+
+/* ── Inline SVG Icons ── */
+const SearchIcon = ({ className }: { className?: string }) => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+  </svg>
+);
+
+const PinIcon = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 6 6 18M6 6l12 12" />
+  </svg>
+);
+
+const TruckIcon = ({ size = 24 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" />
+    <rect width="9" height="11" x="11" y="6" rx="2" />
+    <circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" />
+  </svg>
+);
 
 export default Vehicles;
