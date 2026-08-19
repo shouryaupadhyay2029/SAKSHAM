@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     FRONTEND_ORIGIN: str = "http://localhost:5173"
     PORT: int = 8000
     HOST: str = "0.0.0.0"
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/saksham_db"
 
     class Config:
         env_file = ".env"

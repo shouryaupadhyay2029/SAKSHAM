@@ -99,13 +99,16 @@ enum DeliveryStatus {
 }
 
 model Officer {
-  id        String   @id @default(uuid()) @db.Uuid
-  email     String   @unique
-  name      String
-  role      Role
-  region    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(uuid()) @db.Uuid
+  email              String   @unique
+  name               String
+  role               Role
+  region             String?
+  passwordHash       String   @default("")
+  verificationStatus String   @default("VERIFIED")
+  accountStatus      String   @default("ACTIVE")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   timelines   IncidentTimeline[]
   allocations Allocation[]

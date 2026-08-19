@@ -28,6 +28,9 @@ async function main() {
       name: 'Harshit Sharma',
       role: Role.OPERATOR,
       region: 'Delhi NCR',
+      passwordHash: '$2b$12$BiVWWTwcmB0/mgdBeEHYeudLVI0BOvBtr1T442FdeGeOg8PYZcjwO',
+      verificationStatus: 'VERIFIED',
+      accountStatus: 'ACTIVE',
     },
   });
 
@@ -37,6 +40,9 @@ async function main() {
       name: 'Pradeep Kumar',
       role: Role.REGIONAL_AUTHORITY,
       region: 'East Delhi',
+      passwordHash: '$2b$12$BiVWWTwcmB0/mgdBeEHYeudLVI0BOvBtr1T442FdeGeOg8PYZcjwO',
+      verificationStatus: 'VERIFIED',
+      accountStatus: 'ACTIVE',
     },
   });
 
@@ -46,6 +52,9 @@ async function main() {
       name: 'Rajesh Nair',
       role: Role.ADMIN,
       region: 'National',
+      passwordHash: '$2b$12$BiVWWTwcmB0/mgdBeEHYeudLVI0BOvBtr1T442FdeGeOg8PYZcjwO',
+      verificationStatus: 'VERIFIED',
+      accountStatus: 'ACTIVE',
     },
   });
 
