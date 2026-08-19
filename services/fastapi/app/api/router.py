@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from app.api.v1 import (
     health,
+    auth,
     incidents,
     demands,
     resources,
@@ -15,6 +16,9 @@ api_router = APIRouter()
 
 # Mount health
 api_router.include_router(health.router, prefix="/health", tags=["Health"])
+
+# Mount auth
+api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 
 # Mount domain resource routes
 api_router.include_router(incidents.router, prefix="/incidents", tags=["Incidents"])
