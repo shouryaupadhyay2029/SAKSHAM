@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { gsap } from 'gsap';
 import styles from './BootScreen.module.css';
+import { GradientBackground } from '../ui/almoayyed';
 
 interface BootScreenProps {
   onComplete: () => void;
@@ -175,24 +176,14 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
       className={`${styles.bootOverlay} ${isExiting ? styles.exiting : ''}`}
       style={{ '--active-index': activeIndexVal } as React.CSSProperties}
     >
-      {/* LEFT SURFACE - FOREST GREEN */}
-      <div className={`${styles.leftPanel} textureForest`}>
-        {/* Topographic Background Contour lines */}
-        <svg className={styles.topographySvg} viewBox="0 0 500 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M -50,100 C 100,120 200,50 350,150 C 450,220 300,350 550,300" stroke="rgba(33, 88, 63, 0.15)" strokeWidth="1.2" fill="none" />
-          <path d="M -50,400 C 150,380 180,450 300,410 C 420,370 350,550 550,500" stroke="rgba(33, 88, 63, 0.15)" strokeWidth="1.2" fill="none" />
-          <path d="M -50,700 C 100,720 250,680 320,750 C 390,820 400,900 550,850" stroke="rgba(33, 88, 63, 0.15)" strokeWidth="1.2" fill="none" />
-        </svg>
-
+      <GradientBackground className={styles.bootBackground} />
+      {/* LEFT SURFACE */}
+      <div className={styles.leftPanel}>
         {/* Curved seam SVGs */}
         <svg className={styles.seamSvg} viewBox="0 0 100 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
           <path 
-            d="M 0,0 L 40,0 C 40,120 38,180 42,250 C 46,330 45,380 50,450 C 55,520 56,580 58,650 C 60,720 54,780 50,850 C 47,910 50,950 50,1000 L 0,1000 Z" 
-            fill="#0C1D17" 
-          />
-          <path 
             d="M 40,0 C 40,120 38,180 42,250 C 46,330 45,380 50,450 C 55,520 56,580 58,650 C 60,720 54,780 50,850 C 47,910 50,950 50,1000" 
-            stroke="rgba(250, 248, 243, 0.22)" 
+            stroke="rgba(12, 29, 23, 0.15)" 
             strokeWidth="1.2" 
             fill="none" 
           />
@@ -203,8 +194,8 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
               cx={node.x} 
               cy={node.y} 
               r="4" 
-              fill="#0C1D17" 
-              stroke={i === activeIndexVal ? "#F47C20" : "rgba(250, 248, 243, 0.35)"} 
+              fill={i === activeIndexVal ? "#F47C20" : "#FAF8F3"} 
+              stroke={i === activeIndexVal ? "#F47C20" : "rgba(12, 29, 23, 0.25)"} 
               strokeWidth="1.5" 
             />
           ))}
