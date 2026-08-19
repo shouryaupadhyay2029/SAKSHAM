@@ -40,6 +40,80 @@
   border-bottom: 1px solid rgba(23, 61, 45, 0.08);
 }
 
+/* Dark animated gradient variant — overrides light-cream defaults */
+.heroSectionDark {
+  background-color: #0A1812; /* fallback before canvas renders */
+  border-bottom-color: rgba(244, 124, 32, 0.15);
+  color: var(--color-warm-white, #FAF8F3);
+
+  /* Remove the stacked-layer rounded corners + upward shadow that create the white gap */
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  box-shadow: none !important;
+  margin-top: 0 !important;
+
+  /* Pull section up behind the sticky header so there is zero gap */
+  margin-top: -84px !important;
+  padding-top: calc(120px + 84px) !important;
+  z-index: 0;
+}
+
+/* Watermark on dark backgrounds */
+.parallaxBackWatermarkDark {
+  color: rgba(250, 248, 243, 0.08) !important;
+}
+
+/* Editorial description on dark hero */
+.editorialDescDark {
+  color: rgba(250, 248, 243, 0.70) !important;
+}
+
+/* Feature rows on dark surface */
+.heroSectionDark .featureRow:hover,
+.heroSectionDark .featureRowActive {
+  background-color: rgba(250, 248, 243, 0.06);
+}
+
+.heroSectionDark .featureIconContainer {
+  color: rgba(250, 248, 243, 0.75);
+}
+
+.heroSectionDark .featureRowText h4 {
+  color: rgba(250, 248, 243, 0.90);
+}
+
+.heroSectionDark .featureRowText p {
+  color: rgba(250, 248, 243, 0.55);
+}
+
+.heroSectionDark .featureRowActive .featureIconContainer,
+.heroSectionDark .featureRow:hover .featureIconContainer {
+  color: #F47C20;
+}
+
+.heroSectionDark .featureRowActive .featureRowText h4,
+.heroSectionDark .featureRow:hover .featureRowText h4 {
+  color: #F47C20;
+}
+
+.heroSectionDark .featureRowActive .featureRowText p,
+.heroSectionDark .featureRow:hover .featureRowText p {
+  color: rgba(250, 248, 243, 0.80);
+}
+
+/* Ensure sectionContainer sits above the gradient canvas */
+.heroSectionDark > div {
+  position: relative;
+  z-index: 2;
+}
+
+/* Heading colour override on dark hero */
+.heroSectionDark .editorialHeading {
+  color: rgba(250, 248, 243, 0.96);
+}
+
+
+
 /* Relocated Telemetry Radar Section (Forest Background) */
 .radarSection {
   position: relative;

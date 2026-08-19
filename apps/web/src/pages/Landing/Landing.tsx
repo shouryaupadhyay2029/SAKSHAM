@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { SituationalAwarenessMap } from '../../components/map/SituationalAwarenessMap';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { GradientBackground } from '../../components/ui/noisy-gradient-backgrounds';
 
 gsap.registerPlugin(ScrollTrigger);
 import { 
@@ -526,7 +527,26 @@ export const Landing: React.FC = () => {
   return (
     <div ref={landingRef} className={styles.landingPage}>
       {/* 1. HOMEPAGE HERO — "See everything. Respond anywhere." with Live MapLibre Map */}
-      <section id="features" className={`${styles.heroSection} textureCream ${styles.stackedLayer}`}>
+      <section id="features" className={`${styles.heroSection} ${styles.heroSectionDark} ${styles.stackedLayer}`}>
+        {/* Animated noisy gradient background — SAKSHAM dark forest → burnt-orange palette */}
+        <GradientBackground
+          gradientType="radial-gradient"
+          gradientSize="140% 140%"
+          gradientOrigin="bottom-right"
+          colors={[
+            { color: 'rgba(10, 24, 18, 1)',   stop: '0%'   },
+            { color: 'rgba(14, 35, 26, 1)',   stop: '22%'  },
+            { color: 'rgba(18, 50, 36, 1)',   stop: '42%'  },
+            { color: 'rgba(120, 55, 10, 1)',  stop: '64%'  },
+            { color: 'rgba(180, 80, 15, 1)',  stop: '80%'  },
+            { color: 'rgba(215, 101, 16, 1)', stop: '91%'  },
+            { color: 'rgba(244, 124, 32, 1)', stop: '100%' },
+          ]}
+          noisePatternAlpha={22}
+          noiseIntensity={0.55}
+          noisePatternRefreshInterval={2}
+          noisePatternSize={90}
+        />
         <div className={styles.sectionContainer}>
           <div className={styles.editorialGrid}>
             
@@ -534,7 +554,7 @@ export const Landing: React.FC = () => {
             <div className={styles.leftContentCol}>
               <div className={styles.parallaxHeaderContainer}>
                 {/* Back Layer Watermark (Absolute Positioned behind content) */}
-                <h3 className={`${styles.parallaxBackWatermark} parallax-back`}>RESPONSE</h3>
+                <h3 className={`${styles.parallaxBackWatermark} ${styles.parallaxBackWatermarkDark} parallax-back`}>RESPONSE</h3>
 
                 {/* Front Layer (Eyebrow text) */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }} className="parallax-front">
@@ -558,7 +578,7 @@ export const Landing: React.FC = () => {
                   </span>
                 </h1>
               </div>
-              <p className={styles.editorialDesc}>
+              <p className={`${styles.editorialDesc} ${styles.editorialDescDark}`}>
                 Live maps, real-time feeds, and intelligent dashboards keep you ahead of every situation.
               </p>
 

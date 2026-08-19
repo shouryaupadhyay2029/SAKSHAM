@@ -15,6 +15,7 @@ import { ConnectionIndicator } from '../components/ui/SystemStates';
 import { useOperationalState } from '../context/OperationalStateContext';
 import { useAuth } from '../context/AuthContext';
 
+
 export const OperationsLayout: React.FC = () => {
   const [time, setTime] = useState(new Date());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -89,6 +90,7 @@ export const OperationsLayout: React.FC = () => {
 
   return (
     <div className={styles.layout}>
+
       {/* Top navigation system */}
       <header className={styles.topbar}>
         <div className={styles.topbarLeft}>

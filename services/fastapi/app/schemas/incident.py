@@ -7,6 +7,7 @@ from app.schemas.common import Severity
 class IncidentStatus(str, Enum):
     REPORTED = "REPORTED"
     VERIFIED = "VERIFIED"
+    AWAITING_RESPONSE = "AWAITING_RESPONSE"
     AWAITING_MATCH = "AWAITING_MATCH"
     MATCHED = "MATCHED"
     DISPATCHED = "DISPATCHED"

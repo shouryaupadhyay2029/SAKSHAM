@@ -3,6 +3,16 @@
    OperationsLayout.module.css
    ═══════════════════════════════════════════════════════════ */
 
+/* ── Fixed WebGL shader canvas — full viewport background ── */
+.shaderBg {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .layout {
   display: flex;
   flex-direction: column;
@@ -11,9 +21,9 @@
   background-color: #FAF8F3;
   color: #101513;
   font-family: var(--font-sans), sans-serif;
-}
+  }
 
-/* ── Topbar (Light Cream — matches landing page header) ── */
+/* ── Topbar (light cream with blur — floats above the shader) ── */
 .topbar {
   display: flex;
   justify-content: space-between;
@@ -23,8 +33,9 @@
   color: #0B2119;
   padding: 0 24px;
   border-bottom: 1px solid rgba(11, 33, 25, 0.08);
-  z-index: 100;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 200;
 }
 
 .topbarLeft {

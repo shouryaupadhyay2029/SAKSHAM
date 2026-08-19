@@ -9,6 +9,8 @@ import {
   FileText, Phone, Info, Zap, Activity, BookOpen,
 } from 'lucide-react';
 import styles from './PublicLayout.module.css';
+import { GradientBackground } from '../components/ui/noisy-gradient-backgrounds';
+import { ShaderBackground } from '../components/ui/adisyon-shader';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -286,8 +288,18 @@ export const PublicLayout: React.FC = () => {
   const toggleMobile = (key: string) =>
     setMobileExpanded(prev => (prev === key ? null : key));
 
+  // Show shader on public sub-pages (not home, not login)
+  const isPublicSubPage = !isHome
+    && !location.pathname.startsWith('/officer')
+    && !location.pathname.startsWith('/operations/command-center')
+    && !location.pathname.startsWith('/operations/matching')
+    && !location.pathname.startsWith('/operations/dispatch')
+    && !location.pathname.startsWith('/operations/delivery');
+
   return (
     <div className={styles.container}>
+      {/* WebGL shader — only on public sub-pages (Shelters, Incidents, Resources, etc.) */}
+      {isPublicSubPage && <ShaderBackground className={styles.shaderCanvas} />}
 
       {/* ── ANNOUNCEMENT BAR ── */}
       {isAlertVisible && (
@@ -306,7 +318,28 @@ export const PublicLayout: React.FC = () => {
       )}
 
       {/* ── MAIN NAV HEADER ── */}
-      <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''} ${isCompressed ? styles.headerCompressed : ''}`}>
+      <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''} ${isCompressed ? styles.headerCompressed : ''} ${isHome ? styles.headerSticky : ''} ${isHome && !isScrolled ? styles.headerHomeDark : ''}`}>
+        {/* Animated gradient background — orange-dominant, mirrors hero palette */}
+        {isHome && !isScrolled && (
+          <GradientBackground
+            gradientType="radial-gradient"
+            gradientSize="220% 600%"
+            gradientOrigin="bottom-right"
+            colors={[
+              { color: 'rgba(244, 124, 32, 1)', stop: '0%'   },
+              { color: 'rgba(215, 101, 16, 1)', stop: '18%'  },
+              { color: 'rgba(180, 80,  15, 1)', stop: '36%'  },
+              { color: 'rgba(120, 55,  10, 1)', stop: '55%'  },
+              { color: 'rgba(18,  50,  36, 1)', stop: '75%'  },
+              { color: 'rgba(14,  35,  26, 1)', stop: '88%'  },
+              { color: 'rgba(10,  24,  18, 1)', stop: '100%' },
+            ]}
+            noisePatternAlpha={18}
+            noiseIntensity={0.45}
+            noisePatternRefreshInterval={2}
+            noisePatternSize={90}
+          />
+        )}
         <div className={styles.headerWrapper}>
 
           {/* Brand */}
@@ -436,22 +469,22 @@ export const PublicLayout: React.FC = () => {
                     fontSize: '10px',
                     fontWeight: 700,
                     letterSpacing: '0.1em',
-                    color: 'rgba(26,47,35,0.55)',
+                    color: isHome && !isScrolled ? 'rgba(250,248,243,0.55)' : 'rgba(26,47,35,0.55)',
                     textDecoration: 'none',
                     textTransform: 'uppercase',
                     fontFamily: 'Inter, sans-serif',
-                    border: '1px solid rgba(26,47,35,0.18)',
+                    border: `1px solid ${isHome && !isScrolled ? 'rgba(250,248,243,0.22)' : 'rgba(26,47,35,0.18)'}`,
                     borderRadius: '3px',
                     padding: '6px 12px',
                     transition: 'all 0.2s',
                     whiteSpace: 'nowrap',
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLAnchorElement).style.color = '#1A2F23';
-                    (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(26,47,35,0.04)';
+                    (e.currentTarget as HTMLAnchorElement).style.color = isHome && !isScrolled ? '#FAF8F3' : '#1A2F23';
+                    (e.currentTarget as HTMLAnchorElement).style.background = isHome && !isScrolled ? 'rgba(250,248,243,0.08)' : 'rgba(26,47,35,0.04)';
                   }}
                   onMouseLeave={e => {
-                    (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(26,47,35,0.55)';
+                    (e.currentTarget as HTMLAnchorElement).style.color = isHome && !isScrolled ? 'rgba(250,248,243,0.55)' : 'rgba(26,47,35,0.55)';
                     (e.currentTarget as HTMLAnchorElement).style.background = 'none';
                   }}
                 >

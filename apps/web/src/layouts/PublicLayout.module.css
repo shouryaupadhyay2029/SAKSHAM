@@ -10,10 +10,23 @@
   flex-direction: column;
   min-height: 100vh;
   background-color: var(--color-bg-base);
+  position: relative;
+}
+
+/* WebGL shader canvas — fixed full-bleed, behind all content */
+.shaderCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .main {
   flex-grow: 1;
+  position: relative;
+  z-index: 1;
 }
 
 /* ── 1. TOP ANNOUNCEMENT / STATUS BAR ─────────────────────── */
@@ -82,15 +95,76 @@
   transition:
     transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
     background-color 400ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 400ms cubic-bezier(0.22, 1, 0.36, 1);
+    border-color 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 400ms cubic-bezier(0.22, 1, 0.36, 1);
   box-sizing: border-box;
 }
 
+/* ── Dark gradient variant: home page at scroll-top ─────────── */
+.headerHomeDark {
+  background-color: transparent !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* Sticky positioning — used on home page so header overlays the hero */
+.headerSticky {
+  position: sticky;
+  top: 0;
+  z-index: 1002;
+}
+
+/* Ensure headerWrapper content sits above the canvas */
+.headerHomeDark .headerWrapper {
+  position: relative;
+  z-index: 3;
+}
+
+/* Nav links go ivory on dark hero */
+.headerHomeDark .navLink {
+  color: rgba(250, 248, 243, 0.70);
+}
+.headerHomeDark .navLink:hover,
+.headerHomeDark .navLinkActive {
+  color: rgba(250, 248, 243, 1);
+}
+.headerHomeDark .chevron {
+  opacity: 0.5;
+}
+
+/* Logo text on dark */
+.headerHomeDark .logoText {
+  color: #F0956A;
+}
+
+/* SOS link on dark */
+.headerHomeDark .sosLink {
+  color: #F0956A;
+}
+.headerHomeDark .sosLink:hover {
+  color: #FAF8F3;
+}
+
+/* Search button on dark */
+.headerHomeDark .searchCircleButton {
+  border-color: rgba(250, 248, 243, 0.20);
+  color: rgba(250, 248, 243, 0.65);
+}
+.headerHomeDark .searchCircleButton:hover {
+  border-color: rgba(250, 248, 243, 0.55);
+  color: #FAF8F3;
+}
+
+/* Mobile hamburger on dark */
+.headerHomeDark .mobileMenuButton {
+  color: rgba(250, 248, 243, 0.80);
+}
+
 .headerScrolled {
-  box-shadow: 0 4px 20px rgba(12,29,23,0.02);
+  box-shadow: 0 4px 20px rgba(12,29,23,0.06);
   background-color: rgba(250,248,243,0.97);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(12,29,23,0.06);
 }
 
