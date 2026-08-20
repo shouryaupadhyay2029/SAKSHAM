@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useTranslation } from 'react-i18next';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { SituationalAwarenessMap } from '../../components/map/SituationalAwarenessMap';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
@@ -25,7 +24,6 @@ import {
 import styles from './Landing.module.css';
 
 export const Landing: React.FC = () => {
-  const { t } = useTranslation();
   const { incidents, vehicles, shelters, addIncidentFromSOS } = useOperationalState();
   const [sosSubmitted, setSosSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -557,12 +555,12 @@ export const Landing: React.FC = () => {
             <div className={styles.leftContentCol}>
               <div className={styles.parallaxHeaderContainer}>
                 {/* Back Layer Watermark (Absolute Positioned behind content) */}
-                 <h3 className={`${styles.parallaxBackWatermark} ${styles.parallaxBackWatermarkDark} parallax-back`}>{t('hero.backText')}</h3>
+                <h3 className={`${styles.parallaxBackWatermark} ${styles.parallaxBackWatermarkDark} parallax-back`}>RESPONSE</h3>
 
                 {/* Front Layer (Eyebrow text) */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }} className="parallax-front">
                   <span className={styles.eyebrowText} style={{ marginBottom: 0 }}>
-                    {t('hero.eyebrow')}
+                    LIVE SITUATIONAL AWARENESS
                   </span>
                   <PageGuideTrigger />
                 </div>
@@ -571,18 +569,18 @@ export const Landing: React.FC = () => {
                 <h1 className={`${styles.editorialHeading} parallax-mid`}>
                   <span className={styles.headingLineMask}>
                     <span className={styles.headingLine}>
-                      {t('hero.seeEverything')}
+                      See everything.
                     </span>
                   </span>
                   <span className={styles.headingLineMask}>
                     <span className={`${styles.headingLine} ${styles.accentOrangeText}`}>
-                      {t('hero.respondAnywhere')}
+                      Respond anywhere.
                     </span>
                   </span>
                 </h1>
               </div>
               <p className={`${styles.editorialDesc} ${styles.editorialDescDark}`}>
-                {t('hero.desc')}
+                Live maps, real-time feeds, and intelligent dashboards keep you ahead of every situation.
               </p>
 
               {/* Capability feature stack with dynamic motion overlays */}
@@ -599,8 +597,8 @@ export const Landing: React.FC = () => {
                     <MapPin size={16} />
                   </div>
                   <div className={styles.featureRowText}>
-                    <h4>{t('hero.f1_title')}</h4>
-                    <p>{t('hero.f1_subtitle')}</p>
+                    <h4>REAL-TIME INCIDENT MAP</h4>
+                    <p>Real-time location &amp; status</p>
                   </div>
                   <span className={styles.orangeIndicator} />
                 </div>
@@ -617,8 +615,8 @@ export const Landing: React.FC = () => {
                     <CloudSun size={16} />
                   </div>
                   <div className={styles.featureRowText}>
-                    <h4>{t('hero.f2_title')}</h4>
-                    <p>{t('hero.f2_subtitle')}</p>
+                    <h4>WEATHER INTELLIGENCE</h4>
+                    <p>Predictive alerts &amp; risk zones</p>
                   </div>
                   <span className={styles.orangeIndicator} />
                 </div>
@@ -635,8 +633,8 @@ export const Landing: React.FC = () => {
                     <Truck size={16} />
                   </div>
                   <div className={styles.featureRowText}>
-                    <h4>{t('hero.f3_title')}</h4>
-                    <p>{t('hero.f3_subtitle')}</p>
+                    <h4>RESOURCE TRACKING</h4>
+                    <p>Assets, supplies &amp; teams live</p>
                   </div>
                   <span className={styles.orangeIndicator} />
                 </div>
@@ -653,8 +651,8 @@ export const Landing: React.FC = () => {
                     <BarChart3 size={16} />
                   </div>
                   <div className={styles.featureRowText}>
-                    <h4>{t('hero.f4_title')}</h4>
-                    <p>{t('hero.f4_subtitle')}</p>
+                    <h4>DECISION SUPPORT</h4>
+                    <p>Data-driven insights for smarter choices</p>
                   </div>
                   <span className={styles.orangeIndicator} />
                 </div>
@@ -663,7 +661,7 @@ export const Landing: React.FC = () => {
               {/* Explore text link */}
               <div>
                 <Link to="/operations/command-center" className={styles.exploreTextLink}>
-                  {t('hero.exploreCommand')} &rarr;
+                  EXPLORE COMMAND CENTER &rarr;
                 </Link>
               </div>
             </div>

@@ -4,8 +4,12 @@ from app.schemas.delivery import DeliveryResponse, DeliveryCreate, DeliveryStatu
 from app.domain.delivery.service import DeliveryService
 from app.api.dependencies import get_delivery_service, get_current_officer
 from app.core.models import OfficerModel
+from app.realtime.connection_manager import connection_manager
+from app.realtime.publisher import EventPublisher
+from app.realtime.events import EventType, RealtimeEvent
 
 router = APIRouter()
+publisher = EventPublisher(connection_manager)
 
 @router.get("", response_model=List[DeliveryResponse], summary="List all deliveries")
 async def list_deliveries(
@@ -41,7 +45,19 @@ async def create_delivery(
     service: DeliveryService = Depends(get_delivery_service),
     current_officer: OfficerModel = Depends(get_current_officer)
 ):
-    return service.create_delivery(delivery, officer=current_officer)
+    created = service.create_delivery(delivery, officer=current_officer)
+    try:
+        await publisher.publish(
+            RealtimeEvent(
+                event=EventType.DELIVERY_CREATED,
+                entityType="delivery",
+                entityId=str(created.id),
+                data=DeliveryResponse.model_validate(created).model_dump(mode="json"),
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ WebSocket publish failed: {e}")
+    return created
 
 @router.patch("/{delivery_id}/status", response_model=DeliveryResponse, summary="Update delivery status via transition check")
 async def update_delivery_status(
@@ -50,7 +66,7 @@ async def update_delivery_status(
     service: DeliveryService = Depends(get_delivery_service),
     current_officer: OfficerModel = Depends(get_current_officer)
 ):
-    return service.update_delivery_status(
+    updated = service.update_delivery_status(
         delivery_id, 
         status_update.status, 
         officer=current_officer, 
@@ -58,6 +74,18 @@ async def update_delivery_status(
         confirmation=status_update.confirmation, 
         notes=status_update.notes
     )
+    try:
+        await publisher.publish(
+            RealtimeEvent(
+                event=EventType.DELIVERY_STATUS_CHANGED,
+                entityType="delivery",
+                entityId=str(updated.id),
+                data=DeliveryResponse.model_validate(updated).model_dump(mode="json"),
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ WebSocket publish failed: {e}")
+    return updated
 
 @router.post("/{delivery_id}/verify", response_model=DeliveryResponse, summary="Record verification details and quantity for a delivery")
 async def verify_delivery(
@@ -66,13 +94,25 @@ async def verify_delivery(
     service: DeliveryService = Depends(get_delivery_service),
     current_officer: OfficerModel = Depends(get_current_officer)
 ):
-    return service.verify_delivery(
+    updated = service.verify_delivery(
         delivery_id, 
         verify_req.verifiedQuantity, 
         notes=verify_req.notes, 
         recipient_name=verify_req.recipientName, 
         officer=current_officer
     )
+    try:
+        await publisher.publish(
+            RealtimeEvent(
+                event=EventType.DELIVERY_STATUS_CHANGED,
+                entityType="delivery",
+                entityId=str(updated.id),
+                data=DeliveryResponse.model_validate(updated).model_dump(mode="json"),
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ WebSocket publish failed: {e}")
+    return updated
 
 @router.post("/{delivery_id}/complete", response_model=DeliveryResponse, summary="Complete the delivery and update resource inventory atomically")
 async def complete_delivery(
@@ -80,7 +120,19 @@ async def complete_delivery(
     service: DeliveryService = Depends(get_delivery_service),
     current_officer: OfficerModel = Depends(get_current_officer)
 ):
-    return service.complete_delivery(delivery_id, officer=current_officer)
+    updated = service.complete_delivery(delivery_id, officer=current_officer)
+    try:
+        await publisher.publish(
+            RealtimeEvent(
+                event=EventType.DELIVERY_STATUS_CHANGED,
+                entityType="delivery",
+                entityId=str(updated.id),
+                data=DeliveryResponse.model_validate(updated).model_dump(mode="json"),
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ WebSocket publish failed: {e}")
+    return updated
 
 @router.post("/{delivery_id}/cancel", response_model=DeliveryResponse, summary="Cancel the delivery operation")
 async def cancel_delivery(
@@ -88,4 +140,16 @@ async def cancel_delivery(
     service: DeliveryService = Depends(get_delivery_service),
     current_officer: OfficerModel = Depends(get_current_officer)
 ):
-    return service.update_delivery_status(delivery_id, DeliveryStatus.CANCELLED, officer=current_officer)
+    updated = service.update_delivery_status(delivery_id, DeliveryStatus.CANCELLED, officer=current_officer)
+    try:
+        await publisher.publish(
+            RealtimeEvent(
+                event=EventType.DELIVERY_STATUS_CHANGED,
+                entityType="delivery",
+                entityId=str(updated.id),
+                data=DeliveryResponse.model_validate(updated).model_dump(mode="json"),
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ WebSocket publish failed: {e}")
+    return updated

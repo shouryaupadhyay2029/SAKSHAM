@@ -11,8 +11,6 @@ import {
 import styles from './PublicLayout.module.css';
 import { GradientBackground } from '../components/ui/noisy-gradient-backgrounds';
 
-import { useTranslation } from 'react-i18next';
-
 gsap.registerPlugin(ScrollTrigger);
 
 // ─── Dropdown data ─────────────────────────────────────────────────────────
@@ -20,15 +18,15 @@ const GET_HELP_ITEMS = [
   {
     icon: Home,
     to: '/operations/shelters',
-    title: 'menu.shelters',
-    desc: 'menu.sheltersDesc',
+    title: 'Shelter Network',
+    desc: 'Find nearby shelters and available capacity',
     highlight: false,
   },
   {
     icon: Phone,
     to: '/help',
-    title: 'menu.helplines',
-    desc: 'menu.helplinesDesc',
+    title: 'Help & Helplines',
+    desc: 'Emergency contacts, protocols and useful information',
     highlight: false,
   },
 ];
@@ -37,20 +35,20 @@ const RESPONSE_ITEMS = [
   {
     icon: AlertTriangle,
     to: '/operations/incidents',
-    title: 'menu.incidents',
-    desc: 'menu.incidentsDesc',
+    title: 'Incident Monitoring',
+    desc: 'Live threat & incident tracking',
   },
   {
     icon: Zap,
     to: '/operations/requests',
-    title: 'menu.requests',
-    desc: 'menu.requestsDesc',
+    title: 'Demand Requests',
+    desc: 'Track and review active requests',
   },
   {
     icon: FileText,
     to: '/operations/analytics',
-    title: 'menu.analytics',
-    desc: 'menu.analyticsDesc',
+    title: 'Response Overview',
+    desc: 'Analytics, metrics and reports',
   },
 ];
 
@@ -58,26 +56,26 @@ const RESOURCES_ITEMS = [
   {
     icon: Package,
     to: '/operations/resources',
-    title: 'menu.registry',
-    desc: 'menu.registryDesc',
+    title: 'Resource Registry',
+    desc: 'Available equipment and supplies',
   },
   {
     icon: Truck,
     to: '/operations/vehicles',
-    title: 'menu.vehicles',
-    desc: 'menu.vehiclesDesc',
+    title: 'Vehicle Fleet',
+    desc: 'Deploy and track field vehicles',
   },
   {
     icon: Home,
     to: '/operations/shelters',
-    title: 'menu.shelters',
-    desc: 'menu.sheltersDesc',
+    title: 'Shelter Network',
+    desc: 'Shelter locations & capacity',
   },
   {
     icon: FileText,
     to: '/help',
-    title: 'menu.documentation',
-    desc: 'menu.documentationDesc',
+    title: 'Help & Documentation',
+    desc: 'Protocols, guides and emergency contacts',
   },
 ];
 
@@ -85,20 +83,20 @@ const ABOUT_ITEMS = [
   {
     icon: Activity,
     anchor: '#how-it-works',
-    title: 'menu.howItWorks',
-    desc: 'menu.howItWorksDesc',
+    title: 'How It Works',
+    desc: 'Understand the SAKSHAM response workflow',
   },
   {
     icon: BookOpen,
     anchor: '#metrics',
-    title: 'menu.impact',
-    desc: 'menu.impactDesc',
+    title: 'Impact',
+    desc: 'Network reach and response statistics',
   },
   {
     icon: Info,
     anchor: '#about',
-    title: 'menu.aboutSaksham',
-    desc: 'menu.aboutSakshamDesc',
+    title: 'About SAKSHAM',
+    desc: 'Mission, team and operational mandate',
   },
 ];
 
@@ -171,15 +169,14 @@ interface DropItemProps {
   onClick?: () => void;
 }
 const DropItem: React.FC<DropItemProps> = ({ icon: Icon, to, anchor, title, desc, highlight, active, onClick }) => {
-  const { t } = useTranslation();
   const inner = (
     <div className={`${styles.dropItem} ${highlight ? styles.dropItemHighlight : ''} ${active ? styles.dropItemActive : ''}`}>
       <div className={`${styles.dropIcon} ${highlight ? styles.dropIconHighlight : active ? styles.dropIconActive : ''}`}>
         <Icon size={14} />
       </div>
       <div className={styles.dropText}>
-        <span className={styles.dropTitle}>{t(title)}</span>
-        <span className={styles.dropDesc}>{t(desc)}</span>
+        <span className={styles.dropTitle}>{title}</span>
+        <span className={styles.dropDesc}>{desc}</span>
       </div>
     </div>
   );
@@ -202,7 +199,6 @@ export const PublicLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, authUser, logout } = useAuth();
-  const { t, i18n } = useTranslation();
 
   const isHome = location.pathname === '/';
 
@@ -292,9 +288,9 @@ export const PublicLayout: React.FC = () => {
         <div className={styles.announcementBar}>
           <div className={styles.announcementContent}>
             <span className={styles.alertPulseDot}>●</span>
-            {t('nav.alertBanner')}{' '}
+            SAKSHAM OPERATIONS ALERT: RESPONSE CHANNELS &amp; LOGISTICS DELEGATION ONLINE.{' '}
             <Link to="/operations/command-center" className={styles.announcementLink}>
-              {t('nav.enterCommand')}
+              ENTER COMMAND CENTER &rarr;
             </Link>
           </div>
           <button className={styles.alertCloseButton} onClick={() => setIsAlertVisible(false)}>
@@ -330,16 +326,16 @@ export const PublicLayout: React.FC = () => {
 
           {/* Brand */}
           <div className={styles.brandArea}>
-            <img 
-              src="/logo.png" 
-              alt="SAKSHAM Logo" 
-              style={{ 
-                width: isScrolled ? '60px' : '85px', 
-                height: isScrolled ? '60px' : '85px', 
-                objectFit: 'contain', 
+            <img
+              src="/logo.png"
+              alt="SAKSHAM Logo"
+              style={{
+                width: isScrolled ? '60px' : '85px',
+                height: isScrolled ? '60px' : '85px',
+                objectFit: 'contain',
                 marginRight: '14px',
                 transition: 'width 400ms cubic-bezier(0.22, 1, 0.36, 1), height 400ms cubic-bezier(0.22, 1, 0.36, 1)'
-              }} 
+              }}
             />
             <Link to="/" className={styles.logoText}>SAKSHAM</Link>
           </div>
@@ -348,10 +344,10 @@ export const PublicLayout: React.FC = () => {
           <nav className={styles.nav} aria-label="Primary navigation">
 
             {/* GET HELP */}
-            <NavItem label={t('nav.getHelp')} isActive={location.pathname === '/report' || location.pathname === '/help'}>
+            <NavItem label="Get Help" isActive={location.pathname === '/report' || location.pathname === '/help'}>
               <div className={styles.dropPanel} style={{ minWidth: 280 }}>
                 <div className={styles.dropPanelHead}>
-                  <span className={styles.dropPanelLabel}>{t('nav.emergencyTitle')}</span>
+                  <span className={styles.dropPanelLabel}>CIVILIAN EMERGENCY</span>
                 </div>
                 <div className={styles.dropPanelBody}>
                   {GET_HELP_ITEMS.map(item => (
@@ -363,12 +359,12 @@ export const PublicLayout: React.FC = () => {
 
             {/* RESPONSE */}
             <NavItem
-              label={t('nav.response')}
+              label="Response"
               isActive={location.pathname.startsWith('/operations')}
             >
               <div className={styles.dropPanel} style={{ minWidth: 320 }}>
                 <div className={styles.dropPanelHead}>
-                  <span className={styles.dropPanelLabel}>{t('nav.operationalTitle')}</span>
+                  <span className={styles.dropPanelLabel}>OPERATIONAL RESPONSE</span>
                 </div>
                 <div className={styles.dropPanelBody}>
                   {RESPONSE_ITEMS.map(item => (
@@ -379,10 +375,10 @@ export const PublicLayout: React.FC = () => {
             </NavItem>
 
             {/* RESOURCES */}
-            <NavItem label={t('nav.resources')}>
+            <NavItem label="Resources">
               <div className={styles.dropPanel} style={{ minWidth: 300 }}>
                 <div className={styles.dropPanelHead}>
-                  <span className={styles.dropPanelLabel}>{t('nav.availableResources')}</span>
+                  <span className={styles.dropPanelLabel}>AVAILABLE RESOURCES</span>
                 </div>
                 <div className={styles.dropPanelBody}>
                   {RESOURCES_ITEMS.map(item => (
@@ -394,39 +390,17 @@ export const PublicLayout: React.FC = () => {
 
             {/* ABOUT */}
             <NavItem
-              label={t('nav.about')}
+              label="About"
               isActive={activeSection === '#about' || activeSection === '#metrics' || activeSection === '#how-it-works'}
             >
               <div className={styles.dropPanel} style={{ minWidth: 260 }}>
                 <div className={styles.dropPanelHead}>
-                  <span className={styles.dropPanelLabel}>{t('nav.aboutTitle')}</span>
+                  <span className={styles.dropPanelLabel}>ABOUT SAKSHAM</span>
                 </div>
                 <div className={styles.dropPanelBody}>
                   {ABOUT_ITEMS.map(item => (
                     <DropItem key={item.anchor} {...item} />
                   ))}
-                </div>
-              </div>
-            </NavItem>
-
-            {/* LANGUAGE SELECTOR */}
-            <NavItem label={i18n.language === 'hi' ? 'हिन्दी' : 'English'}>
-              <div className={styles.dropPanel} style={{ minWidth: 120 }}>
-                <div className={styles.dropPanelBody} style={{ padding: '6px' }}>
-                  <button
-                    onClick={() => i18n.changeLanguage('en')}
-                    className={`${styles.dropItem} ${i18n.language === 'en' ? styles.dropItemActive : ''}`}
-                    style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left', display: 'block', padding: '8px 10px', fontSize: '12px', fontWeight: i18n.language === 'en' ? 700 : 500 }}
-                  >
-                    English
-                  </button>
-                  <button
-                    onClick={() => i18n.changeLanguage('hi')}
-                    className={`${styles.dropItem} ${i18n.language === 'hi' ? styles.dropItemActive : ''}`}
-                    style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left', display: 'block', padding: '8px 10px', fontSize: '12px', fontWeight: i18n.language === 'hi' ? 700 : 500 }}
-                  >
-                    हिन्दी
-                  </button>
                 </div>
               </div>
             </NavItem>
@@ -438,14 +412,14 @@ export const PublicLayout: React.FC = () => {
             {/* Civilian SOS — high-visibility standalone link */}
             <Link to="/report" className={styles.sosLink} aria-label="Civilian SOS — report an emergency">
               <span className={styles.sosDot} />
-              {t('nav.civilianSos')}
+              Civilian SOS
             </Link>
 
             {/* Officer Login / authenticated user badge */}
             {isAuthenticated && authUser ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Link to="/operations" className={styles.primaryCta}>
-                  {t('nav.commandCenter')} →
+                  Command Centre →
                 </Link>
                 <button
                   onClick={() => { logout(); navigate('/'); }}
@@ -467,14 +441,14 @@ export const PublicLayout: React.FC = () => {
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; }}
                   aria-label="Sign out"
                 >
-                  {t('nav.logout')}
+                  Sign Out
                 </button>
               </div>
             ) : (
               <>
                 {/* Enter Command Center pill */}
                 <Link to="/operations" className={styles.primaryCta}>
-                  {t('nav.commandCenter')} →
+                  Enter Command Center →
                 </Link>
 
                 {/* Officer Login — understated */}
@@ -506,7 +480,7 @@ export const PublicLayout: React.FC = () => {
                     (e.currentTarget as HTMLAnchorElement).style.background = 'none';
                   }}
                 >
-                  {t('nav.officerLogin')}
+                  Officer Login
                 </Link>
               </>
             )}
@@ -537,7 +511,7 @@ export const PublicLayout: React.FC = () => {
           {/* EMERGENCY FIRST */}
           <Link to="/report" className={styles.mobileSosButton} onClick={() => setIsMobileOpen(false)}>
             <AlertCircle size={16} />
-            {t('nav.civilianSos')}
+            Civilian SOS — Report an Emergency
           </Link>
 
           <div className={styles.mobileDivider} />
@@ -545,14 +519,14 @@ export const PublicLayout: React.FC = () => {
           {/* GET HELP accordion */}
           <div className={styles.mobileAccordion}>
             <button className={styles.mobileAccordionToggle} onClick={() => toggleMobile('help')}>
-              <span>{t('nav.getHelp')}</span>
+              <span>Get Help</span>
               <ChevronDown size={14} className={mobileExpanded === 'help' ? styles.chevronOpen : ''} />
             </button>
             {mobileExpanded === 'help' && (
               <div className={styles.mobileAccordionBody}>
                 {GET_HELP_ITEMS.map(item => (
                   <Link key={item.to} to={item.to} className={styles.mobileSubLink} onClick={() => setIsMobileOpen(false)}>
-                    <item.icon size={13} /> {t(item.title)}
+                    <item.icon size={13} /> {item.title}
                   </Link>
                 ))}
               </div>
@@ -562,14 +536,14 @@ export const PublicLayout: React.FC = () => {
           {/* RESPONSE accordion */}
           <div className={styles.mobileAccordion}>
             <button className={styles.mobileAccordionToggle} onClick={() => toggleMobile('response')}>
-              <span>{t('nav.response')}</span>
+              <span>Response</span>
               <ChevronDown size={14} className={mobileExpanded === 'response' ? styles.chevronOpen : ''} />
             </button>
             {mobileExpanded === 'response' && (
               <div className={styles.mobileAccordionBody}>
                 {RESPONSE_ITEMS.map(item => (
                   <Link key={item.to} to={item.to} className={styles.mobileSubLink} onClick={() => setIsMobileOpen(false)}>
-                    <item.icon size={13} /> {t(item.title)}
+                    <item.icon size={13} /> {item.title}
                   </Link>
                 ))}
               </div>
@@ -579,14 +553,14 @@ export const PublicLayout: React.FC = () => {
           {/* RESOURCES accordion */}
           <div className={styles.mobileAccordion}>
             <button className={styles.mobileAccordionToggle} onClick={() => toggleMobile('resources')}>
-              <span>{t('nav.resources')}</span>
+              <span>Resources</span>
               <ChevronDown size={14} className={mobileExpanded === 'resources' ? styles.chevronOpen : ''} />
             </button>
             {mobileExpanded === 'resources' && (
               <div className={styles.mobileAccordionBody}>
                 {RESOURCES_ITEMS.map(item => (
                   <Link key={item.to} to={item.to} className={styles.mobileSubLink} onClick={() => setIsMobileOpen(false)}>
-                    <item.icon size={13} /> {t(item.title)}
+                    <item.icon size={13} /> {item.title}
                   </Link>
                 ))}
               </div>
@@ -596,43 +570,25 @@ export const PublicLayout: React.FC = () => {
           {/* ABOUT accordion */}
           <div className={styles.mobileAccordion}>
             <button className={styles.mobileAccordionToggle} onClick={() => toggleMobile('about')}>
-              <span>{t('nav.about')}</span>
+              <span>About</span>
               <ChevronDown size={14} className={mobileExpanded === 'about' ? styles.chevronOpen : ''} />
             </button>
             {mobileExpanded === 'about' && (
               <div className={styles.mobileAccordionBody}>
                 {ABOUT_ITEMS.map(item => (
                   <a key={item.anchor} href={item.anchor} className={styles.mobileSubLink} onClick={() => setIsMobileOpen(false)}>
-                    <item.icon size={13} /> {t(item.title)}
+                    <item.icon size={13} /> {item.title}
                   </a>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Mobile Language Selector */}
-          <div className={styles.mobileAccordion} style={{ borderTop: '1px solid rgba(26,47,35,0.08)', paddingTop: '10px' }}>
-            <div style={{ display: 'flex', gap: '10px', padding: '10px 14px' }}>
-              <button
-                onClick={() => { i18n.changeLanguage('en'); setIsMobileOpen(false); }}
-                style={{ flex: 1, padding: '8px', border: '1px solid rgba(26,47,35,0.15)', borderRadius: '4px', background: i18n.language === 'en' ? 'rgba(26,47,35,0.08)' : 'none', color: '#1a2f23', fontWeight: 700 }}
-              >
-                English
-              </button>
-              <button
-                onClick={() => { i18n.changeLanguage('hi'); setIsMobileOpen(false); }}
-                style={{ flex: 1, padding: '8px', border: '1px solid rgba(26,47,35,0.15)', borderRadius: '4px', background: i18n.language === 'hi' ? 'rgba(26,47,35,0.08)' : 'none', color: '#1a2f23', fontWeight: 700 }}
-              >
-                हिन्दी
-              </button>
-            </div>
-          </div>
-
         </div>
 
         {/* Mobile Command Center CTA */}
         <Link to="/operations" className={styles.mobileCtaButton} onClick={() => setIsMobileOpen(false)}>
-          <span>{t('nav.commandCenter').toUpperCase()}</span>
+          <span>ENTER COMMAND CENTER</span>
           <ArrowRightSideIcon />
         </Link>
 
@@ -657,7 +613,7 @@ export const PublicLayout: React.FC = () => {
             }}
             onClick={() => setIsMobileOpen(false)}
           >
-            {t('nav.officerLogin')}
+            Officer Login
           </Link>
         )}
       </div>

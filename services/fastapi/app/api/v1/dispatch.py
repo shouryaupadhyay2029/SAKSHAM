@@ -5,8 +5,12 @@ from app.domain.dispatch.service import DispatchService
 from app.api.dependencies import get_dispatch_service, get_current_officer
 from app.core.models import OfficerModel
 from app.core.exceptions import SakshamException
+from app.realtime.connection_manager import connection_manager
+from app.realtime.publisher import EventPublisher
+from app.realtime.events import EventType, RealtimeEvent
 
 router = APIRouter()
+publisher = EventPublisher(connection_manager)
 
 @router.get("", response_model=List[DispatchResponse], summary="List all dispatches")
 async def list_dispatches(
@@ -25,7 +29,19 @@ async def create_dispatch(
     service: DispatchService = Depends(get_dispatch_service),
     current_officer: OfficerModel = Depends(get_current_officer)
 ):
-    return service.create_dispatch(dispatch, officer=current_officer)
+    created = service.create_dispatch(dispatch, officer=current_officer)
+    try:
+        await publisher.publish(
+            RealtimeEvent(
+                event=EventType.DISPATCH_CREATED,
+                entityType="dispatch",
+                entityId=str(created.id),
+                data=DispatchResponse.model_validate(created).model_dump(mode="json"),
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ WebSocket publish failed: {e}")
+    return created
 
 @router.get("/recommend-vehicles", response_model=List[VehicleRecommendation], summary="Get suitable vehicle recommendations for an allocation")
 async def recommend_vehicles(
@@ -60,4 +76,16 @@ async def update_dispatch_status(
                 message=f"Access denied. Only regional authorities or admins can cancel dispatches."
             )
             
-    return service.update_dispatch_status(dispatch_id, nextStatus, action_req, officer=current_officer)
+    updated = service.update_dispatch_status(dispatch_id, nextStatus, action_req, officer=current_officer)
+    try:
+        await publisher.publish(
+            RealtimeEvent(
+                event=EventType.DISPATCH_STATUS_CHANGED,
+                entityType="dispatch",
+                entityId=str(updated.id),
+                data=DispatchResponse.model_validate(updated).model_dump(mode="json"),
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ WebSocket publish failed: {e}")
+    return updated

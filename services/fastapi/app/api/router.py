@@ -9,7 +9,8 @@ from app.api.v1 import (
     matching,
     allocations,
     dispatch,
-    delivery
+    delivery,
+    websocket
 )
 
 api_router = APIRouter()
@@ -29,3 +30,4 @@ api_router.include_router(matching.router, prefix="/matching", tags=["Matching"]
 api_router.include_router(allocations.router, prefix="/allocations", tags=["Allocations"])
 api_router.include_router(dispatch.router, prefix="/dispatch", tags=["Dispatch"])
 api_router.include_router(delivery.router, prefix="/delivery", tags=["Delivery"])
+api_router.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
