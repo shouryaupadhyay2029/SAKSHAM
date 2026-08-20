@@ -215,7 +215,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
         {/* Brand SAKSHAM Centered Logo & Typography */}
         <div className={styles.leftBrandContainer}>
           <div ref={logoMarkRef} className={styles.logoMark}>
-            <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+            <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '140px', height: '140px', objectFit: 'contain' }} />
           </div>
           <h1 ref={brandWordmarkRef} className={styles.brandWordmark}>
             SAKSHAM
