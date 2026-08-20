@@ -349,7 +349,8 @@ export const PublicLayout: React.FC = () => {
                   width: 'auto',
                   objectFit: 'contain',
                   filter: isDarkHeader ? 'none' : 'invert(1) brightness(1.2)',
-                  pointerEvents: 'none'
+                  pointerEvents: 'none',
+                  transform: 'translateY(6px)'
                 }}
               />
             </Link>
