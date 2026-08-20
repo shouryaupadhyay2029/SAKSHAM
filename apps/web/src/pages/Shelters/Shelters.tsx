@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Shelters.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 const STATUS_DISPLAY: Record<string, string> = {
   OPEN: 'OPEN',
@@ -60,14 +61,14 @@ export const Shelters: React.FC = () => {
   return (
     <div className={`${styles.container} ${mounted ? styles.mounted : ''}`}>
 
-      {/* ── 1. Page Header ── */}
-      <header className={styles.pageHeader}>
+      <header className={`${styles.pageHeader} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.headerTitles}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
             <span className={styles.eyebrow} style={{ marginBottom: 0 }}>SHELTER OPERATIONS</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={styles.title}>Emergency Shelter Network</h1>
+          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#059669">Emergency Shelter Network</h1>
           <p className={styles.lead}>Monitor shelter occupancy, available facilities and safe capacity across the response region.</p>
         </div>
         <div className={styles.headerActions}>

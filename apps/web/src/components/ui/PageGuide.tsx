@@ -335,6 +335,10 @@ export const PageGuideTrigger: React.FC<PageGuideTriggerProps> = ({ onClick }) =
     }
   };
 
+  if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+    return null;
+  }
+
   return (
     <button
       className={styles.triggerBtn}
@@ -407,7 +411,7 @@ export const PageGuidebook: React.FC<PageGuidebookProps> = ({ guideKey }) => {
     };
   }, [guideKey]);
 
-  if (!guide) return null;
+  if (!guide || guideKey !== 'home') return null;
 
   return (
     <section

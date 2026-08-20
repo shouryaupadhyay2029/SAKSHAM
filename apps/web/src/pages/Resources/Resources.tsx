@@ -3,6 +3,7 @@ import { Search, ChevronRight, Package, MapPin, AlertTriangle, AlertCircle, Plus
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Resources.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 export const Resources: React.FC = () => {
   const { resources, requests } = useOperationalState();
@@ -64,14 +65,14 @@ export const Resources: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      {/* ── 1. Page Header ── */}
-      <header className={styles.pageHeader}>
+      <header className={`${styles.pageHeader} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.headerTitles}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
             <span className={styles.eyebrow} style={{ marginBottom: 0 }}>RESOURCE COORDINATION</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={styles.title}>Relief Resource Registry</h1>
+          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#10B981">Relief Resource Registry</h1>
           <p className={styles.lead}>Track available supplies, response equipment, depot storage nodes, and operational readiness networks.</p>
         </div>
         <div className={styles.headerActions}>

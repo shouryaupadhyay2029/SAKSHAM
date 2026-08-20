@@ -90,3 +90,89 @@ h1, h2, h3, h4, h5, h6 {
   outline: 2px solid var(--color-primary, #F47C20);
   outline-offset: 2px;
 }
+
+/* Global Cream Background overrides to replace pure bright whites */
+body {
+  background-color: #FAF7F0;
+}
+
+/* Block Reveal Animation Classes */
+.reveal-block {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.reveal-block-inner {
+  opacity: 0;
+  display: inline-block;
+}
+
+.reveal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Page Header/Hero WebGL Wave Shader Container */
+.shaderHeaderWrapper {
+  position: relative !important;
+  overflow: hidden !important;
+  margin-top: -75px !important; /* Move header down slightly from the very top */
+  padding-top: 100px !important; /* Premium breathing space at top of shader */
+  padding-bottom: 32px !important; /* Premium breathing space at bottom of shader */
+  padding-left: 48px !important; /* Move texts away from the left edge */
+  padding-right: 48px !important; /* Move texts away from the right edge */
+}
+
+/* Force high contrast light colors for texts on the dark blue shader background */
+.shaderHeaderWrapper,
+.shaderHeaderWrapper h1,
+.shaderHeaderWrapper h2,
+.shaderHeaderWrapper h3,
+.shaderHeaderWrapper p,
+.shaderHeaderWrapper span,
+.shaderHeaderWrapper div,
+.shaderHeaderWrapper a,
+.shaderHeaderWrapper strong {
+  color: #FFFFFF !important;
+}
+
+/* Eyebrows styling */
+.shaderHeaderWrapper span[class*="eyebrow"],
+.shaderHeaderWrapper span[class*="heroEyebrow"] {
+  color: #FFB085 !important; /* Premium bright peach for high readability */
+}
+
+/* Sub-leads and secondary description texts */
+.shaderHeaderWrapper p[class*="lead"],
+.shaderHeaderWrapper p[class*="subtext"],
+.shaderHeaderWrapper p[class*="heroLead"],
+.shaderHeaderWrapper span[class*="subtext"] {
+  color: rgba(250, 248, 243, 0.85) !important;
+}
+
+/* Elevate the page header content fields over WebGL canvas */
+.shaderHeaderWrapper > * {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Force the WebGL shader canvas into the background, stretching to fill container */
+.shaderHeaderWrapper > canvas,
+.shaderHeaderWrapper > .shaderCanvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+

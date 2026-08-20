@@ -11,6 +11,7 @@ import {
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Analytics.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 /* ───────────────────────────────────────────────
    STATIC INTELLIGENCE DATA (labelled DEMO MODEL)
@@ -210,13 +211,14 @@ export const Analytics: React.FC = () => {
     <div className={`${styles.container} ${mounted ? styles.mounted : ''}`}>
 
       {/* ══ 1. PAGE HEADER ══ */}
-      <header className={styles.pageHeader}>
+      <header className={`${styles.pageHeader} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.headerLeft}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
             <span className={styles.eyebrow} style={{ marginBottom: 0 }}>RESPONSE INTELLIGENCE</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={styles.title}>Operational Intelligence Center</h1>
+          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#F59E0B">Operational Intelligence Center</h1>
           <p className={styles.lead}>
             Transforming live incidents, resource availability, demand signals and field activity into actionable response decisions.
           </p>
@@ -677,7 +679,7 @@ export const Analytics: React.FC = () => {
               { num: vehicles.filter(v => v.status === 'AVAILABLE').length, label: 'AVAILABLE' },
             ].map(m => (
               <div key={m.label} className={styles.fleetMetricCell}>
-                <span className={styles.fleetMetricNum}>{String(m.num).padStart(2,'0')}</span>
+                <span className={styles.fleetMetricNum}>{String(m.num).padStart(2, '0')}</span>
                 <span className={styles.fleetMetricLabel}>{m.label}</span>
               </div>
             ))}

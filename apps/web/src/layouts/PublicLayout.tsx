@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import styles from './PublicLayout.module.css';
 import { GradientBackground } from '../components/ui/noisy-gradient-backgrounds';
-import { ShaderBackground } from '../components/ui/adisyon-shader';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -288,19 +287,15 @@ export const PublicLayout: React.FC = () => {
   const toggleMobile = (key: string) =>
     setMobileExpanded(prev => (prev === key ? null : key));
 
-  // Show shader on public sub-pages (not home, not login)
-  const isPublicSubPage = !isHome
-    && !location.pathname.startsWith('/officer')
-    && !location.pathname.startsWith('/operations/command-center')
-    && !location.pathname.startsWith('/operations/matching')
-    && !location.pathname.startsWith('/operations/dispatch')
-    && !location.pathname.startsWith('/operations/delivery');
+
+
+  // Show dark/transparent header on home top and officer login/forgot-password pages
+  const isOfficerRoute = location.pathname.startsWith('/officer');
+  const isDarkHeader = (isHome && !isScrolled) || isOfficerRoute;
+  const isStickyHeader = isHome || isOfficerRoute;
 
   return (
-    <div className={styles.container}>
-      {/* WebGL shader — only on public sub-pages (Shelters, Incidents, Resources, etc.) */}
-      {isPublicSubPage && <ShaderBackground className={styles.shaderCanvas} />}
-
+    <div className={`${styles.container} ${isOfficerRoute ? styles.containerDark : ''}`}>
       {/* ── ANNOUNCEMENT BAR ── */}
       {isAlertVisible && (
         <div className={styles.announcementBar}>
@@ -318,7 +313,7 @@ export const PublicLayout: React.FC = () => {
       )}
 
       {/* ── MAIN NAV HEADER ── */}
-      <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''} ${isCompressed ? styles.headerCompressed : ''} ${isHome ? styles.headerSticky : ''} ${isHome && !isScrolled ? styles.headerHomeDark : ''}`}>
+      <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''} ${isCompressed ? styles.headerCompressed : ''} ${isStickyHeader ? styles.headerSticky : ''} ${isDarkHeader ? styles.headerHomeDark : ''}`}>
         {/* Animated gradient background — orange-dominant, mirrors hero palette */}
         {isHome && !isScrolled && (
           <GradientBackground
@@ -326,12 +321,12 @@ export const PublicLayout: React.FC = () => {
             gradientSize="220% 600%"
             gradientOrigin="bottom-right"
             colors={[
-              { color: 'rgba(244, 124, 32, 1)', stop: '0%'   },
-              { color: 'rgba(215, 101, 16, 1)', stop: '18%'  },
-              { color: 'rgba(180, 80,  15, 1)', stop: '36%'  },
-              { color: 'rgba(120, 55,  10, 1)', stop: '55%'  },
-              { color: 'rgba(18,  50,  36, 1)', stop: '75%'  },
-              { color: 'rgba(14,  35,  26, 1)', stop: '88%'  },
+              { color: 'rgba(244, 124, 32, 1)', stop: '0%' },
+              { color: 'rgba(215, 101, 16, 1)', stop: '18%' },
+              { color: 'rgba(180, 80,  15, 1)', stop: '36%' },
+              { color: 'rgba(120, 55,  10, 1)', stop: '55%' },
+              { color: 'rgba(18,  50,  36, 1)', stop: '75%' },
+              { color: 'rgba(14,  35,  26, 1)', stop: '88%' },
               { color: 'rgba(10,  24,  18, 1)', stop: '100%' },
             ]}
             noisePatternAlpha={18}

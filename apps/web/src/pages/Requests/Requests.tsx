@@ -3,6 +3,7 @@ import { Search, ChevronRight, FileText, Plus, AlertCircle, ArrowDown } from 'lu
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Requests.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 export const Requests: React.FC = () => {
   const { requests, resources } = useOperationalState();
@@ -45,14 +46,14 @@ export const Requests: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      {/* ── 1. Page Header ── */}
-      <header className={styles.pageHeader}>
+      <header className={`${styles.pageHeader} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.headerTitles}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
             <span className={styles.eyebrow} style={{ marginBottom: 0 }}>DEMAND COORDINATION</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={styles.title}>Civilian Demand Registry</h1>
+          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#7F00FF">Civilian Demand Registry</h1>
           <p className={styles.lead}>Track incoming relief requests, prioritize unmet needs, and coordinate resource allocation.</p>
         </div>
         <div className={styles.headerActions}>

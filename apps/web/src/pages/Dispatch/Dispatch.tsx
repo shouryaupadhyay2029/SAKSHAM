@@ -17,6 +17,7 @@ import styles from './Dispatch.module.css';
 
 import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 gsap.registerPlugin(ScrollTrigger);
 
 import { useOperationalState, type DispatchMission } from '../../context/OperationalStateContext';
@@ -336,8 +337,8 @@ export const Dispatch: React.FC = () => {
     <div ref={pageRef} className={styles.page}>
       <GradientBackground />
       
-      {/* ── Page Hero ── */}
-      <header ref={heroRef} className={styles.hero}>
+      <header ref={heroRef} className={`${styles.hero} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.heroLeft}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
             <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>LOGISTICS EXECUTION</span>

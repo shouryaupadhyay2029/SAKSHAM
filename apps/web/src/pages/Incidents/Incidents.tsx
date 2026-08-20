@@ -10,6 +10,7 @@ import { MapView } from '../../components/map/MapView';
 import type { Severity } from '../../types/common';
 import styles from './Incidents.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 const incidentTypeLabel: Record<string, string> = {
   FLOOD: 'Flood Relief Operations',
@@ -176,14 +177,14 @@ export const Incidents: React.FC = () => {
   return (
     <div className={styles.container}>
       
-      {/* ── 1. Page Header ── */}
-      <header className={styles.pageHeader}>
+      <header className={`${styles.pageHeader} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.headerTitles}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
             <span className={styles.eyebrow} style={{ marginBottom: 0 }}>INCIDENT MANAGEMENT</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={styles.title}>Incident Response Registry</h1>
+          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#EF4444">Incident Response Registry</h1>
           <p className={styles.lead}>Monitor, verify, prioritize and coordinate active regional disaster responses.</p>
         </div>
         <div className={styles.headerActions}>

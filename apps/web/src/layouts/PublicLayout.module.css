@@ -13,6 +13,10 @@
   position: relative;
 }
 
+.containerDark {
+  background-color: #060807 !important;
+}
+
 /* WebGL shader canvas — fixed full-bleed, behind all content */
 .shaderCanvas {
   position: fixed;
@@ -649,8 +653,10 @@
    ═══════════════════════════════════════════════════════════ */
 .footer {
   position: relative;
-  background: radial-gradient(circle at 50% 100%, rgba(27,73,53,0.15) 0%, transparent 70%),
-              linear-gradient(180deg, #10291F 0%, #0B2119 100%);
+  background: radial-gradient(circle at 35% 0%, rgba(254, 245, 210, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 52% 45%, rgba(10, 28, 20, 0.88) 0%, transparent 55%),
+              radial-gradient(circle at 75% 55%, rgba(38, 95, 71, 0.75) 0%, transparent 60%),
+              #3E7259; /* Sage green base from Image 4, slightly darkened for text contrast */
   color: rgba(250,248,243,0.85);
   padding: var(--space-16) var(--space-8) var(--space-8);
   z-index: 10;

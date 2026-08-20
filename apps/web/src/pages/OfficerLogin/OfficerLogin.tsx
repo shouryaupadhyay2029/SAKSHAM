@@ -1,5 +1,5 @@
 import { GrainGradient } from "@paper-design/shaders-react";
-import { useState, useEffect, useId } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
@@ -22,6 +22,93 @@ const ERROR_MESSAGES: Record<NonNullable<LoginError>, { heading: string; body: s
     body: "We couldn't reach the authentication service. Check your connection and try again.",
   },
 };
+
+function OrbitalLinesBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let width = 0;
+    let height = 0;
+    let offset = 0;
+
+    const resize = () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", resize);
+    resize();
+
+    // Concentric orbital curves from bottom-right towards top-left
+    const arcCount = 16;
+    const arcs = Array.from({ length: arcCount }, (_, i) => {
+      const baseRadius = 200 + i * 80;
+      const speed = 0.05 + (i % 3) * 0.02;
+      const isDashed = i % 2 === 0;
+      // dash array with randomized segment lengths
+      const dashPattern = isDashed ? [100 + (i % 4) * 50, 300 + (i % 3) * 100] : null;
+      const opacity = 0.02 + (i % 4) * 0.015; // low opacity, very elegant
+      return { baseRadius, speed, isDashed, dashPattern, opacity };
+    });
+
+    const draw = () => {
+      // Deep dark space background color matching SAKSHAM premium aesthetics
+      ctx.fillStyle = "#060807";
+      ctx.fillRect(0, 0, width, height);
+
+      // Radial coordinates originating at bottom-right corner
+      const originX = width * 1.05;
+      const originY = height * 1.05;
+
+      offset += 0.4; // animation motion step
+
+      arcs.forEach((arc) => {
+        ctx.beginPath();
+        ctx.arc(originX, originY, arc.baseRadius, Math.PI, 1.5 * Math.PI);
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = `rgba(250, 248, 243, ${arc.opacity})`;
+
+        if (arc.isDashed && arc.dashPattern) {
+          ctx.setLineDash(arc.dashPattern);
+          ctx.lineDashOffset = offset * arc.speed;
+        } else {
+          ctx.setLineDash([]);
+        }
+
+        ctx.stroke();
+      });
+
+      animationFrameId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        zIndex: 0,
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
 
 export default function OfficerLogin() {
   const { isAuthenticated, login } = useAuth();
@@ -63,7 +150,7 @@ export default function OfficerLogin() {
     setIsSubmitting(true);
     try {
       const result = await login(email, password);
-      if (result.success) {
+      if (result.success === true) {
         const redirect = searchParams.get('redirect');
         navigate(redirect ? decodeURIComponent(redirect) : '/operations', { replace: true });
       } else {
@@ -80,6 +167,7 @@ export default function OfficerLogin() {
 
   return (
     <div className={styles.page}>
+      <OrbitalLinesBackground />
       <div className={styles.grid}>
 
         {/* ── LEFT: FORM COLUMN ── */}
@@ -272,6 +360,23 @@ export default function OfficerLogin() {
         </div>
 
       </div>
+      
+      {/* ── FOOTER ── */}
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <div className={styles.footerLeft}>
+            <span className={styles.footerSystemName}>SAKSHAM SECURE PORTAL</span>
+            <span className={styles.footerDivider}>·</span>
+            <span className={styles.footerSecurity}>SSL/TLS 256-BIT ENCRYPTION</span>
+          </div>
+          <div className={styles.footerCenter}>
+            <span className={styles.footerCopyright}>&copy; 2026 SAKSHAM. All rights reserved. Unauthorized access is strictly prohibited and subject to monitoring.</span>
+          </div>
+          <div className={styles.footerRight}>
+            <span className={styles.footerNode}>SYSTEM NODE: DEL_HQ_01</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

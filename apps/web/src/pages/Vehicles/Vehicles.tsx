@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Vehicles.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 const VEHICLE_TYPE_LABELS: Record<string, string> = {
   TRUCK: 'TRUCK',
@@ -89,14 +90,14 @@ export const Vehicles: React.FC = () => {
   return (
     <div className={`${styles.container} ${mounted ? styles.mounted : ''}`}>
 
-      {/* ── 1. Page Header ── */}
-      <header className={styles.pageHeader}>
+      <header className={`${styles.pageHeader} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.headerTitles}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
             <span className={styles.eyebrow} style={{ marginBottom: 0 }}>FLEET OPERATIONS</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={styles.title}>Emergency Response Fleet</h1>
+          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#3B82F6">Emergency Response Fleet</h1>
           <p className={styles.lead}>Live fleet availability, mission assignments and field movement across the response network.</p>
         </div>
         <div className={styles.headerActions}>

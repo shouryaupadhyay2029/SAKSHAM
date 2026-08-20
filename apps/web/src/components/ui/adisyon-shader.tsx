@@ -259,51 +259,53 @@ export function ShaderBackground({ className }: { className?: string }) {
     const gl = canvas.getContext("webgl", { antialias: false })
     if (!gl) return
 
+    const activeCanvas = canvas as HTMLCanvasElement;
+    const activeGl = gl as WebGLRenderingContext;
+
     const compile = (type: number, src: string) => {
-      const s = gl.createShader(type)!
-      gl.shaderSource(s, src)
-      gl.compileShader(s)
+      const s = activeGl.createShader(type)!
+      activeGl.shaderSource(s, src)
+      activeGl.compileShader(s)
       return s
     }
-    const program = gl.createProgram()!
-    const vertexShader = compile(gl.VERTEX_SHADER, VERT)
-    const fragmentShader = compile(gl.FRAGMENT_SHADER, FRAG)
-    gl.attachShader(program, vertexShader)
-    gl.attachShader(program, fragmentShader)
-    gl.linkProgram(program)
-    gl.deleteShader(vertexShader)
-    gl.deleteShader(fragmentShader)
-    gl.useProgram(program)
+    const program = activeGl.createProgram()!
+    const vertexShader = compile(activeGl.VERTEX_SHADER, VERT)
+    const fragmentShader = compile(activeGl.FRAGMENT_SHADER, FRAG)
+    activeGl.attachShader(program, vertexShader)
+    activeGl.attachShader(program, fragmentShader)
+    activeGl.linkProgram(program)
+    activeGl.deleteShader(vertexShader)
+    activeGl.deleteShader(fragmentShader)
+    activeGl.useProgram(program)
 
-    const buf = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
-    const loc = gl.getAttribLocation(program, "a_position")
-    gl.enableVertexAttribArray(loc)
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
+    const buf = activeGl.createBuffer()
+    activeGl.bindBuffer(activeGl.ARRAY_BUFFER, buf)
+    activeGl.bufferData(activeGl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), activeGl.STATIC_DRAW)
+    const loc = activeGl.getAttribLocation(program, "a_position")
+    activeGl.enableVertexAttribArray(loc)
+    activeGl.vertexAttribPointer(loc, 2, activeGl.FLOAT, false, 0, 0)
 
     const uni = {
-      colors:    gl.getUniformLocation(program, "u_colors"),
-      scene:     gl.getUniformLocation(program, "u_scene"),
-      shape:     gl.getUniformLocation(program, "u_shape"),
-      surface:   gl.getUniformLocation(program, "u_surface"),
-      finish:    gl.getUniformLocation(program, "u_finish"),
-      transform: gl.getUniformLocation(program, "u_transform"),
-      space:     gl.getUniformLocation(program, "u_space"),
-      cursor:    gl.getUniformLocation(program, "u_cursor"),
+      colors:    activeGl.getUniformLocation(program, "u_colors"),
+      scene:     activeGl.getUniformLocation(program, "u_scene"),
+      shape:     activeGl.getUniformLocation(program, "u_shape"),
+      surface:   activeGl.getUniformLocation(program, "u_surface"),
+      finish:    activeGl.getUniformLocation(program, "u_finish"),
+      transform: activeGl.getUniformLocation(program, "u_transform"),
+      space:     activeGl.getUniformLocation(program, "u_space"),
+      cursor:    activeGl.getUniformLocation(program, "u_cursor"),
     }
 
-    gl.uniform3fv(uni.colors, new Float32Array(UNIFORMS.colors.flat()))
-    gl.uniform4f(uni.shape,     UNIFORMS.scale, UNIFORMS.intensity, UNIFORMS.paramA, UNIFORMS.warp)
-    gl.uniform4f(uni.surface,   UNIFORMS.detail, UNIFORMS.contrast, UNIFORMS.brightness, UNIFORMS.saturation)
-    gl.uniform4f(uni.finish,    UNIFORMS.hue, UNIFORMS.vignette, UNIFORMS.blur, UNIFORMS.grain)
-    gl.uniform4f(uni.transform, UNIFORMS.seed, UNIFORMS.rotate, UNIFORMS.drift, UNIFORMS.oklab)
-    gl.uniform4f(uni.cursor,    0, UNIFORMS.cursorEffect, UNIFORMS.cursorStrength, UNIFORMS.cursorRadius)
+    activeGl.uniform3fv(uni.colors, new Float32Array(UNIFORMS.colors.flat()))
+    activeGl.uniform4f(uni.shape,     UNIFORMS.scale, UNIFORMS.intensity, UNIFORMS.paramA, UNIFORMS.warp)
+    activeGl.uniform4f(uni.surface,   UNIFORMS.detail, UNIFORMS.contrast, UNIFORMS.brightness, UNIFORMS.saturation)
+    activeGl.uniform4f(uni.finish,    UNIFORMS.hue, UNIFORMS.vignette, UNIFORMS.blur, UNIFORMS.grain)
+    activeGl.uniform4f(uni.transform, UNIFORMS.seed, UNIFORMS.rotate, UNIFORMS.drift, UNIFORMS.oklab)
+    activeGl.uniform4f(uni.cursor,    0, UNIFORMS.cursorEffect, UNIFORMS.cursorStrength, UNIFORMS.cursorRadius)
 
     let targetX = 0, targetY = 0, targetPresence = 0
     let mouseX = 0, mouseY = 0, cursorPresence = 0
-    let pointerKnown = false, pointerClientX = 0, pointerClientY = 0
-    let bounds = canvas.getBoundingClientRect()
+    let bounds = activeCanvas.getBoundingClientRect()
     let raf = 0, lastNow: number | null = null
     let visible = document.visibilityState === "visible"
     let inView = true, disposed = false
@@ -318,9 +320,9 @@ export function ShaderBackground({ className }: { className?: string }) {
       const pixelScale = Math.min(1, Math.sqrt(2_000_000 / Math.max(1, rawWidth * rawHeight)))
       const width  = Math.max(1, Math.round(rawWidth  * pixelScale))
       const height = Math.max(1, Math.round(rawHeight * pixelScale))
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width; canvas.height = height
-        gl.viewport(0, 0, width, height)
+      if (activeCanvas.width !== width || activeCanvas.height !== height) {
+        activeCanvas.width = width; activeCanvas.height = height
+        activeGl.viewport(0, 0, width, height)
       }
     }
 
@@ -330,20 +332,20 @@ export function ShaderBackground({ className }: { className?: string }) {
     }
 
     const updateLayout = () => {
-      bounds = canvas.getBoundingClientRect()
+      bounds = activeCanvas.getBoundingClientRect()
       resizeCanvas()
       requestRender()
     }
     window.addEventListener("resize", updateLayout)
 
     const resizeObserver = new ResizeObserver(updateLayout)
-    resizeObserver.observe(canvas)
+    resizeObserver.observe(activeCanvas)
     const intersectionObserver = new IntersectionObserver(([entry]) => {
       inView = entry?.isIntersecting ?? true
       if (inView) requestRender()
       else if (raf !== 0) { cancelAnimationFrame(raf); raf = 0; lastNow = null }
     })
-    intersectionObserver.observe(canvas)
+    intersectionObserver.observe(activeCanvas)
     const onVisibilityChange = () => {
       visible = document.visibilityState === "visible"
       if (visible) requestRender()
@@ -361,10 +363,10 @@ export function ShaderBackground({ className }: { className?: string }) {
       mouseY += (targetY - mouseY) * follow
       cursorPresence += (targetPresence - cursorPresence) * follow
       resizeCanvas()
-      gl.uniform4f(uni.scene,  canvas.width, canvas.height, ((now - start) / 1000) * UNIFORMS.timeScale, UNIFORMS.colorCount)
-      gl.uniform4f(uni.space,  UNIFORMS.offsetX, UNIFORMS.offsetY, mouseX, mouseY)
-      gl.uniform4f(uni.cursor, 0, UNIFORMS.cursorEffect, UNIFORMS.cursorStrength, UNIFORMS.cursorRadius)
-      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      activeGl.uniform4f(uni.scene,  activeCanvas.width, activeCanvas.height, ((now - start) / 1000) * UNIFORMS.timeScale, UNIFORMS.colorCount)
+      activeGl.uniform4f(uni.space,  UNIFORMS.offsetX, UNIFORMS.offsetY, mouseX, mouseY)
+      activeGl.uniform4f(uni.cursor, 0, UNIFORMS.cursorEffect, UNIFORMS.cursorStrength, UNIFORMS.cursorRadius)
+      activeGl.drawArrays(activeGl.TRIANGLES, 0, 3)
       if (timeAnimated) requestRender()
       else lastNow = null
     }
@@ -377,15 +379,15 @@ export function ShaderBackground({ className }: { className?: string }) {
       intersectionObserver.disconnect()
       document.removeEventListener("visibilitychange", onVisibilityChange)
       window.removeEventListener("resize", updateLayout)
-      gl.deleteBuffer(buf)
-      gl.deleteProgram(program)
+      activeGl.deleteBuffer(buf)
+      activeGl.deleteProgram(program)
       const releaseTimer = window.setTimeout(() => {
-        if (pendingContextReleases.get(canvas) !== releaseTimer) return
-        pendingContextReleases.delete(canvas)
-        gl.getExtension("WEBGL_lose_context")?.loseContext()
-        canvas.width = 1; canvas.height = 1
+        if (pendingContextReleases.get(activeCanvas) !== releaseTimer) return
+        pendingContextReleases.delete(activeCanvas)
+        activeGl.getExtension("WEBGL_lose_context")?.loseContext()
+        activeCanvas.width = 1; activeCanvas.height = 1
       }, 0)
-      pendingContextReleases.set(canvas, releaseTimer)
+      pendingContextReleases.set(activeCanvas, releaseTimer)
     }
   }, [])
 

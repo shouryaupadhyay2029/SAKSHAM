@@ -1,6 +1,7 @@
 import { PhoneCall, ShieldAlert, ArrowLeft, HeartHandshake } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import styles from './Help.module.css';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 export const Help: React.FC = () => {
   return (
@@ -11,7 +12,8 @@ export const Help: React.FC = () => {
         </Link>
       </div>
 
-      <div className={styles.header}>
+      <div className={`${styles.header} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <h2>Civilian Support Desk & Protocol Center</h2>
         <p className={styles.subtext}>
           Emergency hotlines, relief camp workflows, and flood/fire safety instructions during active deployment.

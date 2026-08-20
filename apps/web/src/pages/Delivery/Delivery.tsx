@@ -15,8 +15,9 @@ import { useOperationalState } from '../../context/OperationalStateContext';
 import type { DemandRequest } from '../../types/request';
 import styles from './Delivery.module.css';
 
-import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
+import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -348,7 +349,8 @@ export const Delivery: React.FC = () => {
       <GradientBackground />
       
       {/* ── Page Hero ── */}
-      <header ref={heroRef} className={styles.hero}>
+      <header ref={heroRef} className={`${styles.hero} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.heroLeft}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
             <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>LOGISTICS EXECUTION</span>

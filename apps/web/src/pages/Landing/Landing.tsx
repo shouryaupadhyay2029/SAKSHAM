@@ -6,12 +6,13 @@ import { useOperationalState } from '../../context/OperationalStateContext';
 import { SituationalAwarenessMap } from '../../components/map/SituationalAwarenessMap';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import { GradientBackground } from '../../components/ui/noisy-gradient-backgrounds';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 gsap.registerPlugin(ScrollTrigger);
-import { 
-  ShieldAlert, 
-  MapPin, 
-  ArrowRight, 
+import {
+  ShieldAlert,
+  MapPin,
+  ArrowRight,
   Send,
   FileCheck,
   Truck,
@@ -27,7 +28,7 @@ export const Landing: React.FC = () => {
   const [sosSubmitted, setSosSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ticketId, setTicketId] = useState('');
-  
+
   const [sosForm, setSosForm] = useState({
     name: '',
     phone: '',
@@ -55,7 +56,7 @@ export const Landing: React.FC = () => {
   const handleSosSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sosForm.name || !sosForm.phone || !sosForm.details) return;
-    
+
     setIsSubmitting(true);
 
     setTimeout(() => {
@@ -118,7 +119,7 @@ export const Landing: React.FC = () => {
     gsap.set(`.${styles.headingLine}`, { opacity: 0, y: '105%' });
     gsap.set(`.${styles.editorialDesc}`, { opacity: 0, y: 14 });
     gsap.set(`.${styles.featureRow}`, { opacity: 0, y: 14 });
-    
+
     // Telemetry section initial states
     gsap.set('.radar-eyebrow', { opacity: 0, y: 15 });
     gsap.set(`.${styles.radarHeadingLine}`, { opacity: 0, y: '105%' });
@@ -287,7 +288,7 @@ export const Landing: React.FC = () => {
       });
 
       // 10. SAKSHAM ECOSYSTEM (Section A) reveals
-      gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionSub}`, 
+      gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionSub}`,
         { opacity: 0, y: 20 },
         {
           opacity: 1,
@@ -299,7 +300,7 @@ export const Landing: React.FC = () => {
           }
         }
       );
-      
+
       gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionTitle}`,
         { opacity: 0, y: 40 },
         {
@@ -312,7 +313,7 @@ export const Landing: React.FC = () => {
           }
         }
       );
-      
+
       gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionDesc}`,
         { opacity: 0, y: 16 },
         {
@@ -457,7 +458,7 @@ export const Landing: React.FC = () => {
 
       radarTl
         .to('.radar-eyebrow', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' })
-        
+
         .to(gsap.utils.toArray(`.${styles.radarHeadingLine}`) as any[], {
           opacity: 1,
           y: 0,
@@ -465,7 +466,7 @@ export const Landing: React.FC = () => {
           stagger: 0.12,
           ease: 'power3.out'
         }, '-=0.35')
-        
+
         .to('.radar-description', { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, '-=0.55')
         .to('.radar-card-container', { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' }, '-=0.45');
 
@@ -482,7 +483,7 @@ export const Landing: React.FC = () => {
 
       sosTl
         .to('.sos-eyebrow', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' })
-        
+
         .to(gsap.utils.toArray(`.${styles.sosHeadingLine}`) as any[], {
           opacity: 1,
           y: 0,
@@ -490,9 +491,9 @@ export const Landing: React.FC = () => {
           stagger: 0.12,
           ease: 'power3.out'
         }, '-=0.35')
-        
+
         .to('.sos-description', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' }, '-=0.55')
-        
+
         .to(gsap.utils.toArray('.sos-reassurance-item') as any[], {
           opacity: 1,
           y: 0,
@@ -500,7 +501,7 @@ export const Landing: React.FC = () => {
           stagger: 0.14,
           ease: 'power2.out'
         }, '-=0.35')
-        
+
         .to('.sos-form-card-container', { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' }, '-=0.55');
 
 
@@ -534,12 +535,12 @@ export const Landing: React.FC = () => {
           gradientSize="140% 140%"
           gradientOrigin="bottom-right"
           colors={[
-            { color: 'rgba(10, 24, 18, 1)',   stop: '0%'   },
-            { color: 'rgba(14, 35, 26, 1)',   stop: '22%'  },
-            { color: 'rgba(18, 50, 36, 1)',   stop: '42%'  },
-            { color: 'rgba(120, 55, 10, 1)',  stop: '64%'  },
-            { color: 'rgba(180, 80, 15, 1)',  stop: '80%'  },
-            { color: 'rgba(215, 101, 16, 1)', stop: '91%'  },
+            { color: 'rgba(10, 24, 18, 1)', stop: '0%' },
+            { color: 'rgba(14, 35, 26, 1)', stop: '22%' },
+            { color: 'rgba(18, 50, 36, 1)', stop: '42%' },
+            { color: 'rgba(120, 55, 10, 1)', stop: '64%' },
+            { color: 'rgba(180, 80, 15, 1)', stop: '80%' },
+            { color: 'rgba(215, 101, 16, 1)', stop: '91%' },
             { color: 'rgba(244, 124, 32, 1)', stop: '100%' },
           ]}
           noisePatternAlpha={22}
@@ -549,7 +550,7 @@ export const Landing: React.FC = () => {
         />
         <div className={styles.sectionContainer}>
           <div className={styles.editorialGrid}>
-            
+
             {/* Left Content Column */}
             <div className={styles.leftContentCol}>
               <div className={styles.parallaxHeaderContainer}>
@@ -563,7 +564,7 @@ export const Landing: React.FC = () => {
                   </span>
                   <PageGuideTrigger />
                 </div>
-                
+
                 {/* Mid Layer (Actual Heading text) */}
                 <h1 className={`${styles.editorialHeading} parallax-mid`}>
                   <span className={styles.headingLineMask}>
@@ -584,7 +585,7 @@ export const Landing: React.FC = () => {
 
               {/* Capability feature stack with dynamic motion overlays */}
               <div className={styles.featureStack}>
-                <div 
+                <div
                   className={`${styles.featureRow} ${activeFeatureIndex === 0 ? styles.featureRowActive : ''}`}
                   onMouseEnter={() => {
                     setActiveFeatureIndex(0);
@@ -602,7 +603,7 @@ export const Landing: React.FC = () => {
                   <span className={styles.orangeIndicator} />
                 </div>
 
-                <div 
+                <div
                   className={`${styles.featureRow} ${activeFeatureIndex === 1 ? styles.featureRowActive : ''}`}
                   onMouseEnter={() => {
                     setActiveFeatureIndex(1);
@@ -620,7 +621,7 @@ export const Landing: React.FC = () => {
                   <span className={styles.orangeIndicator} />
                 </div>
 
-                <div 
+                <div
                   className={`${styles.featureRow} ${activeFeatureIndex === 2 ? styles.featureRowActive : ''}`}
                   onMouseEnter={() => {
                     setActiveFeatureIndex(2);
@@ -638,7 +639,7 @@ export const Landing: React.FC = () => {
                   <span className={styles.orangeIndicator} />
                 </div>
 
-                <div 
+                <div
                   className={`${styles.featureRow} ${activeFeatureIndex === 3 ? styles.featureRowActive : ''}`}
                   onMouseEnter={() => {
                     setActiveFeatureIndex(3);
@@ -676,7 +677,12 @@ export const Landing: React.FC = () => {
 
       {/* 2. ONE RESPONSE NETWORK. EVERYTHING CONNECTED. */}
       <section id="network-flow" className={`${styles.networkFlowSection} textureCream ${styles.stackedLayer}`}>
-        <div className={styles.sectionContainer}>
+        {/* Large smooth shallow curved top edge rising into the hero */}
+        <svg className={styles.heroCurveSvg} viewBox="0 0 1000 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 0 100 C 300 0, 700 0, 1000 100 Z" />
+        </svg>
+
+        <div className={styles.networkFlowContent}>
           <div className={styles.networkHeader}>
             <span className={styles.sectionSub}>SAKSHAM ECOSYSTEM</span>
             <h2 className={styles.sectionTitle}>One Response Network. Everything Connected.</h2>
@@ -762,9 +768,10 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* 4. OLD TELEMETRY / RADAR CONCEPT (Reused lower down as supporting section) */}
-      <section id="telemetry-radar" className={`${styles.radarSection} textureForest ${styles.stackedLayer}`}>
+      <section id="telemetry-radar" className={`${styles.radarSection} textureForest ${styles.stackedLayer}`} style={{ position: 'relative', overflow: 'hidden' }}>
+        <ShaderBackground className="absolute inset-0" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />
         <div className={styles.heroGlow} />
-        
+
         {/* Background routing curves & coordinate geometry (3-6% opacity) */}
         <svg className={styles.radarBgGeometry} viewBox="0 0 1000 500" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="150" cy="180" r="3" fill="#FAF8F3" opacity="0.12" />
@@ -780,21 +787,21 @@ export const Landing: React.FC = () => {
               <span className={`${styles.badgeText} radar-eyebrow`}>[ ● LIVE ] RESPONSE MATRIX</span>
               <h2 className={styles.radarHeading}>
                 <span className={styles.radarHeadingLineMask}>
-                  <span className={styles.radarHeadingLine}>Building Resilient</span>
+                  <span className={`${styles.radarHeadingLine} reveal-block`} data-reveal-color="#F47C20">Building Resilient</span>
                 </span>
                 <span className={styles.radarHeadingLineMask}>
-                  <span className={styles.radarHeadingLine}>Communities.</span>
+                  <span className={`${styles.radarHeadingLine} reveal-block`} data-reveal-color="#F47C20">Communities.</span>
                 </span>
               </h2>
               <p className={`${styles.radarDesc} radar-description`}>
                 Our telemetry radar and incident routing loops coordinate relief depots and fleet deployment protocols synchronously.
               </p>
             </div>
-            
+
             <div className={`${styles.radarCardWrapper} radar-card-container`}>
               {/* Backing layer for visual depth */}
               <div className={styles.radarCardBacking} />
-              
+
               <div className={`${styles.radarCard} textureDark`}>
                 <div className={styles.radarHeader}>
                   <div className={styles.liveIndicator}>
@@ -810,14 +817,14 @@ export const Landing: React.FC = () => {
                     <div className={styles.radarCircle} />
                     <div className={styles.radarCircle} />
                     <div className={styles.radarSweep} />
-                    
+
                     {/* SVG lines for network connections */}
                     <svg className={styles.radarNodeConnections} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                       <line x1="84" y1="70" x2="140" y2="120" stroke="rgba(250, 248, 243, 0.08)" strokeWidth="0.8" strokeDasharray="3 3" />
                       <line x1="84" y1="70" x2="50" y2="100" stroke="rgba(250, 248, 243, 0.08)" strokeWidth="0.8" strokeDasharray="3 3" />
                       <line x1="140" y1="120" x2="136" y2="50" stroke="rgba(250, 248, 243, 0.08)" strokeWidth="0.8" strokeDasharray="3 3" />
                     </svg>
-                    
+
                     {/* Micro Telemetry metadata */}
                     <span className={`${styles.radarMicroText} tech-code`} style={{ top: '8px', left: '10px' }}>LAT 28.61</span>
                     <span className={`${styles.radarMicroText} tech-code`} style={{ bottom: '8px', right: '10px' }}>LON 77.21</span>
@@ -836,7 +843,7 @@ export const Landing: React.FC = () => {
                       <div className={styles.pinGlow} />
                     </div>
                   </div>
-                  
+
                   <div className={styles.radarMetrics}>
                     <div className={styles.metricRow}>
                       <span>Active Threats</span>
@@ -905,7 +912,8 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* 6. CIVILIAN SUPPORT EMERGENCY PORTAL */}
-      <section id="sos-section" className={`${styles.sosSection} textureForest ${styles.stackedLayer}`}>
+      <section id="sos-section" className={`${styles.sosSection} textureForest ${styles.stackedLayer}`} style={{ position: 'relative', overflow: 'hidden' }}>
+        <ShaderBackground className="absolute inset-0" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />
         <div className={styles.sosGlow} />
 
         {/* Subtle background coordinate lines & grid geometry */}
@@ -922,10 +930,10 @@ export const Landing: React.FC = () => {
               <span className={`${styles.sectionSub} sos-eyebrow`}>CIVILIAN EMERGENCY PORTAL ● PRIORITY CHANNEL</span>
               <h2 className={styles.sectionTitle}>
                 <span className={styles.sosHeadingLineMask}>
-                  <span className={styles.sosHeadingLine}>Need Assistance?</span>
+                  <span className={`${styles.sosHeadingLine} reveal-block`} data-reveal-color="#F47C20">Need Assistance?</span>
                 </span>
                 <span className={styles.sosHeadingLineMask}>
-                  <span className={styles.sosHeadingLine}>File an SOS Request</span>
+                  <span className={`${styles.sosHeadingLine} reveal-block`} data-reveal-color="#F47C20">File an SOS Request</span>
                 </span>
               </h2>
               <p className={`${styles.sosText} sos-description`}>
@@ -944,6 +952,10 @@ export const Landing: React.FC = () => {
             </div>
 
             <div className="sos-form-card-container" style={{ position: 'relative', width: '100%', maxWidth: '440px', justifySelf: 'center' }}>
+              {/* Decorative floating glassmorphic orbs */}
+              <div className={styles.glassOrbTop} />
+              <div className={styles.glassOrbBottom} />
+
               {/* Backing layer for visual depth */}
               <div className={styles.sosFormCardBacking} />
 
@@ -961,8 +973,8 @@ export const Landing: React.FC = () => {
                       <span>REQUEST ID:</span>
                       <strong>{ticketId}</strong>
                     </div>
-                    <button 
-                      onClick={() => setSosSubmitted(false)} 
+                    <button
+                      onClick={() => setSosSubmitted(false)}
                       className={styles.resetBtn}
                     >
                       File Another Request
@@ -980,29 +992,29 @@ export const Landing: React.FC = () => {
                         <span>SECURE INTAKE</span>
                       </div>
                     </div>
-                    
+
                     <div className={styles.formDivider} />
 
                     <div className={styles.formGroup}>
                       <label htmlFor="name">Reporter Full Name</label>
-                      <input 
+                      <input
                         id="name"
-                        type="text" 
-                        placeholder="e.g., Rajesh Khanna" 
-                        value={sosForm.name} 
-                        onChange={(e) => setSosForm({...sosForm, name: e.target.value})}
+                        type="text"
+                        placeholder="e.g., Rajesh Khanna"
+                        value={sosForm.name}
+                        onChange={(e) => setSosForm({ ...sosForm, name: e.target.value })}
                         required
                         disabled={isSubmitting}
                       />
                     </div>
                     <div className={styles.formGroup}>
                       <label htmlFor="phone">Contact Number</label>
-                      <input 
+                      <input
                         id="phone"
-                        type="tel" 
-                        placeholder="e.g., +91-98765-XXXXX" 
-                        value={sosForm.phone} 
-                        onChange={(e) => setSosForm({...sosForm, phone: e.target.value})}
+                        type="tel"
+                        placeholder="e.g., +91-98765-XXXXX"
+                        value={sosForm.phone}
+                        onChange={(e) => setSosForm({ ...sosForm, phone: e.target.value })}
                         required
                         disabled={isSubmitting}
                       />
@@ -1011,10 +1023,10 @@ export const Landing: React.FC = () => {
                       <div className={styles.formGroup}>
                         <label htmlFor="zone">Affected Zone</label>
                         <div className={styles.selectWrapper}>
-                          <select 
+                          <select
                             id="zone"
-                            value={sosForm.zone} 
-                            onChange={(e) => setSosForm({...sosForm, zone: e.target.value})}
+                            value={sosForm.zone}
+                            onChange={(e) => setSosForm({ ...sosForm, zone: e.target.value })}
                             disabled={isSubmitting}
                           >
                             <option value="East Delhi">East Delhi</option>
@@ -1028,10 +1040,10 @@ export const Landing: React.FC = () => {
                       <div className={styles.formGroup}>
                         <label htmlFor="need">Primary Need</label>
                         <div className={styles.selectWrapper}>
-                          <select 
+                          <select
                             id="need"
-                            value={sosForm.need} 
-                            onChange={(e) => setSosForm({...sosForm, need: e.target.value})}
+                            value={sosForm.need}
+                            onChange={(e) => setSosForm({ ...sosForm, need: e.target.value })}
                             disabled={isSubmitting}
                           >
                             <option value="Drinking Water">Drinking Water</option>
@@ -1045,12 +1057,12 @@ export const Landing: React.FC = () => {
                     </div>
                     <div className={styles.formGroup}>
                       <label htmlFor="details">Situation Details</label>
-                      <textarea 
+                      <textarea
                         id="details"
-                        rows={3} 
+                        rows={3}
                         placeholder="Describe the number of people affected and current safety levels..."
-                        value={sosForm.details} 
-                        onChange={(e) => setSosForm({...sosForm, details: e.target.value})}
+                        value={sosForm.details}
+                        onChange={(e) => setSosForm({ ...sosForm, details: e.target.value })}
                         required
                         disabled={isSubmitting}
                       />

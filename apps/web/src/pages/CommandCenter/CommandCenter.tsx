@@ -16,6 +16,7 @@ import styles from './CommandCenter.module.css';
 
 import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -223,7 +224,8 @@ export const CommandCenter: React.FC = () => {
     <div ref={containerRef} className={styles.container}>
       <GradientBackground />
       {/* 1. EDITORIAL HERO SECTION */}
-      <section ref={heroRef} className={styles.heroSection}>
+      <section ref={heroRef} className={`${styles.heroSection} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.heroHeader}>
           <div className={styles.heroTitles}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -231,7 +233,7 @@ export const CommandCenter: React.FC = () => {
               <PageGuideTrigger />
             </div>
             <div style={{ overflow: 'hidden' }}>
-              <h1 className={styles.heroTitle}>Live Operational Overview</h1>
+              <h1 className={`${styles.heroTitle} reveal-block`} data-reveal-color="#F47C20">Live Operational Overview</h1>
             </div>
             <p className={styles.heroLead}>
               A unified monitoring layout connecting emergency incidents, resource supply coordinates,
