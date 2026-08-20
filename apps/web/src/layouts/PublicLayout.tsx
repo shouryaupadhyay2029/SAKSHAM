@@ -339,7 +339,17 @@ export const PublicLayout: React.FC = () => {
 
           {/* Brand */}
           <div className={styles.brandArea}>
-            <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', marginRight: '14px' }} />
+            <img 
+              src="/logo.png" 
+              alt="SAKSHAM Logo" 
+              style={{ 
+                width: isScrolled ? '60px' : '85px', 
+                height: isScrolled ? '60px' : '85px', 
+                objectFit: 'contain', 
+                marginRight: '14px',
+                transition: 'width 400ms cubic-bezier(0.22, 1, 0.36, 1), height 400ms cubic-bezier(0.22, 1, 0.36, 1)'
+              }} 
+            />
             <Link to="/" className={styles.logoText}>SAKSHAM</Link>
           </div>
 
