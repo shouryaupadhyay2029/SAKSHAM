@@ -24,17 +24,17 @@ frame_idx = 0
 # Thresholds for transparency conversion
 # min_val maps to alpha 0 (fully transparent)
 # max_val maps to alpha 255 (fully opaque)
-thresh_min = 12
-thresh_max = 45
+thresh_min = 18
+thresh_max = 50
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
     
-    # Downscale frame to 84x84 (2x retina size for 42px navbar height)
+    # Downscale frame to 240x240 (perfect retina quality for 100px navbar height)
     # The original is 368x368, keeping 1:1 aspect ratio
-    resized = cv2.resize(frame, (84, 84), interpolation=cv2.INTER_AREA)
+    resized = cv2.resize(frame, (240, 240), interpolation=cv2.INTER_AREA)
     
     # Split into B, G, R
     b, g, r = cv2.split(resized)
