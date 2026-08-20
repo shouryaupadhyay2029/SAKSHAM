@@ -339,7 +339,7 @@ export const PublicLayout: React.FC = () => {
 
           {/* Brand */}
           <div className={styles.brandArea}>
-            <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', marginRight: '14px' }} />
+            <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', marginRight: '14px', transform: 'translateY(4px)' }} />
             <Link to="/" style={{ display: 'flex', alignItems: 'center', height: '100%', textDecoration: 'none' }}>
               <img
                 src="/WEB_NAME.webp"
