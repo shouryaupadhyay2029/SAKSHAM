@@ -4,6 +4,8 @@ import { gsap } from 'gsap';
 import styles from './BootScreen.module.css';
 import { GradientBackground } from '../ui/almoayyed';
 
+import { useTranslation } from 'react-i18next';
+
 interface BootScreenProps {
   onComplete: () => void;
 }
@@ -11,27 +13,27 @@ interface BootScreenProps {
 const features = [
   {
     num: '01',
-    line1: 'REAL-TIME',
-    line2: 'INCIDENT MONITORING',
-    desc: 'Continuous monitoring of threats and emergencies across regions with live updates.'
+    line1: 'boot.f1_line1',
+    line2: 'boot.f1_line2',
+    desc: 'boot.f1_desc'
   },
   {
     num: '02',
-    line1: 'RESOURCE-DEMAND',
-    line2: 'MATCHING',
-    desc: 'Algorithmic matching of disaster requests with nearest available supply inventories.'
+    line1: 'boot.f2_line1',
+    line2: 'boot.f2_line2',
+    desc: 'boot.f2_desc'
   },
   {
     num: '03',
-    line1: 'SMART',
-    line2: 'LOGISTICS ROUTING',
-    desc: 'Optimized dispatch routes for relief vehicles avoiding waterlogged or high-hazard zones.'
+    line1: 'boot.f3_line1',
+    line2: 'boot.f3_line2',
+    desc: 'boot.f3_desc'
   },
   {
     num: '04',
-    line1: 'CONNECTED',
-    line2: 'RESPONSE NETWORK',
-    desc: 'Unified dashboard connecting NDRF, civil defence, state authorities, and civilian requests.'
+    line1: 'boot.f4_line1',
+    line2: 'boot.f4_line2',
+    desc: 'boot.f4_desc'
   }
 ];
 
@@ -43,6 +45,7 @@ const seamNodes = [
 ];
 
 export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
+  const { t } = useTranslation();
   // Track-based active feature index: -1 initially (hidden), 0 to 3 are features, 4 is ready transition.
   const [featureIndex, setFeatureIndex] = useState(-1);
   const [isReadyStage, setIsReadyStage] = useState(false);
@@ -218,31 +221,31 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
             <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '140px', height: '140px', objectFit: 'contain' }} />
           </div>
           <h1 ref={brandWordmarkRef} className={styles.brandWordmark}>
-            SAKSHAM
+            {t('boot.title')}
           </h1>
           <p ref={brandDescriptorRef} className={styles.brandDescriptor}>
-            DISASTER RESPONSE &amp; RELIEF COORDINATION NETWORK
+            {t('boot.descriptor')}
           </p>
         </div>
 
         {/* Bottom active state indicator */}
         <div ref={leftBottomStatusRef} className={styles.leftBottomStatus}>
-          RESPONSE NETWORK
+          {t('boot.responseNetwork')}
           <div className={styles.statusActiveRow}>
-            <span className={styles.activeDot}>●</span> ACTIVE
+            <span className={styles.activeDot}>●</span> {t('boot.active')}
           </div>
         </div>
 
         {/* Initiating Monospace metadata */}
         <div ref={initiatingTextRef} className={styles.initiatingText}>
-          SAKSHAM INITIATING SYSTEMS...
+          {t('boot.initiating')}
         </div>
       </div>
 
       {/* RIGHT SURFACE - WARM CREAM */}
       <div className={`${styles.rightPanel} textureCream`}>
         {/* Escape Skip Cue */}
-        <div ref={skipCueRef} className={styles.skipCue}>Press ESC to Skip</div>
+        <div ref={skipCueRef} className={styles.skipCue}>{t('boot.skip')}</div>
 
         {/* Accordion Feature Viewport & Track */}
         <div className={styles.featureViewport}>
@@ -261,21 +264,21 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
                 >
                   {/* Expanded Content Viewport */}
                   <div className={styles.expandedContent}>
-                    <div className={styles.featureCounter}>{feat.num} / 04</div>
+                    <div className={styles.featureCounter}>{t('boot.feature', { num: feat.num })}</div>
                     <h2 className={styles.featureTitle}>
-                      {feat.line1}
+                      {t(feat.line1)}
                       <br />
-                      {feat.line2}
+                      {t(feat.line2)}
                     </h2>
                     <div className={styles.orangeLine} />
-                    <p className={styles.featureDesc}>{feat.desc}</p>
+                    <p className={styles.featureDesc}>{t(feat.desc)}</p>
                   </div>
 
                   {/* Collapsed Row Viewport */}
                   <div className={styles.collapsedRow}>
                     <span className={styles.collapsedDot}>●</span>
-                    <span className={styles.collapsedCounter}>{feat.num} / 04</span>
-                    <span className={styles.collapsedTitle}>{feat.line1} {feat.line2}</span>
+                    <span className={styles.collapsedCounter}>{t('boot.feature', { num: feat.num })}</span>
+                    <span className={styles.collapsedTitle}>{t(feat.line1)} {t(feat.line2)}</span>
                   </div>
                 </div>
               );
@@ -287,16 +290,16 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
         <div ref={rightBottomBarRef} className={styles.rightBottomBar}>
           <div className={styles.readyStatusRow}>
             <div className={styles.readyIndicator}>
-              RESPONSE NETWORK READY
+              {t('boot.ready')}
             </div>
             {isReadyStage ? (
               <div className={styles.readyPulse}>
                 <ShieldCheck size={12} />
-                <span className={styles.readyGreenDot}>●</span> READY
+                <span className={styles.readyGreenDot}>●</span> {t('boot.statusReady')}
               </div>
             ) : (
               <div className={styles.readyPulse} style={{ color: '#F47C20' }}>
-                <span>●</span> ACTIVATING
+                <span>●</span> {t('boot.activating')}
               </div>
             )}
           </div>
