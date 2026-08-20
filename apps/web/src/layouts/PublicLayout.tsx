@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
-  Menu, X, Search, ChevronDown, LayoutGrid,
+  Menu, X, Search, ChevronDown,
   AlertTriangle, Package, Truck, Home, AlertCircle,
   FileText, Phone, Info, Zap, Activity, BookOpen,
 } from 'lucide-react';
@@ -15,13 +15,6 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ─── Dropdown data ─────────────────────────────────────────────────────────
 const GET_HELP_ITEMS = [
-  {
-    icon: AlertCircle,
-    to: '/report',
-    title: 'Civilian SOS',
-    desc: 'Report an emergency or request assistance',
-    highlight: true,
-  },
   {
     icon: Home,
     to: '/operations/shelters',
@@ -39,12 +32,6 @@ const GET_HELP_ITEMS = [
 ];
 
 const RESPONSE_ITEMS = [
-  {
-    icon: LayoutGrid,
-    to: '/operations/command-center',
-    title: 'Command Centre',
-    desc: 'Live operational situational overview',
-  },
   {
     icon: AlertTriangle,
     to: '/operations/incidents',
