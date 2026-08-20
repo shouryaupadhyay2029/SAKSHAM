@@ -345,12 +345,12 @@ export const PublicLayout: React.FC = () => {
                 src="/WEB_NAME.webp"
                 alt="SAKSHAM"
                 style={{
-                  height: '140px',
+                  height: '165px',
                   width: 'auto',
                   objectFit: 'contain',
                   filter: isDarkHeader ? 'none' : 'invert(1) brightness(1.2)',
                   pointerEvents: 'none',
-                  transform: 'translateY(6px)'
+                  transform: 'translateY(8px)'
                 }}
               />
             </Link>
