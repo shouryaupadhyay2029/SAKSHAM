@@ -1,0 +1,370 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OPERATOR
+  REGIONAL_AUTHORITY
+  ADMIN
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum IncidentStatus {
+  REPORTED
+  VERIFIED
+  AWAITING_RESPONSE
+  UNDER_RESPONSE
+  RESOLVED
+}
+
+enum DemandPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum DemandStatus {
+  PENDING
+  AWAITING_MATCH
+  MATCHED
+  ALLOCATED
+  DISPATCHED
+  FULFILLED
+  CANCELLED
+}
+
+enum ResourceStatus {
+  AVAILABLE
+  LOW
+  RESERVED
+  DEPLETED
+  IN_TRANSIT
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  DISPATCHED
+  EN_ROUTE
+  ON_SCENE
+  RETURNING
+  MAINTENANCE
+}
+
+enum ShelterStatus {
+  OPEN
+  NEAR_CAPACITY
+  FULL
+  CLOSED
+}
+
+enum AllocationStatus {
+  RECOMMENDED
+  PENDING_APPROVAL
+  APPROVED
+  DISPATCHED
+  COMPLETED
+  REJECTED
+}
+
+enum DispatchStatus {
+  PLANNED
+  READY
+  DISPATCHED
+  EN_ROUTE
+  ARRIVED
+  COMPLETED
+  CANCELLED
+  DELAYED
+  FAILED
+}
+
+enum DeliveryStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  PARTIAL
+  FAILED
+}
+
+model Officer {
+  id                 String   @id @default(uuid()) @db.Uuid
+  email              String   @unique
+  name               String
+  role               Role
+  region             String?
+  passwordHash       String   @default("")
+  verificationStatus String   @default("VERIFIED")
+  accountStatus      String   @default("ACTIVE")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  timelines   IncidentTimeline[]
+  allocations Allocation[]
+  dispatches  Dispatch[]
+}
+
+model Incident {
+  id             String         @id @default(uuid()) @db.Uuid
+  incidentId     String         @unique // e.g. "INC-2026-081"
+  type           String
+  title          String
+  description    String
+  location       String
+  latitude       Float
+  longitude      Float
+  region         String
+  severity       Severity
+  status         IncidentStatus @default(REPORTED)
+  reportedAt     DateTime       @default(now())
+  affectedPeople Int            @default(0)
+  displacedPeople Int           @default(0)
+  assignedUnit   String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  timelines     IncidentTimeline[]
+  demands       DemandRequest[]
+  notifications Notification[]
+}
+
+model IncidentTimeline {
+  id         String   @id @default(uuid()) @db.Uuid
+  incidentId String   @db.Uuid
+  timestamp  DateTime @default(now())
+  eventType  String
+  message    String
+  actorId    String?  @db.Uuid
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  actor    Officer? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([incidentId])
+}
+
+model DemandRequest {
+  id             String         @id @default(uuid()) @db.Uuid
+  requestId      String         @unique // e.g. "REQ-DEL-101"
+  incidentId     String         @db.Uuid
+  affectedZone   String
+  requestedType  String         // e.g. WATER, FOOD, MEDICAL, etc.
+  description    String
+  quantity       Float
+  unit           String
+  affectedPeople Int            @default(0)
+  priority       DemandPriority
+  status         DemandStatus   @default(PENDING)
+  requiredBy     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  incident    Incident     @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  allocations Allocation[]
+
+  @@index([incidentId])
+}
+
+model Resource {
+  id                String         @id @default(uuid()) @db.Uuid
+  resourceId        String         @unique // e.g. "RES-WT-001"
+  materialName      String
+  description       String
+  category          String         // e.g. WATER, FOOD, MEDICAL, etc.
+  availableQuantity Float
+  reservedQuantity  Float          @default(0)
+  unit              String
+  storageDepot      String
+  location          String
+  latitude          Float
+  longitude         Float
+  status            ResourceStatus @default(AVAILABLE)
+  pointOfContact    String
+  lastUpdated       DateTime       @default(now()) @updatedAt
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  allocations Allocation[]
+  movements   ResourceMovement[]
+  notifications Notification[]
+}
+
+model ResourceMovement {
+  id          String   @id @default(uuid()) @db.Uuid
+  resourceId  String   @db.Uuid
+  timestamp   DateTime @default(now())
+  quantity    Float
+  type        String   // INCOMING, OUTGOING, RESERVED
+  description String
+  createdAt   DateTime @default(now())
+
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([resourceId])
+}
+
+model Vehicle {
+  id                 String        @id @default(uuid()) @db.Uuid
+  vehicleId          String        @unique // e.g. "VEH-BT-401"
+  name               String
+  type               String        // Truck, Ambulance, Helicopter, Boat, Drone
+  capacity           Float
+  capacityUnit       String
+  currentLatitude    Float
+  currentLongitude   Float
+  speed              Float         @default(0)
+  operatorName       String
+  contactRadio       String
+  currentMission     String?
+  status             VehicleStatus @default(AVAILABLE)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  allocations Allocation[]
+  dispatches  Dispatch[]
+  locations   VehicleLocation[]
+}
+
+model VehicleLocation {
+  id        String   @id @default(uuid()) @db.Uuid
+  vehicleId String   @db.Uuid
+  timestamp DateTime @default(now())
+  latitude  Float
+  longitude Float
+  speed     Float    @default(0)
+  createdAt DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+}
+
+model Shelter {
+  id               String        @id @default(uuid()) @db.Uuid
+  shelterId        String        @unique // e.g. "SHL-DEL-001"
+  name             String
+  location         String
+  region           String
+  latitude         Float
+  longitude        Float
+  totalCapacity    Int
+  currentOccupancy Int           @default(0)
+  status           ShelterStatus @default(OPEN)
+  facilities       String[]
+  contactPerson    String
+  contactInfo      String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model Allocation {
+  id                 String           @id @default(uuid()) @db.Uuid
+  allocationId       String           @unique // e.g. "ALL-2026-001"
+  demandId           String           @db.Uuid
+  resourceId         String           @db.Uuid
+  vehicleId          String?          @db.Uuid
+  matchScore         Float            @default(1.0)
+  availabilityScore  Float            @default(1.0)
+  distanceScore      Float            @default(1.0)
+  priorityScore      Float            @default(1.0)
+  compatibilityScore Float            @default(1.0)
+  status             AllocationStatus @default(RECOMMENDED)
+  approvedById       String?          @db.Uuid
+  approvedAt         DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  demand     DemandRequest @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  resource   Resource      @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle?      @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  approvedBy Officer?      @relation(fields: [approvedById], references: [id], onDelete: SetNull)
+  dispatches Dispatch[]
+
+  @@index([demandId])
+  @@index([resourceId])
+  @@index([vehicleId])
+}
+
+model Dispatch {
+  id                String         @id @default(uuid()) @db.Uuid
+  dispatchId        String         @unique // e.g. "DSP-2026-001" (Wait, or DIS-2026-001)
+  allocationId      String         @db.Uuid
+  vehicleId         String         @db.Uuid
+  origin            String
+  destination       String
+  assignedOfficer   String?
+  assignedOfficerId String?        @db.Uuid
+  plannedDeparture  DateTime?
+  actualDeparture   DateTime?
+  estimatedArrival  DateTime?
+  actualArrival     DateTime?
+  completionTime    DateTime?
+  latitude          Float?
+  longitude         Float?
+  quantity          Float?
+  priority          String?
+  status            DispatchStatus @default(PLANNED)
+  notes             String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  allocation Allocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  officer    Officer?   @relation(fields: [assignedOfficerId], references: [id], onDelete: SetNull)
+  deliveries Delivery[]
+
+  @@index([allocationId])
+  @@index([vehicleId])
+  @@index([assignedOfficerId])
+}
+
+model Delivery {
+  id           String         @id @default(uuid()) @db.Uuid
+  deliveryId   String         @unique // e.g. "DEL-2026-001"
+  dispatchId   String         @db.Uuid
+  quantity     Float
+  unit         String
+  deliveredAt  DateTime?
+  receivedBy   String?
+  confirmation String?
+  status       DeliveryStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  dispatch Dispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+
+  @@index([dispatchId])
+}
+
+model Notification {
+  id         String   @id @default(uuid()) @db.Uuid
+  recipient  String
+  type       String
+  title      String
+  message    String
+  severity   String   @default("INFO")
+  read       Boolean  @default(false)
+  incidentId String?  @db.Uuid
+  resourceId String?  @db.Uuid
+  dispatchId String?  @db.Uuid
+  createdAt  DateTime @default(now())
+
+  incident Incident? @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+  resource Resource? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+
+  @@index([incidentId])
+  @@index([resourceId])
+}

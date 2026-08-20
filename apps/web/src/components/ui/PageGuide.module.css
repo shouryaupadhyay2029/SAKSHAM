@@ -1,0 +1,286 @@
+/* ═══════════════════════════════════════════════════════════
+   SAKSHAM PAGE-SPECIFIC GUIDEBOOK — PREMIUM EDITORIAL STYLING
+   PageGuide.module.css
+   ═══════════════════════════════════════════════════════════ */
+
+.guidebook {
+  background-color: #FAF7F0;
+  border-top: 1px solid rgba(23, 61, 45, 0.08);
+  padding: 60px 40px;
+  margin-top: 60px;
+  font-family: var(--font-sans), sans-serif;
+  color: #17211C;
+  position: relative;
+  overflow: hidden;
+}
+
+.guidebookHeader {
+  max-width: 800px;
+  margin-bottom: 40px;
+}
+
+.guidebookEyebrow {
+  display: block;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: #F47C20;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.guidebookTitle {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 30px;
+  font-weight: 800;
+  color: #173D2D;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.guidebookIntro {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: rgba(23, 33, 28, 0.75);
+}
+
+.guidebookGrid {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 48px;
+  max-width: 1200px;
+  margin-bottom: 48px;
+}
+
+.stepsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stepRow {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(23, 61, 45, 0.06);
+}
+
+.stepRow:last-child {
+  border-bottom: none;
+}
+
+.stepNum {
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  font-weight: 800;
+  color: #F47C20;
+  background-color: rgba(244, 124, 32, 0.08);
+  padding: 4px 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.stepText h4 {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #173D2D;
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.stepText p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(23, 33, 28, 0.7);
+  margin: 0;
+}
+
+.sidebarSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebarCard {
+  background-color: rgba(23, 61, 45, 0.02);
+  border: 1px solid rgba(23, 61, 45, 0.05);
+  border-radius: 4px;
+  padding: 20px;
+}
+
+.sidebarCard h4 {
+  font-size: 10.5px;
+  font-weight: 850;
+  color: #173D2D;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed rgba(23, 61, 45, 0.15);
+  padding-bottom: 6px;
+}
+
+.sidebarCard p {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(23, 33, 28, 0.7);
+  margin: 0;
+}
+
+.sidebarCard ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebarCard li {
+  font-size: 12px;
+  color: rgba(23, 33, 28, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebarCard li::before {
+  content: "■";
+  color: #F47C20;
+  font-size: 7px;
+}
+
+.flowDiagramSection {
+  border-top: 1px solid rgba(23, 61, 45, 0.08);
+  padding-top: 36px;
+  margin-bottom: 40px;
+}
+
+.flowTitle {
+  font-size: 9.5px;
+  font-weight: 850;
+  color: rgba(23, 61, 45, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.flowPath {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background-color: rgba(23, 61, 45, 0.02);
+  padding: 16px 24px;
+  border-radius: 4px;
+}
+
+.flowNode {
+  font-size: 11px;
+  font-weight: 800;
+  color: #173D2D;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.flowArrow {
+  color: rgba(23, 61, 45, 0.3);
+}
+
+.glossarySection {
+  border-top: 1px solid rgba(23, 61, 45, 0.08);
+  padding-top: 36px;
+  margin-bottom: 40px;
+}
+
+.glossaryList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.glossaryTerm {
+  font-size: 12px;
+}
+
+.glossaryTerm strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+  color: #173D2D;
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+.glossaryTerm span {
+  color: rgba(23, 33, 28, 0.65);
+  line-height: 1.45;
+}
+
+.backToTop {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  border-top: 1px solid rgba(23, 61, 45, 0.08);
+  padding-top: 30px;
+}
+
+.backBtn {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #173D2D;
+  border: 1px solid rgba(23, 61, 45, 0.2);
+  background: transparent;
+  padding: 10px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.backBtn:hover {
+  background-color: #173D2D;
+  color: #FAF7F0;
+  border-color: #173D2D;
+}
+
+/* Subtle trigger links */
+.triggerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(23, 61, 45, 0.6);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.triggerBtn:hover {
+  color: #F47C20;
+  transform: translateY(-1.5px);
+}
+
+@media (max-width: 768px) {
+  .guidebook {
+    padding: 40px 20px;
+  }
+  .guidebookGrid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .flowPath {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

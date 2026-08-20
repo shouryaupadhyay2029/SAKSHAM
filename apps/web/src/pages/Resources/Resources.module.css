@@ -1,0 +1,693 @@
+/* ═══════════════════════════════════════════════════════════
+   SAKSHAM RESOURCE INVENTORY — PREMIUM EDITORIAL STYLING
+   Resources.module.css
+   ═══════════════════════════════════════════════════════════ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  background-color: #FAF8F3;
+  color: #101513;
+  padding: 40px 24px;
+  gap: 36px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ── 1. Page Header ── */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.08);
+  padding-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.headerTitles {
+  max-width: 600px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #E86F16;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 38px;
+  font-weight: 900;
+  color: #0B2119;
+  letter-spacing: -0.02em;
+  margin: 0 0 12px 0;
+  line-height: 1.1;
+}
+
+.lead {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(11, 33, 25, 0.7);
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.liveStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(11, 33, 25, 0.04);
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  background-color: #10B981;
+  border-radius: 50%;
+}
+
+.statusLabel {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #0B2119;
+}
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #0B2119;
+  color: #FAF8F3;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.addBtn:hover {
+  opacity: 0.9;
+}
+
+/* ── 2. Statistics Strip ── */
+.statsStrip {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.08);
+  padding-bottom: 24px;
+}
+
+.statCell {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statNum {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 36px;
+  font-weight: 900;
+  color: #0B2119;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(11, 33, 25, 0.45);
+  text-transform: uppercase;
+}
+
+.criticalAccent { color: #DC2626; }
+.warningAccent  { color: #EA580C; }
+.successAccent  { color: #059669; }
+
+.statDivider {
+  width: 1px;
+  background-color: rgba(11, 33, 25, 0.08);
+  align-self: stretch;
+}
+
+/* ── 3. Filters & Search Control Bar ── */
+.filterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.searchWrapper {
+  position: relative;
+  flex: 1;
+  max-width: 380px;
+  min-width: 260px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(11, 33, 25, 0.35);
+  pointer-events: none;
+}
+
+.searchWrapper input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border-radius: 6px;
+  border: 1px solid rgba(11, 33, 25, 0.12);
+  background-color: #FAF8F3;
+  color: #0B2119;
+  outline: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.searchWrapper input::placeholder {
+  color: rgba(11, 33, 25, 0.35);
+}
+
+.filterPills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pillDivider {
+  width: 1px;
+  height: 16px;
+  background-color: rgba(11, 33, 25, 0.12);
+  margin: 0 4px;
+}
+
+.filterPill {
+  font-size: 10.5px;
+  font-weight: 750;
+  color: rgba(11, 33, 25, 0.5);
+  background: transparent;
+  border: 1px solid rgba(11, 33, 25, 0.12);
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.filterPill:hover {
+  border-color: rgba(11, 33, 25, 0.25);
+  color: #0B2119;
+}
+
+.filterPillActive {
+  background-color: #0B2119;
+  color: #FAF8F3;
+  border-color: #0B2119;
+}
+
+/* ── 4. Main Split Workspace ── */
+.splitWorkspace {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 36px;
+  align-items: start;
+}
+
+.registryColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.tableWrapper {
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  border-radius: 6px;
+  overflow-x: auto;
+  background-color: #FAF8F3;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: rgba(11, 33, 25, 0.45);
+  letter-spacing: 0.08em;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.08);
+  background-color: rgba(11, 33, 25, 0.02);
+  text-transform: uppercase;
+}
+
+.table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.06);
+  font-size: 13px;
+  color: rgba(11, 33, 25, 0.8);
+  vertical-align: middle;
+}
+
+.tableRow {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.tableRow:hover {
+  background-color: rgba(11, 33, 25, 0.02);
+}
+
+.rowSelected {
+  background-color: rgba(232, 111, 22, 0.04);
+}
+
+.nameCol {
+  min-width: 180px;
+}
+
+.itemTitleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.resNameLabel {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0B2119;
+}
+
+.resContactText {
+  font-size: 10.5px;
+  color: rgba(11, 33, 25, 0.45);
+}
+
+.stockCol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stockText {
+  font-size: 12px;
+  color: #0B2119;
+}
+
+.stockCapacityBar {
+  width: 100px;
+  height: 4px;
+  background-color: rgba(11, 33, 25, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.stockCapacityFill {
+  height: 100%;
+  background-color: #10B981;
+}
+
+.fillLow {
+  background-color: #EF4444;
+}
+
+.depotCol {
+  font-weight: 700;
+  color: #0B2119;
+}
+
+.statusLabel {
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-block;
+}
+
+.status_AVAILABLE { background-color: rgba(16, 185, 129, 0.1); color: #10B981; }
+.status_LOW       { background-color: rgba(239, 68, 68, 0.1); color: #EF4444; }
+.status_RESERVED  { background-color: rgba(249, 115, 22, 0.1); color: #F97316; }
+.status_IN_TRANSIT { background-color: rgba(59, 130, 246, 0.1); color: #3B82F6; }
+.status_DEPLETED  { background-color: rgba(17, 21, 19, 0.08); color: rgba(17, 21, 19, 0.6); }
+
+.actionCol {
+  width: 40px;
+  text-align: right;
+}
+
+.rowArrow {
+  color: rgba(11, 33, 25, 0.2);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.tableRow:hover .rowArrow {
+  color: #E86F16;
+  transform: translateX(3px);
+}
+
+.emptyRow {
+  text-align: center;
+  padding: 48px !important;
+}
+
+.emptyIcon {
+  color: rgba(11, 33, 25, 0.2);
+  margin-bottom: 12px;
+}
+
+.emptyRow p {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0B2119;
+  margin: 0 0 4px 0;
+}
+
+.emptyRow span {
+  font-size: 11.5px;
+  color: rgba(11, 33, 25, 0.5);
+}
+
+/* ── Right Side: Ledger Panel ── */
+.ledgerColumn {
+  background-color: rgba(11, 33, 25, 0.02);
+  border: 1px dashed rgba(11, 33, 25, 0.12);
+  border-radius: 6px;
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyLedger {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px;
+  text-align: center;
+  max-width: 280px;
+  margin: auto;
+}
+
+.ledgerIcon {
+  color: rgba(11, 33, 25, 0.2);
+  margin-bottom: 12px;
+}
+
+.emptyLedger h4 {
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: #0B2119;
+  text-transform: uppercase;
+  margin: 0 0 6px 0;
+}
+
+.emptyLedger p {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(11, 33, 25, 0.55);
+  margin: 0;
+}
+
+/* Selected Ledger details */
+.ledgerContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+.ledgerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.08);
+  padding-bottom: 12px;
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ledgerTypeLabel {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0B2119;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.ledgerLocation {
+  font-size: 12px;
+  color: rgba(11, 33, 25, 0.6);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mapPinIcon {
+  color: rgba(11, 33, 25, 0.4);
+}
+
+.closeLedgerBtn {
+  background: transparent;
+  border: none;
+  color: rgba(11, 33, 25, 0.35);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+}
+
+.closeLedgerBtn:hover {
+  background-color: rgba(11, 33, 25, 0.05);
+}
+
+/* Metrics details grid inside detail */
+.detailsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(11, 33, 25, 0.45);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.gridData {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gridRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.04);
+  padding-bottom: 4px;
+}
+
+.gridLabel {
+  font-weight: 800;
+  color: rgba(11, 33, 25, 0.4);
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+}
+
+/* Pressure indicators */
+.pressurePanel {
+  background-color: rgba(232, 111, 22, 0.04);
+  border: 1px solid rgba(232, 111, 22, 0.12);
+  border-radius: 4px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pressureHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  font-weight: 850;
+  color: #D55E0E;
+  text-transform: uppercase;
+}
+
+.pressureIcon {
+  color: #E86F16;
+}
+
+.linkedRequestsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.linkedRequestItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.lrZone {
+  font-weight: 700;
+  color: #0B2119;
+}
+
+.lrQty {
+  font-family: var(--font-mono), monospace;
+  color: rgba(11, 33, 25, 0.65);
+}
+
+.noPressureBanner {
+  font-size: 11px;
+  font-weight: 850;
+  color: #059669;
+  background-color: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  padding: 8px;
+  border-radius: 4px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.allNominalBanner {
+  font-size: 11px;
+  font-weight: 850;
+  color: rgba(11, 33, 25, 0.5);
+  background-color: rgba(11, 33, 25, 0.03);
+  border: 1px solid rgba(11, 33, 25, 0.1);
+  padding: 8px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* Ledger actions */
+.ledgerActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.primaryActionBtn {
+  font-size: 11px;
+  font-weight: 750;
+  background-color: #0B2119;
+  color: #FAF8F3;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  width: 100%;
+}
+
+.primaryActionBtn:hover {
+  opacity: 0.9;
+}
+
+/* ── 5. Depot Network Grid Section ── */
+.depotNetworkSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid rgba(11, 33, 25, 0.08);
+  padding-top: 30px;
+}
+
+.depotGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.depotCard {
+  background-color: #FAF8F3;
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.depotTitle {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0B2119;
+}
+
+.depotMeta {
+  font-size: 11px;
+  color: rgba(11, 33, 25, 0.5);
+}
+
+.depotMeta.criticalAccent {
+  color: #DC2626;
+}
+
+/* ── 6. Low stock Alerts banner ── */
+.lowStockBanner {
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 750;
+  color: #DC2626;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 860px) {
+  .splitWorkspace {
+    grid-template-columns: 1fr;
+  }
+}

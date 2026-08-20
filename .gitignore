@@ -29,3 +29,14 @@ pnpm-debug.log*
 *.sln
 *.sw?
 .gemini/
+.gemini/
+
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.pyo
+
+# FastAPI local environment
+services/fastapi/.venv/

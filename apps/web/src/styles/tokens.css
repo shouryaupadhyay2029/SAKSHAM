@@ -1,0 +1,104 @@
+:root {
+  /* Brand Palette */
+  --color-primary: #F47C20;       /* Warm Orange - Brand Accent & Primary Actions */
+  --color-primary-hover: #D76510; /* Darker Orange */
+  --color-primary-light: #FDF1E7; /* Light tint for highlights */
+  
+  --color-deep-forest: #173D2D;
+  --color-forest: #21583F;
+  --color-dark-forest: #10291F;
+  --color-earth: #5A4636;
+  
+  /* Cream Material Palette */
+  --color-cream-light: #FAF7F0;
+  --color-cream-primary: #F5F0E7;
+  --color-cream-deep: #EEE6D8;
+  --color-cream-parchment: #E7DDCE;
+  --color-cream-surface: #F2ECE2;
+  --color-cream-border: #D8CEC0;
+  --color-cream-border-light: #E5DDD2;
+  --color-cream-muted: #B7AD9F;
+  
+  --color-cream: var(--color-cream-primary);
+  --color-warm-white: var(--color-cream-light);
+  --color-charcoal: #101513;
+  --color-border: var(--color-cream-border-light);
+  --color-border-strong: var(--color-cream-border);
+  
+  /* Status Colors */
+  --color-critical: #D94B3D;      /* Red - real danger */
+  --color-warning: #E7A72B;       /* Amber/Yellow - warnings */
+  --color-success: #4F8F5B;       /* Green - safe / operational */
+  --color-info: #4A82A8;          /* Blue - informational */
+  
+  /* Layout Surfaces */
+  --color-bg-base: var(--color-cream-light);
+  --color-bg-surface: var(--color-cream-primary);
+  --color-bg-surface-raised: var(--color-cream-surface);
+  --color-bg-sidebar: var(--color-dark-forest);
+  --color-bg-topbar: var(--color-deep-forest);
+  
+  /* Text Colors */
+  --color-text-primary: #17211C;
+  --color-text-secondary: #5F675F;
+  --color-text-muted: var(--color-cream-muted);
+  --color-text-on-dark: var(--color-cream-light);
+  --color-text-on-primary: #FFFFFF;
+  
+  /* Typography Stacks */
+  --font-display: 'AsteraCasty', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Feldora', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;     /* 12px */
+  --font-size-sm: 0.875rem;    /* 14px */
+  --font-size-md: 1rem;        /* 16px */
+  --font-size-lg: 1.125rem;    /* 18px */
+  --font-size-xl: 1.25rem;     /* 20px */
+  --font-size-2xl: 1.5rem;     /* 24px */
+  --font-size-3xl: 1.875rem;   /* 30px */
+  --font-size-4xl: 2.25rem;    /* 36px */
+  --font-size-5xl: 3rem;       /* 48px */
+  
+  /* Font Weights */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Border Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  
+  /* Spacing Scale */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-10: 2.5rem;  /* 40px */
+  --space-12: 3rem;    /* 48px */
+  --space-16: 4rem;    /* 64px */
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(16, 21, 19, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(16, 21, 19, 0.08), 0 2px 4px -1px rgba(16, 21, 19, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(16, 21, 19, 0.1), 0 4px 6px -2px rgba(16, 21, 19, 0.05);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  
+  /* Transitions */
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Sidebar/Layout constants */
+  --sidebar-width: 260px;
+  --topbar-height: 70px;
+}

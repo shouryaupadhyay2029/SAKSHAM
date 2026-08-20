@@ -1,0 +1,672 @@
+/* ═══════════════════════════════════════════════════════════
+   SAKSHAM COMMAND CENTER OVERVIEW PAGE — PREMIUM EDITORIAL DESIGN
+   CommandCenter.module.css
+   ═══════════════════════════════════════════════════════════ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  background-color: #FAF8F3;
+  color: #101513;
+  padding: 40px 24px;
+  gap: 40px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ── 1. Hero Section ── */
+.heroSection {
+  border-bottom: 1px solid rgba(11, 33, 25, 0.08);
+  padding-bottom: 30px;
+}
+
+.heroHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.heroTitles {
+  max-width: 680px;
+}
+
+.heroSubtitle {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #E86F16;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.heroTitle {
+  font-size: 38px;
+  font-weight: 900;
+  color: #0B2119;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px 0;
+  line-height: 1.1;
+  font-family: 'Georgia', serif;
+}
+
+.heroLead {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(11, 33, 25, 0.7);
+  margin: 0;
+}
+
+.heroStatus {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: rgba(11, 33, 25, 0.04);
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  padding: 10px 16px;
+  border-radius: 4px;
+}
+
+.statusDotPulse {
+  width: 8px;
+  height: 8px;
+  background-color: #10B981;
+  border-radius: 50%;
+  position: relative;
+}
+
+.statusDotPulse::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  border: 2px solid #10B981;
+  animation: pulseGreen 2s infinite ease-in-out;
+}
+
+@keyframes pulseGreen {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+.statusDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.statusLabel {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #0B2119;
+}
+
+.syncLabel {
+  font-size: 8.5px;
+  color: rgba(11, 33, 25, 0.45);
+  font-weight: 700;
+}
+
+/* ── 2. Stats Overview Snapshot ── */
+.statsSection {
+  border-bottom: 1px solid rgba(11, 33, 25, 0.08);
+  padding-bottom: 30px;
+}
+
+.statsGrid {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.statCell {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid rgba(11, 33, 25, 0.08);
+  padding-right: 24px;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.statCell:hover {
+  transform: translateY(-2px);
+}
+
+.statCell:last-child {
+  border-right: none;
+}
+
+.statNumber {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 44px;
+  font-weight: 900;
+  color: #0B2119;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(11, 33, 25, 0.45);
+  text-transform: uppercase;
+}
+
+/* ── 3. Live Map Section ── */
+.mapSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.08);
+  padding-bottom: 12px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #0B2119;
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+}
+
+.sectionSubtitle {
+  font-size: 12.5px;
+  color: rgba(11, 33, 25, 0.55);
+  margin: 0;
+}
+
+.mapWrapper {
+  height: 480px;
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* ── Map Layer dropdown styles ── */
+.layerControlWrapper {
+  position: relative;
+}
+
+.layerToggleBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #FAF8F3;
+  border: 1px solid rgba(11, 33, 25, 0.12);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0B2119;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.layerToggleBtn:hover {
+  background-color: rgba(11, 33, 25, 0.03);
+}
+
+.layerDropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: rgba(250, 248, 243, 0.98);
+  border: 1px solid rgba(11, 33, 25, 0.1);
+  border-radius: 6px;
+  box-shadow: 0 10px 24px rgba(11, 33, 25, 0.08);
+  z-index: 50;
+  padding: 10px;
+  backdrop-filter: blur(8px);
+}
+
+.dropdownSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dropdownLabel {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: rgba(11, 33, 25, 0.4);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.layerCheckboxRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.checkboxLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(11, 33, 25, 0.5);
+}
+
+.checkboxOn {
+  color: #0B2119;
+  font-weight: 700;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background-color: rgba(11, 33, 25, 0.06);
+  margin: 8px 0;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(11, 33, 25, 0.65);
+}
+
+.legendDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.ldCritical {
+  background-color: #EF4444;
+}
+
+.ldHigh {
+  background-color: #F97316;
+}
+
+.ldMedium {
+  background-color: #EAB308;
+}
+
+.ldShelter {
+  background-color: #10B981;
+}
+
+/* ── 4. Details / Operational Focus Section ── */
+.detailsGridSection {
+  border-top: 1px solid rgba(11, 33, 25, 0.08);
+  padding-top: 30px;
+}
+
+.gridCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.gridCol {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gridColHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.08);
+  padding-bottom: 8px;
+}
+
+.gridColHeader h3 {
+  font-size: 14.5px;
+  font-weight: 900;
+  color: #0B2119;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+.viewRegistryLink {
+  font-size: 11px;
+  font-weight: 700;
+  color: #E86F16;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.viewRegistryLink:hover {
+  text-decoration: underline;
+}
+
+.clearPanelBtn {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(11, 33, 25, 0.45);
+  cursor: pointer;
+}
+
+.clearPanelBtn:hover {
+  color: #E86F16;
+}
+
+/* Incidents list styling */
+.incidentList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background-color: rgba(11, 33, 25, 0.05);
+}
+
+.incidentRow {
+  display: flex;
+  align-items: center;
+  background-color: #FAF8F3;
+  border: none;
+  padding: 14px 16px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease, transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.incidentRow:hover {
+  background-color: rgba(11, 33, 25, 0.02);
+  transform: translateX(4px);
+}
+
+.incidentRowActive {
+  background-color: rgba(232, 111, 22, 0.03);
+}
+
+.sevBar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+
+.sev_CRITICAL {
+  background-color: #EF4444;
+}
+
+.sev_HIGH {
+  background-color: #F97316;
+}
+
+.sev_MEDIUM {
+  background-color: #EAB308;
+}
+
+.incContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.incHeaderRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.incId {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(11, 33, 25, 0.4);
+}
+
+.sevBadge {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.badge_CRITICAL {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+}
+
+.badge_HIGH {
+  background-color: rgba(249, 115, 22, 0.1);
+  color: #F97316;
+}
+
+.badge_MEDIUM {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: #EAB308;
+}
+
+.incType {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0B2119;
+}
+
+.incLocation {
+  font-size: 11.5px;
+  color: rgba(11, 33, 25, 0.65);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowArrow {
+  color: rgba(11, 33, 25, 0.2);
+  margin-left: 12px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.incidentRow:hover .rowArrow {
+  color: #E86F16;
+  transform: translateX(3px);
+}
+
+/* Inspector Column styling */
+.inspectorContainer {
+  background-color: rgba(11, 33, 25, 0.02);
+  border: 1px dashed rgba(11, 33, 25, 0.12);
+  border-radius: 6px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  min-height: 280px;
+}
+
+.inspectorPlaceholder {
+  text-align: center;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.phIcon {
+  color: rgba(11, 33, 25, 0.2);
+}
+
+.inspectorPlaceholder p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0B2119;
+  text-transform: uppercase;
+}
+
+.inspectorPlaceholder span {
+  font-size: 11.5px;
+  color: rgba(11, 33, 25, 0.55);
+  line-height: 1.5;
+}
+
+.inspectorBody {
+  width: 100%;
+}
+
+.inspectorDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: detailsFadeIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes detailsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.inspectorSubtitle {
+  font-size: 8.5px;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  color: #E86F16;
+  text-transform: uppercase;
+}
+
+.inspectorTitle {
+  font-size: 20px;
+  font-weight: 900;
+  color: #0B2119;
+  margin: 0;
+  line-height: 1.2;
+  font-family: 'Georgia', serif;
+}
+
+.inspectorLoc {
+  font-size: 12.5px;
+  color: rgba(11, 33, 25, 0.7);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.metaRow {
+  display: flex;
+  gap: 8px;
+}
+
+.metaBadge {
+  font-size: 9px;
+  font-weight: 800;
+  background-color: rgba(11, 33, 25, 0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  color: rgba(11, 33, 25, 0.6);
+}
+
+.statsSnippet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background-color: rgba(11, 33, 25, 0.03);
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(11, 33, 25, 0.06);
+}
+
+.snippetLabel {
+  display: block;
+  font-size: 8.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: rgba(11, 33, 25, 0.45);
+  margin-bottom: 2px;
+}
+
+.snippetValue {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0B2119;
+}
+
+.inspectorDesc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(11, 33, 25, 0.75);
+  margin: 0;
+}
+
+.inspectCta {
+  align-self: flex-start;
+  font-size: 11.5px;
+  font-weight: 750;
+  color: #FAF8F3;
+  background-color: #0B2119;
+  padding: 8px 16px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: opacity 0.15s ease, transform 0.2s ease;
+  margin-top: 8px;
+}
+
+.inspectCta:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.cargoInfo {
+  font-size: 12px;
+  background-color: rgba(232, 111, 22, 0.05);
+  border: 1px solid rgba(232, 111, 22, 0.15);
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: #D55E0E;
+}
+
+@media (max-width: 860px) {
+  .gridCols {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+}

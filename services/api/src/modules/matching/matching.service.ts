@@ -1,0 +1,217 @@
+import { prisma } from '../../db/db.js';
+import { calculateHaversineDistance } from '../../utils/distance.js';
+import { MATCH_WEIGHTS, COMPATIBLE_CATEGORIES } from './matching.constants.js';
+import { ResourceStatus, DemandStatus } from '@prisma/client';
+
+export interface ScoreBreakdown {
+  compatibility: number;
+  availability: number;
+  distance: number;
+  priority: number;
+  readiness: number;
+  total: number;
+}
+
+export interface Recommendation {
+  resourceId: string;
+  name: string;
+  category: string;
+  storageDepot: string;
+  availableQuantity: number;
+  requestedQuantity: number;
+  canFullyFulfill: boolean;
+  distanceKm: number;
+  score: number;
+  breakdown: ScoreBreakdown;
+  qualityLabel: 'EXCELLENT' | 'GOOD' | 'PARTIAL' | 'POOR' | 'INCOMPATIBLE';
+  explanation: string[];
+}
+
+export interface MatchingOutput {
+  status: 'MATCHES_FOUND' | 'PARTIAL_MATCHES_FOUND' | 'NO_MATCH_FOUND';
+  results: Recommendation[];
+  bestMatch: Recommendation | null;
+  fullCoveragePossible: boolean;
+  candidateCombination: Array<{ resourceId: string; quantity: number }> | null;
+}
+
+export class MatchingService {
+  /**
+   * Generates ranked recommendations for a given demand request.
+   */
+  static async getRecommendations(demandId: string): Promise<MatchingOutput> {
+    // 1. Fetch demand details along with incident coordinates
+    const demand = await prisma.demandRequest.findUnique({
+      where: { id: demandId },
+      include: { incident: true },
+    });
+
+    if (!demand) {
+      throw new Error(`Demand request ${demandId} not found.`);
+    }
+
+    // Determine compatible resource categories
+    const compatibleCats = COMPATIBLE_CATEGORIES[demand.requestedType] ?? [demand.requestedType];
+
+    // 2. Fetch candidate resources matching the categories
+    const resources = await prisma.resource.findMany({
+      where: {
+        category: { in: compatibleCats },
+      },
+    });
+
+    const recommendations: Recommendation[] = [];
+
+    for (const res of resources) {
+      // 3. Eligibility filters
+      // A resource is considered INELIGIBLE if:
+      // - status is DEPLETED or RESERVED
+      // - availableQuantity is <= 0
+      // - categories do not match
+      const ineligibleStatuses: ResourceStatus[] = [ResourceStatus.DEPLETED, ResourceStatus.RESERVED];
+      const isStatusIneligible = ineligibleStatuses.includes(res.status);
+      const isQuantityIneligible = res.availableQuantity - res.reservedQuantity <= 0;
+
+      if (isStatusIneligible || isQuantityIneligible) {
+        continue;
+      }
+
+      // Calculate availability parameters
+      const unreservedQty = res.availableQuantity - res.reservedQuantity;
+      const canFullyFulfill = unreservedQty >= demand.quantity;
+
+      // Distance calculation
+      const dist = calculateHaversineDistance(
+        demand.incident.latitude,
+        demand.incident.longitude,
+        res.latitude,
+        res.longitude
+      );
+      const distKm = Math.round(dist * 10) / 10;
+
+      // Compatibility Score (35%)
+      const compatScore = MATCH_WEIGHTS.COMPATIBILITY; // 100% compatible if passed through DB filter
+
+      // Availability Score (25%)
+      let availScore = 0;
+      let availReason = '';
+      if (canFullyFulfill) {
+        availScore = MATCH_WEIGHTS.AVAILABILITY;
+        availReason = `Sufficient quantity is available: ${unreservedQty.toLocaleString()} ${res.unit} (requires ${demand.quantity.toLocaleString()}).`;
+      } else {
+        const ratio = unreservedQty / demand.quantity;
+        availScore = Math.round(MATCH_WEIGHTS.AVAILABILITY * ratio);
+        availReason = `Partial stock: ${unreservedQty.toLocaleString()} of ${demand.quantity.toLocaleString()} ${res.unit} available (${Math.round(ratio * 100)}% of demand).`;
+      }
+
+      // Distance Score (20%)
+      let distScore = 0;
+      const wDist = MATCH_WEIGHTS.DISTANCE;
+      if (dist <= 3) distScore = wDist;
+      else if (dist <= 7) distScore = Math.round(wDist * 0.88);
+      else if (dist <= 12) distScore = Math.round(wDist * 0.72);
+      else if (dist <= 18) distScore = Math.round(wDist * 0.56);
+      else if (dist <= 25) distScore = Math.round(wDist * 0.36);
+      else if (dist <= 40) distScore = Math.round(wDist * 0.20);
+      else distScore = Math.max(0, Math.round(wDist * (1 - dist / 80)));
+
+      // Priority Score (10%)
+      let prioScore = 0;
+      const wPrio = MATCH_WEIGHTS.PRIORITY;
+      if (demand.priority === 'CRITICAL') prioScore = wPrio;
+      else if (demand.priority === 'HIGH') prioScore = Math.round(wPrio * 0.85);
+      else if (demand.priority === 'MEDIUM') prioScore = Math.round(wPrio * 0.65);
+      else prioScore = Math.round(wPrio * 0.45);
+
+      // Readiness Score (10%)
+      let readScore = 0;
+      const wRead = MATCH_WEIGHTS.READINESS;
+      if (res.status === ResourceStatus.AVAILABLE) readScore = wRead;
+      else if (res.status === ResourceStatus.LOW) readScore = Math.round(wRead * 0.7);
+      else if (res.status === ResourceStatus.IN_TRANSIT) readScore = Math.round(wRead * 0.4);
+
+      // Final Score
+      const finalScore = compatScore + availScore + distScore + prioScore + readScore;
+
+      // Quality Label
+      let qualityLabel: 'EXCELLENT' | 'GOOD' | 'PARTIAL' | 'POOR' | 'INCOMPATIBLE';
+      if (finalScore >= 90) qualityLabel = 'EXCELLENT';
+      else if (finalScore >= 75) qualityLabel = 'GOOD';
+      else if (finalScore >= 50) qualityLabel = 'PARTIAL';
+      else if (finalScore >= 20) qualityLabel = 'POOR';
+      else qualityLabel = 'INCOMPATIBLE';
+
+      // Explanation components
+      const explanation = [
+        `Resource type matches the request (${res.category})`,
+        availReason,
+        `Resource is ${distKm} km from the affected area`,
+        `Resource depot readiness status is ${res.status}`,
+      ];
+
+      recommendations.push({
+        resourceId: res.id,
+        name: res.materialName,
+        category: res.category,
+        storageDepot: res.storageDepot,
+        availableQuantity: unreservedQty,
+        requestedQuantity: demand.quantity,
+        canFullyFulfill,
+        distanceKm: distKm,
+        score: finalScore,
+        breakdown: {
+          compatibility: compatScore,
+          availability: availScore,
+          distance: distScore,
+          priority: prioScore,
+          readiness: readScore,
+          total: finalScore,
+        },
+        qualityLabel,
+        explanation,
+      });
+    }
+
+    // Sort by score descending
+    recommendations.sort((a, b) => b.score - a.score);
+
+    const bestMatch = recommendations.length > 0 ? recommendations[0] : null;
+
+    // Determine overall result status
+    let status: 'MATCHES_FOUND' | 'PARTIAL_MATCHES_FOUND' | 'NO_MATCH_FOUND' = 'NO_MATCH_FOUND';
+    if (recommendations.length > 0) {
+      status = recommendations.some(r => r.canFullyFulfill) ? 'MATCHES_FOUND' : 'PARTIAL_MATCHES_FOUND';
+    }
+
+    // Combination logic for partial coverage (if best match cannot satisfy)
+    let fullCoveragePossible = false;
+    let candidateCombination: Array<{ resourceId: string; quantity: number }> | null = null;
+
+    if (bestMatch && !bestMatch.canFullyFulfill) {
+      let accumulated = 0;
+      const combo: Array<{ resourceId: string; quantity: number }> = [];
+
+      for (const rec of recommendations) {
+        if (accumulated >= demand.quantity) break;
+        const take = Math.min(rec.availableQuantity, demand.quantity - accumulated);
+        if (take > 0) {
+          combo.push({ resourceId: rec.resourceId, quantity: take });
+          accumulated += take;
+        }
+      }
+
+      if (accumulated >= demand.quantity) {
+        fullCoveragePossible = true;
+        candidateCombination = combo;
+      }
+    }
+
+    return {
+      status,
+      results: recommendations,
+      bestMatch,
+      fullCoveragePossible,
+      candidateCombination,
+    };
+  }
+}
