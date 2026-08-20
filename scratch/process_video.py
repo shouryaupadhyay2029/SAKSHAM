@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 import os
 
-video_path = "../WEB_NAME.mp4"
+video_path = "../SAKSHAN.mp4"
 output_path = "../apps/web/public/WEB_NAME.webp"
 
 cap = cv2.VideoCapture(video_path)
