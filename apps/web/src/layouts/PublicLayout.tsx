@@ -345,7 +345,7 @@ export const PublicLayout: React.FC = () => {
                 src="/WEB_NAME.webp"
                 alt="SAKSHAM"
                 style={{
-                  height: '100px',
+                  height: '140px',
                   width: 'auto',
                   objectFit: 'contain',
                   filter: isDarkHeader ? 'none' : 'invert(1) brightness(1.2)',
