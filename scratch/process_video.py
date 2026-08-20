@@ -32,12 +32,8 @@ while True:
     if not ret:
         break
     
-    # Downscale frame to 240x240 (perfect retina quality for 100px navbar height)
-    # The original is 368x368, keeping 1:1 aspect ratio
-    resized = cv2.resize(frame, (240, 240), interpolation=cv2.INTER_AREA)
-    
-    # Split into B, G, R
-    b, g, r = cv2.split(resized)
+    # Split into B, G, R (keep original 368x368 dimensions for HD quality)
+    b, g, r = cv2.split(frame)
     
     # Calculate brightness (max of B, G, R)
     brightness = np.maximum(np.maximum(b, g), r)
@@ -74,7 +70,7 @@ cap.release()
 
 print(f"Finished processing {len(frames)} frames. Saving as animated WebP...")
 
-# Save frames as animated WebP
+# Save frames as lossless animated WebP for razor sharp text quality
 # loop=0 means infinite looping
 frames[0].save(
     output_path,
@@ -82,8 +78,7 @@ frames[0].save(
     append_images=frames[1:],
     duration=frame_duration,
     loop=0,
-    quality=80,
-    lossless=False
+    lossless=True
 )
 
 print(f"Saved transparent animated WebP to: {output_path}")
