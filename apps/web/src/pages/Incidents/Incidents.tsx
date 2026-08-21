@@ -8,18 +8,11 @@ import {
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { MapView } from '../../components/map/MapView';
 import type { Severity } from '../../types/common';
+import { useTranslation } from 'react-i18next';
+import { DynamicText } from '../../components/ui/DynamicText';
 import styles from './Incidents.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
-
-const incidentTypeLabel: Record<string, string> = {
-  FLOOD: 'Flood Relief Operations',
-  FIRE: 'Fire Suppression & Rescue',
-  EARTHQUAKE: 'Seismic Rescue Ops',
-  MEDICAL_EMERGENCY: 'Urgent Medical Assistance',
-  STRUCTURAL_COLLAPSE: 'Search & Rescue Collapse',
-  RESOURCE_SHORTAGE: 'Supply Shortage Alert',
-};
 
 const severityColor: Record<string, string> = {
   CRITICAL: '#EF4444',
@@ -29,10 +22,14 @@ const severityColor: Record<string, string> = {
 };
 
 export const Incidents: React.FC = () => {
+  const { t } = useTranslation();
   const { 
     incidents, resources, vehicles, shelters,
-    addManualIncident, updateIncidentStatus, setIncidentPriority 
+    addManualIncident, updateIncidentStatus 
   } = useOperationalState();
+
+  console.log('[INCIDENT DEBUG] incidents received by page:', incidents);
+  console.log('[INCIDENT DEBUG] incidents count:', incidents.length);
 
   // --- Search & Filters State ---
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,7 +116,7 @@ export const Incidents: React.FC = () => {
     });
   }, [incidents, searchQuery, activeFilter]);
 
-  const handleCreateManual = (e: React.FormEvent) => {
+  const handleCreateManual = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualLocation || !manualDesc || !manualReporter) {
       alert('Please fill in required fields: Location, Situation, and Reporter Name.');
@@ -133,7 +130,7 @@ export const Incidents: React.FC = () => {
       return;
     }
 
-    const newId = addManualIncident({
+    const newId = await addManualIncident({
       type: manualType,
       severity: manualSeverity,
       location: manualLocation,
@@ -181,11 +178,11 @@ export const Incidents: React.FC = () => {
         <ShaderBackground className="absolute inset-0" />
         <div className={styles.headerTitles}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
-            <span className={styles.eyebrow} style={{ marginBottom: 0 }}>INCIDENT MANAGEMENT</span>
+            <span className={styles.eyebrow} style={{ marginBottom: 0 }}>{t('incidents.title')}</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#EF4444">Incident Response Registry</h1>
-          <p className={styles.lead}>Monitor, verify, prioritize and coordinate active regional disaster responses.</p>
+          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#EF4444">{t('incidents.title')}</h1>
+          <p className={styles.lead}>{t('incidents.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.liveStatus}>
@@ -194,7 +191,7 @@ export const Incidents: React.FC = () => {
           </div>
           <button className={styles.addBtn} onClick={() => setIsManualModalOpen(true)}>
             <Plus size={13} />
-            <span>MANUAL INCIDENT</span>
+            <span>{t('incidents.logNewIncident')}</span>
           </button>
         </div>
       </header>
@@ -203,27 +200,27 @@ export const Incidents: React.FC = () => {
       <section className={styles.statsStrip}>
         <div className={styles.statCell}>
           <span className={styles.statNum}>{summary.active}</span>
-          <span className={styles.statLabel}>Active Incidents</span>
+          <span className={styles.statLabel}>{t('common.active')}</span>
         </div>
         <div className={styles.statDivider} />
         <div className={styles.statCell}>
           <span className={`${styles.statNum} ${styles.criticalAccent}`}>{summary.critical}</span>
-          <span className={styles.statLabel}>Critical Threats</span>
+          <span className={styles.statLabel}>{t('incidents.severityCritical')}</span>
         </div>
         <div className={styles.statDivider} />
         <div className={styles.statCell}>
           <span className={`${styles.statNum} ${styles.warningAccent}`}>{summary.awaiting}</span>
-          <span className={styles.statLabel}>Awaiting Response</span>
+          <span className={styles.statLabel}>{t('common.pending')}</span>
         </div>
         <div className={styles.statDivider} />
         <div className={styles.statCell}>
           <span className={`${styles.statNum} ${styles.successAccent}`}>{summary.under}</span>
-          <span className={styles.statLabel}>Under Response</span>
+          <span className={styles.statLabel}>{t('common.active')}</span>
         </div>
         <div className={styles.statDivider} />
         <div className={styles.statCell}>
           <span className={styles.statNum}>{summary.resolved}</span>
-          <span className={styles.statLabel}>Resolved Today</span>
+          <span className={styles.statLabel}>{t('common.completed')}</span>
         </div>
       </section>
 
@@ -233,19 +230,28 @@ export const Incidents: React.FC = () => {
           <Search size={14} className={styles.searchIcon} />
           <input 
             type="text" 
-            placeholder="Search by ID, type, location..."
+            placeholder={t('incidents.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className={styles.filterPills}>
-          {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'AWAITING RESPONSE', 'UNDER RESPONSE', 'RESOLVED'].map(pill => (
+          {[
+            { id: 'ALL', label: t('common.all') },
+            { id: 'CRITICAL', label: t('severity.CRITICAL') },
+            { id: 'HIGH', label: t('severity.HIGH') },
+            { id: 'MEDIUM', label: t('severity.MEDIUM') },
+            { id: 'LOW', label: t('severity.LOW') },
+            { id: 'AWAITING RESPONSE', label: t('incidents.awaitingResponse') },
+            { id: 'UNDER RESPONSE', label: t('incidents.underResponse') },
+            { id: 'RESOLVED', label: t('status.RESOLVED') }
+          ].map(pill => (
             <button
-              key={pill}
-              className={`${styles.filterPill} ${activeFilter === pill ? styles.filterPillActive : ''}`}
-              onClick={() => setActiveFilter(pill)}
+              key={pill.id}
+              className={`${styles.filterPill} ${activeFilter === pill.id ? styles.filterPillActive : ''}`}
+              onClick={() => setActiveFilter(pill.id)}
             >
-              {pill}
+              {pill.label}
             </button>
           ))}
         </div>
@@ -260,13 +266,13 @@ export const Incidents: React.FC = () => {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>INCIDENT</th>
-                  <th>LOCATION</th>
-                  <th>SEVERITY</th>
-                  <th>REPORTED</th>
-                  <th>IMPACT</th>
-                  <th>STATUS</th>
-                  <th>ASSIGNED UNIT</th>
+                  <th>{t('incidents.incident')}</th>
+                  <th>{t('common.location')}</th>
+                  <th>{t('common.severity')}</th>
+                  <th>{t('incidents.reported')}</th>
+                  <th>{t('incidents.impact')}</th>
+                  <th>{t('common.status')}</th>
+                  <th>{t('incidents.assignedUnit')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -275,8 +281,8 @@ export const Incidents: React.FC = () => {
                   <tr>
                     <td colSpan={8} className={styles.emptyRow}>
                       <AlertCircle size={22} className={styles.emptyIcon} />
-                      <p>NO ACTIVE REGISTRY MATCHES</p>
-                      <span>Adjust filters or search parameters.</span>
+                      <p>{t('common.noResultsFound')}</p>
+                      <span>{t('incidents.subtitle')}</span>
                     </td>
                   </tr>
                 ) : (
@@ -299,16 +305,16 @@ export const Incidents: React.FC = () => {
                         <td className={styles.locCol}>{inc.location}</td>
                         <td>
                           <span className={styles.sevIndicator} style={{ color: severityColor[inc.severity] }}>
-                            ● {inc.severity}
+                            ● {t(`severity.${inc.severity}`) || inc.severity}
                           </span>
                         </td>
                         <td className="tech-code">
                           {new Date(inc.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
                         </td>
-                        <td className={styles.impactCol}>{inc.peopleAffected ?? inc.displacedCount ?? '—'} affected</td>
+                        <td className={styles.impactCol}>{inc.peopleAffected ?? inc.displacedCount ?? '—'}</td>
                         <td>
                           <span className={`${styles.statusLabel} ${styles['status_' + inc.status]}`}>
-                            {inc.status.replace(/_/g, ' ')}
+                            {t(`status.${inc.status}`) || inc.status.replace(/_/g, ' ')}
                           </span>
                         </td>
                         <td className={styles.assignedCol}>{inc.assignedVehicle || inc.assignedTeam || '—'}</td>
@@ -326,6 +332,7 @@ export const Incidents: React.FC = () => {
 
         {/* Right Side: Operational Detail View */}
         <div className={styles.ledgerColumn}>
+          <ShaderBackground style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.85, pointerEvents: 'none', zIndex: 0 }} />
           {selectedIncident ? (
             <div className={styles.ledgerContent}>
               
@@ -333,13 +340,13 @@ export const Incidents: React.FC = () => {
               <div className={styles.ledgerHeader}>
                 <div className={styles.titleArea}>
                   <div className={styles.metaRow}>
-                    <span className="tech-code font-bold">{selectedIncident.id}</span>
+                    <span className="tech-code font-bold" style={{ color: '#FAF8F3' }}>{selectedIncident.id}</span>
                     <span className={`${styles.statusLabel} ${styles['status_' + selectedIncident.status]}`}>
-                      {selectedIncident.status.replace(/_/g, ' ')}
+                      {t(`status.${selectedIncident.status}`) || selectedIncident.status.replace(/_/g, ' ')}
                     </span>
                   </div>
                   <h3 className={styles.ledgerTypeLabel}>
-                    {incidentTypeLabel[selectedIncident.type] || selectedIncident.type.replace(/_/g, ' ')}
+                    {selectedIncident.type.replace(/_/g, ' ')}
                   </h3>
                   <p className={styles.ledgerLocation}>
                     <MapPin size={11} /> {selectedIncident.location}
@@ -366,7 +373,7 @@ export const Incidents: React.FC = () => {
                       <div className={styles.nodeIcon}>
                         {isCompleted ? <Check size={8} /> : <span>{stepIdx + 1}</span>}
                       </div>
-                      <span className={styles.nodeLabel}>{step.replace(/_/g, ' ')}</span>
+                      <span className={styles.nodeLabel}>{t(`status.${step}`) || step.replace(/_/g, ' ')}</span>
                     </div>
                   );
                 })}
@@ -379,18 +386,18 @@ export const Incidents: React.FC = () => {
                   className={styles.primaryActionBtn}
                   style={{ textDecoration: 'none', textAlign: 'center', display: 'block', backgroundColor: '#E86F16' }}
                 >
-                  OPEN RESPONSE WORKSPACE →
+                  {t('common.view')} →
                 </Link>
 
                 {selectedIncident.status === 'REPORTED' && activeSubAction !== 'VERIFY' && (
                   <button className={styles.primaryActionBtn} onClick={() => setActiveSubAction('VERIFY')}>
-                    VERIFY INCIDENT
+                    {t('status.VERIFIED')}
                   </button>
                 )}
 
                 {selectedIncident.status === 'VERIFIED' && activeSubAction !== 'PRIORITY' && (
                   <button className={styles.primaryActionBtn} onClick={() => setActiveSubAction('PRIORITY')}>
-                    SET PRIORITY
+                    {t('common.priority')}
                   </button>
                 )}
 
@@ -399,7 +406,7 @@ export const Incidents: React.FC = () => {
                     className={styles.primaryActionBtn} 
                     onClick={() => updateIncidentStatus(selectedIncident.id, 'RESOURCE_MATCHED')}
                   >
-                    FIND RESOURCES
+                    {t('matching.runMatcher')}
                   </button>
                 )}
 
@@ -410,13 +417,12 @@ export const Incidents: React.FC = () => {
                       const avail = vehicles.find(v => v.status === 'AVAILABLE');
                       if (avail) {
                         updateIncidentStatus(selectedIncident.id, 'DISPATCHED');
-                        alert(`Simulation: Dispatching vehicle ${avail.name} to target location.`);
                       } else {
                         updateIncidentStatus(selectedIncident.id, 'DISPATCHED');
                       }
                     }}
                   >
-                    DISPATCH UNITS
+                    {t('dashboard.dispatchFleet')}
                   </button>
                 )}
 
@@ -427,81 +433,28 @@ export const Incidents: React.FC = () => {
                         className={styles.primaryActionBtn} 
                         onClick={() => updateIncidentStatus(selectedIncident.id, 'UNDER_RESPONSE')}
                       >
-                        SET UNDER RESPONSE
+                        {t('status.UNDER_RESPONSE')}
                       </button>
                     )}
                     <button 
                       className={`${styles.primaryActionBtn} ${styles.actionSuccess}`}
                       onClick={() => updateIncidentStatus(selectedIncident.id, 'RESOLVED')}
                     >
-                      MARK RESOLVED
+                      {t('status.RESOLVED')}
                     </button>
                   </div>
                 )}
 
                 {selectedIncident.status === 'RESOLVED' && (
                   <div className={styles.resolvedBanner}>
-                    <Shield size={12} /> Response Resolved
-                  </div>
-                )}
-
-                {/* Sub Action Panels */}
-                {activeSubAction === 'VERIFY' && (
-                  <div className={styles.subActionPanel}>
-                    <h4 className={styles.subActionTitle}>Verify Incident Validity</h4>
-                    <div className={styles.verifyMetaList}>
-                      <div><span>Type:</span> {selectedIncident.type.replace(/_/g, ' ')}</div>
-                      <div><span>Location:</span> {selectedIncident.location}</div>
-                      <div><span>Reporter:</span> {selectedIncident.reporterName}</div>
-                      <div><span>Affected:</span> {selectedIncident.peopleAffected ?? 'Pending'}</div>
-                    </div>
-                    <div className={styles.subActionBtnGroup}>
-                      <button 
-                        className={`${styles.subActionBtn} ${styles.actionSuccess}`}
-                        onClick={() => {
-                          updateIncidentStatus(selectedIncident.id, 'VERIFIED');
-                          setActiveSubAction('NONE');
-                        }}
-                      >
-                        VERIFY &amp; CONTINUE
-                      </button>
-                      <button 
-                        className={`${styles.subActionBtn} ${styles.actionDanger}`}
-                        onClick={() => {
-                          alert('Flagged for review.');
-                          setActiveSubAction('NONE');
-                        }}
-                      >
-                        FLAG
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {activeSubAction === 'PRIORITY' && (
-                  <div className={styles.subActionPanel}>
-                    <h4 className={styles.subActionTitle}>Update Priority</h4>
-                    <div className={styles.priorityGridSelector}>
-                      {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(lvl => (
-                        <button 
-                          key={lvl}
-                          className={styles.prioritySelectCell}
-                          onClick={() => {
-                            setIncidentPriority(selectedIncident.id, lvl as Severity);
-                            setActiveSubAction('NONE');
-                          }}
-                        >
-                          <span style={{ color: severityColor[lvl] }}>● {lvl}</span>
-                        </button>
-                      ))}
-                    </div>
+                    <Shield size={12} /> {t('status.RESOLVED')}
                   </div>
                 )}
               </div>
 
               {/* Geographic Small Preview */}
               <div className={styles.geoPreview}>
-                <h4 className={styles.sectionTitle}>GEOGRAPHIC CONTEXT</h4>
+                <h4 className={styles.sectionTitle}>{t('common.location')}</h4>
                 <div className={styles.smallMapWrapper}>
                   <MapView 
                     incidents={[selectedIncident]}
@@ -522,35 +475,37 @@ export const Incidents: React.FC = () => {
 
               {/* Overview Details Grid */}
               <div className={styles.detailsGrid}>
-                <h4 className={styles.sectionTitle}>OPERATIONAL METRICS</h4>
+                <h4 className={styles.sectionTitle}>{t('common.details')}</h4>
                 <div className={styles.gridData}>
                   <div className={styles.gridRow}>
-                    <span className={styles.gridLabel}>REPORTED</span>
-                    <span className="tech-code">{new Date(selectedIncident.reportedAt || selectedIncident.time).toLocaleTimeString()}</span>
+                    <span className={styles.gridLabel}>{t('incidents.reported')}</span>
+                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{new Date(selectedIncident.reportedAt || selectedIncident.time).toLocaleTimeString()}</span>
                   </div>
                   <div className={styles.gridRow}>
-                    <span className={styles.gridLabel}>PEOPLE AFFECTED</span>
-                    <span>{selectedIncident.peopleAffected ?? 'Pending Verification'}</span>
+                    <span className={styles.gridLabel}>{t('incidents.impact')}</span>
+                    <span style={{ color: '#FAF8F3' }}>{selectedIncident.peopleAffected ?? '—'}</span>
                   </div>
                   <div className={styles.gridRow}>
-                    <span className={styles.gridLabel}>COORDINATES</span>
-                    <span className="tech-code">{selectedIncident.coordinates.lat.toFixed(4)}° N, {selectedIncident.coordinates.lng.toFixed(4)}° E</span>
+                    <span className={styles.gridLabel}>{t('common.location')}</span>
+                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{selectedIncident.coordinates.lat.toFixed(4)}° N, {selectedIncident.coordinates.lng.toFixed(4)}° E</span>
                   </div>
                 </div>
               </div>
 
               {/* Situation assessment */}
               <div className={styles.detailsGrid}>
-                <h4 className={styles.sectionTitle}>SITUATION ASSESSMENT</h4>
-                <p className={styles.situationText}>{selectedIncident.description}</p>
+                <h4 className={styles.sectionTitle}>{t('common.description')}</h4>
+                <DynamicText text={selectedIncident.description} className={styles.situationText} as="p" />
               </div>
 
             </div>
           ) : (
             <div className={styles.emptyLedger}>
-              <AlertTriangle size={24} className={styles.ledgerIcon} />
-              <h4>LIVE INCIDENT LEDGER</h4>
-              <p>Select any active registry row item to inspect geographic location context, threat prioritization levels, deployment ETA timelines, and resource dispatch actions.</p>
+              <div className={styles.emptyLedgerContent}>
+                <AlertTriangle size={32} className={styles.emptyIcon} />
+                <h4>{t('incidents.liveLedger')}</h4>
+                <p>{t('incidents.subtitle')}</p>
+              </div>
             </div>
           )}
         </div>
@@ -562,7 +517,7 @@ export const Incidents: React.FC = () => {
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Log Manual Operational Incident</h3>
+              <h3 className={styles.modalTitle}>{t('incidents.createModalTitle')}</h3>
               <button className={styles.closeLedgerBtn} onClick={() => setIsManualModalOpen(false)}>
                 <X size={18} />
               </button>
@@ -571,32 +526,31 @@ export const Incidents: React.FC = () => {
             <form onSubmit={handleCreateManual} className={styles.modalForm}>
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
-                  <label>Incident Type *</label>
+                  <label>{t('incidents.type')} *</label>
                   <select value={manualType} onChange={(e) => setManualType(e.target.value)}>
-                    <option value="FLOOD">Flood Relief Operations</option>
-                    <option value="FIRE">Fire Suppression &amp; Rescue</option>
-                    <option value="EARTHQUAKE">Seismic Rescue Ops</option>
-                    <option value="MEDICAL_EMERGENCY">Urgent Medical Assistance</option>
-                    <option value="STRUCTURAL_COLLAPSE">Search &amp; Rescue Collapse</option>
-                    <option value="RESOURCE_SHORTAGE">Supply Shortage Alert</option>
+                    <option value="FLOOD">{t('incidents.typeFlood')}</option>
+                    <option value="FIRE">{t('incidents.typeFire')}</option>
+                    <option value="EARTHQUAKE">{t('incidents.typeEarthquake')}</option>
+                    <option value="MEDICAL_EMERGENCY">{t('incidents.typeMedical')}</option>
+                    <option value="STRUCTURAL_COLLAPSE">{t('incidents.typeLandslide')}</option>
                   </select>
                 </div>
                 
                 <div className={styles.formGroup}>
-                  <label>Severity Level *</label>
+                  <label>{t('common.severity')} *</label>
                   <select 
                     value={manualSeverity} 
                     onChange={(e) => setManualSeverity(e.target.value as Severity)}
                   >
-                    <option value="CRITICAL">● CRITICAL</option>
-                    <option value="HIGH">● HIGH</option>
-                    <option value="MEDIUM">● MEDIUM</option>
-                    <option value="LOW">● LOW</option>
+                    <option value="CRITICAL">● {t('severity.CRITICAL')}</option>
+                    <option value="HIGH">● {t('severity.HIGH')}</option>
+                    <option value="MEDIUM">● {t('severity.MEDIUM')}</option>
+                    <option value="LOW">● {t('severity.LOW')}</option>
                   </select>
                 </div>
 
                 <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                  <label>Location Area Name *</label>
+                  <label>{t('common.location')} *</label>
                   <input 
                     type="text" 
                     placeholder="e.g. Sector 12 Park Inundated Zone, Delhi"
@@ -627,7 +581,7 @@ export const Incidents: React.FC = () => {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Estimated People Affected</label>
+                  <label>{t('incidents.affectedCount')}</label>
                   <input 
                     type="number" 
                     value={manualAffected}
@@ -636,7 +590,7 @@ export const Incidents: React.FC = () => {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Incident Source Channel</label>
+                  <label>{t('incidents.commander')}</label>
                   <input 
                     type="text" 
                     value={manualSource}
@@ -645,10 +599,10 @@ export const Incidents: React.FC = () => {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Reporter Name *</label>
+                  <label>{t('common.assignedTo')} *</label>
                   <input 
                     type="text" 
-                    placeholder="Duty Officer or Civilian Name"
+                    placeholder="Duty Officer Name"
                     value={manualReporter}
                     onChange={(e) => setManualReporter(e.target.value)}
                     required
@@ -656,20 +610,20 @@ export const Incidents: React.FC = () => {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Reporter Contact / Phone</label>
+                  <label>{t('common.notes')}</label>
                   <input 
                     type="text" 
-                    placeholder="Phone or COMMS-channel ID"
+                    placeholder="Contact info"
                     value={manualContact}
                     onChange={(e) => setManualContact(e.target.value)}
                   />
                 </div>
 
                 <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                  <label>Situation Assessment &amp; Details *</label>
+                  <label>{t('common.description')} *</label>
                   <textarea 
                     rows={4}
-                    placeholder="Provide details about trapped people, immediate resource requirements, or water levels..."
+                    placeholder="..."
                     value={manualDesc}
                     onChange={(e) => setManualDesc(e.target.value)}
                     required
@@ -683,10 +637,10 @@ export const Incidents: React.FC = () => {
                   className={styles.cancelFormBtn} 
                   onClick={() => setIsManualModalOpen(false)}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button type="submit" className={styles.submitFormBtn}>
-                  <Send size={12} /> Log Incident
+                  <Send size={12} /> {t('common.submit')}
                 </button>
               </div>
             </form>

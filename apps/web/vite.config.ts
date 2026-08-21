@@ -10,6 +10,13 @@ export default defineConfig({
   server: {
     headers: {
       'Cache-Control': 'no-store',
+    },
+    proxy: {
+      '/api/v1': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        ws: true,
+      }
     }
   }
 })

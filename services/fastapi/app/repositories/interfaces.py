@@ -164,3 +164,26 @@ class DeliveryRepositoryInterface(ABC):
     def update_status(self, delivery_id: str, status: DeliveryStatus, received_by: Optional[str] = None, confirmation: Optional[str] = None, notes: Optional[str] = None, delivered_at: Optional[datetime] = None) -> Optional[DeliveryResponse]:
         pass
 
+from app.schemas.shelter import ShelterResponse, ShelterCreate, ShelterUpdate
+
+class ShelterRepositoryInterface(ABC):
+    @abstractmethod
+    def get_by_id(self, shelter_id: str) -> Optional[ShelterResponse]:
+        pass
+
+    @abstractmethod
+    def get_by_ref(self, ref: str) -> Optional[ShelterResponse]:
+        pass
+
+    @abstractmethod
+    def list(self, status: Optional[str] = None, region: Optional[str] = None) -> List[ShelterResponse]:
+        pass
+
+    @abstractmethod
+    def create(self, shelter: ShelterCreate) -> ShelterResponse:
+        pass
+
+    @abstractmethod
+    def update(self, shelter_id: str, update_data: ShelterUpdate) -> Optional[ShelterResponse]:
+        pass
+

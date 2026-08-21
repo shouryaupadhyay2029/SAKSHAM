@@ -7,7 +7,8 @@ export type RealtimeEvent = {
 };
 
 const WS_BASE_URL =
-  import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000/api/v1/ws';
+  import.meta.env.VITE_WS_URL ||
+  ((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/api/v1/ws');
 
 class WebSocketService {
   private socket: WebSocket | null = null;

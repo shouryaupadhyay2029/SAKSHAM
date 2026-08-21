@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ChevronRight, Package, MapPin, AlertTriangle, AlertCircle, Plus } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
+import { useTranslation } from 'react-i18next';
 import styles from './Resources.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 export const Resources: React.FC = () => {
+  const { t } = useTranslation();
   const { resources, requests } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
@@ -72,8 +74,8 @@ export const Resources: React.FC = () => {
             <span className={styles.eyebrow} style={{ marginBottom: 0 }}>RESOURCE COORDINATION</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#10B981">Relief Resource Registry</h1>
-          <p className={styles.lead}>Track available supplies, response equipment, depot storage nodes, and operational readiness networks.</p>
+          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#10B981">{t('resources.title')}</h1>
+          <p className={styles.lead}>{t('resources.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.liveStatus}>
@@ -82,7 +84,7 @@ export const Resources: React.FC = () => {
           </div>
           <button className={styles.addBtn} onClick={() => alert('Feature coming: Register Resource Supply Depot.')}>
             <Plus size={13} />
-            <span>REGISTER RESOURCE</span>
+            <span>{t('resources.addResource')}</span>
           </button>
         </div>
       </header>
@@ -121,7 +123,7 @@ export const Resources: React.FC = () => {
           <Search size={14} className={styles.searchIcon} />
           <input 
             type="text" 
-            placeholder="Search resources, depots, categories..."
+            placeholder={t('resources.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -133,22 +135,25 @@ export const Resources: React.FC = () => {
               className={`${styles.filterPill} ${categoryFilter === pill ? styles.filterPillActive : ''}`}
               onClick={() => setCategoryFilter(pill)}
             >
-              {pill.replace('_', ' ')}
+              {pill === 'ALL' ? t('common.all') : pill.replace('_', ' ')}
             </button>
           ))}
           <div className={styles.pillDivider} />
-          {['ALL STATUS', 'AVAILABLE', 'LOW', 'RESERVED', 'DEPLETED', 'IN_TRANSIT'].map(pill => {
-            const val = pill === 'ALL STATUS' ? 'ALL' : pill;
-            return (
-              <button
-                key={pill}
-                className={`${styles.filterPill} ${statusFilter === val ? styles.filterPillActive : ''}`}
-                onClick={() => setStatusFilter(val)}
-              >
-                {pill}
-              </button>
-            );
-          })}
+          {[
+            { id: 'ALL', label: t('common.all') },
+            { id: 'AVAILABLE', label: t('status.AVAILABLE') },
+            { id: 'LOW', label: t('status.LOW_STOCK') },
+            { id: 'RESERVED', label: t('status.ASSIGNED') },
+            { id: 'DEPLETED', label: t('status.DEPLETED') }
+          ].map(pill => (
+            <button
+              key={pill.id}
+              className={`${styles.filterPill} ${statusFilter === pill.id ? styles.filterPillActive : ''}`}
+              onClick={() => setStatusFilter(pill.id)}
+            >
+              {pill.label}
+            </button>
+          ))}
         </div>
       </section>
 
@@ -161,12 +166,12 @@ export const Resources: React.FC = () => {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>RESOURCE ID</th>
-                  <th>MATERIAL DESCRIPTION</th>
-                  <th>CATEGORY</th>
-                  <th>AVAILABLE STOCK</th>
-                  <th>STORAGE DEPOT</th>
-                  <th>STATUS</th>
+                  <th>{t('resources.resourceId')}</th>
+                  <th>{t('common.description')}</th>
+                  <th>{t('resources.category')}</th>
+                  <th>{t('resources.stockLevel')}</th>
+                  <th>{t('resources.depotLocation')}</th>
+                  <th>{t('common.status')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -175,8 +180,8 @@ export const Resources: React.FC = () => {
                   <tr>
                     <td colSpan={7} className={styles.emptyRow}>
                       <AlertCircle size={22} className={styles.emptyIcon} />
-                      <p>NO ACTIVE RESOURCE ENTRIES</p>
-                      <span>Adjust filters or search parameters.</span>
+                      <p>{t('common.noResultsFound')}</p>
+                      <span>{t('resources.subtitle')}</span>
                     </td>
                   </tr>
                 ) : (
@@ -211,7 +216,7 @@ export const Resources: React.FC = () => {
                         <td className={styles.depotCol}>{res.locationName}</td>
                         <td>
                           <span className={`${styles.statusLabel} ${styles['status_' + res.status]}`}>
-                            {res.status.replace('_', ' ')}
+                            {t(`status.${res.status}`) || res.status.replace('_', ' ')}
                           </span>
                         </td>
                         <td className={styles.actionCol}>
@@ -228,19 +233,18 @@ export const Resources: React.FC = () => {
 
         {/* Right Side: Ledger Context Panel */}
         <div className={styles.ledgerColumn}>
+          <ShaderBackground style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.85, pointerEvents: 'none', zIndex: 0 }} />
           {selectedResource ? (
             <div className={styles.ledgerContent}>
               <div className={styles.ledgerHeader}>
                 <div className={styles.titleArea}>
                   <div className={styles.metaRow}>
-                    <span className="tech-code font-bold">{selectedResource.id}</span>
+                    <span className="tech-code font-bold" style={{ color: '#FAF8F3' }}>{selectedResource.id}</span>
                     <span className={`${styles.statusLabel} ${styles['status_' + selectedResource.status]}`}>
-                      {selectedResource.status.replace('_', ' ')}
+                      {t(`status.${selectedResource.status}`) || selectedResource.status.replace('_', ' ')}
                     </span>
                   </div>
-                  <h3 className={styles.ledgerTypeLabel}>
-                    {selectedResource.name}
-                  </h3>
+                  <h3 className={styles.ledgerTypeLabel}>{selectedResource.name || selectedResource.category.replace('_', ' ')}</h3>
                   <p className={styles.ledgerLocation}>
                     <MapPin size={11} className={styles.mapPinIcon} /> {selectedResource.locationName}
                   </p>
@@ -250,59 +254,59 @@ export const Resources: React.FC = () => {
                 </button>
               </div>
 
-              {/* Resource specifications */}
+              {/* Data Grid */}
               <div className={styles.detailsGrid}>
-                <h4 className={styles.sectionTitle}>RESOURCE COORDINATES</h4>
+                <h4 className={styles.sectionTitle}>{t('common.details')}</h4>
                 <div className={styles.gridData}>
                   <div className={styles.gridRow}>
-                    <span className={styles.gridLabel}>QUANTITY IN DEPOT</span>
-                    <span><strong>{selectedResource.quantity.toLocaleString()}</strong> {selectedResource.unit}</span>
+                    <span className={styles.gridLabel}>{t('resources.depot')}</span>
+                    <span style={{ fontWeight: 700, color: '#FAF8F3' }}>{selectedResource.locationName}</span>
                   </div>
                   <div className={styles.gridRow}>
-                    <span className={styles.gridLabel}>CATEGORY INDEX</span>
-                    <span>{selectedResource.category}</span>
+                    <span className={styles.gridLabel}>{t('resources.quantity')}</span>
+                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{selectedResource.quantity.toLocaleString()} {selectedResource.unit}</span>
                   </div>
                   <div className={styles.gridRow}>
-                    <span className={styles.gridLabel}>STORAGE CONTACT</span>
-                    <span>{selectedResource.contactPerson} ({selectedResource.contactNumber})</span>
+                    <span className={styles.gridLabel}>{t('common.location')}</span>
+                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{selectedResource.coordinates.lat.toFixed(4)}° N, {selectedResource.coordinates.lng.toFixed(4)}° E</span>
                   </div>
                 </div>
               </div>
 
-              {/* Demand Pressure Alerts */}
+              {/* Demand Pressure linked block */}
               <div className={styles.detailsGrid}>
-                <h4 className={styles.sectionTitle}>DEMAND PRESSURE METRICS</h4>
+                <h4 className={styles.sectionTitle}>{t('resources.demandPressure')}</h4>
                 {linkedRequests.length > 0 ? (
                   <div className={styles.pressurePanel}>
                     <div className={styles.pressureHeader}>
-                      <AlertTriangle size={14} className={styles.pressureIcon} />
-                      <span>{linkedRequests.length} ACTIVE DEMAND CORRELATIONS</span>
+                      <AlertTriangle size={13} className={styles.pressureIcon} />
+                      <span>{linkedRequests.length} {t('resources.linkedDemand')}</span>
                     </div>
                     <div className={styles.linkedRequestsList}>
-                      {linkedRequests.map(req => (
-                        <div key={req.id} className={styles.linkedRequestItem}>
-                          <span className={styles.lrZone}>{req.zoneName}</span>
-                          <span className={styles.lrQty}>{req.quantity.toLocaleString()} {req.unit}</span>
+                      {linkedRequests.map(r => (
+                        <div key={r.id} className={styles.linkedRequestItem}>
+                          <span className={styles.lrZone}>{r.zoneName}</span>
+                          <span className={styles.lrQty}>{r.itemNeeded} ({r.quantity})</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
                   <div className={styles.noPressureBanner}>
-                    ✓ No active demand pressure logged
+                    ✓ {t('resources.allNominal')}
                   </div>
                 )}
               </div>
 
-              {/* Connection dispatch actions */}
+              {/* Action */}
               <div className={styles.ledgerActions}>
-                {linkedRequests.length > 0 ? (
-                  <button className={styles.primaryActionBtn} onClick={() => alert('Feature coming: Match Resource to active Demand.')}>
-                    MATCH TO DEMAND
-                  </button>
-                ) : (
-                  <div className={styles.allNominalBanner}>
-                    Resource registry is fully allocated
+                <button className={styles.primaryActionBtn}>
+                  {t('resources.allocateDispatched')} →
+                </button>
+                {selectedResource.status === 'LOW' && (
+                  <div className={styles.lowStockBanner} style={{ marginTop: 8 }}>
+                    <AlertTriangle size={14} />
+                    <span>{t('resources.criticalReplenish')}</span>
                   </div>
                 )}
               </div>
@@ -310,9 +314,11 @@ export const Resources: React.FC = () => {
             </div>
           ) : (
             <div className={styles.emptyLedger}>
-              <Package size={24} className={styles.ledgerIcon} />
-              <h4>RESOURCE COORDINATES</h4>
-              <p>Select any active relief resource from the registry list to inspect stock capacity percentages, storage points of contact, and linked civilian demand pressure.</p>
+              <div className={styles.emptyLedgerContent}>
+                <Package size={32} className={styles.emptyIcon} />
+                <h4>RESOURCE COORDINATES</h4>
+                <p>Select any active relief resource from the registry list to inspect stock capacity percentages, storage points of contact, and linked civilian demand pressure.</p>
+              </div>
             </div>
           )}
         </div>

@@ -20,6 +20,8 @@ import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
 gsap.registerPlugin(ScrollTrigger);
 
+import { useTranslation } from 'react-i18next';
+import { DynamicText } from '../../components/ui/DynamicText';
 import { useOperationalState, type DispatchMission } from '../../context/OperationalStateContext';
 
 const HISTORY_MISSIONS = [
@@ -29,6 +31,7 @@ const HISTORY_MISSIONS = [
 ];
 
 export const Dispatch: React.FC = () => {
+  const { t } = useTranslation();
   const { requests, vehicles, setVehicles, setRequests, missions, setMissions, deliveries, setDeliveries, addToast } = useOperationalState();
   const [selectedMissionId, setSelectedMissionId] = useState<string>('DSP-DEL-041');
   const [showCreatePanel, setShowCreatePanel] = useState(false);
@@ -341,21 +344,21 @@ export const Dispatch: React.FC = () => {
         <ShaderBackground className="absolute inset-0" />
         <div className={styles.heroLeft}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
-            <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>LOGISTICS EXECUTION</span>
+            <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>{t('dispatch.title')}</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={styles.heroTitle}>Dispatch &amp; Logistics</h1>
+          <h1 className={styles.heroTitle}>{t('dispatch.title')}</h1>
           <p className={styles.heroLead}>
-            Coordinate approved resource allocations, field vehicles, routes, and live response missions from dispatch to arrival.
+            {t('dispatch.subtitle')}
           </p>
         </div>
         <div className={styles.heroRight}>
           <div className={styles.statusIndicator}>
             <span className={styles.statusDotPulse} />
-            <span className={styles.statusLabel}>OPERATIONS ONLINE</span>
+            <span className={styles.statusLabel}>{t('common.active')}</span>
           </div>
           <span className={styles.statusDetails}>
-            {summaryStats.active} active missions · {summaryStats.awaiting} awaiting dispatch
+            {summaryStats.active} {t('dashboard.activeDispatches')}
           </span>
         </div>
       </header>
@@ -365,23 +368,23 @@ export const Dispatch: React.FC = () => {
         <div className={styles.summaryGrid}>
           <div className={styles.summaryTile}>
             <span className={styles.summaryNum}>{String(summaryStats.active).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>Active Missions</span>
+            <span className={styles.summaryLabel}>{t('dashboard.activeDispatches')}</span>
           </div>
           <div className={styles.summaryTile}>
             <span className={styles.summaryNum}>{String(summaryStats.awaiting).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>Awaiting Dispatch</span>
+            <span className={styles.summaryLabel}>{t('status.PENDING')}</span>
           </div>
           <div className={styles.summaryTile}>
             <span className={styles.summaryNum}>{String(summaryStats.enroute).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>En Route</span>
+            <span className={styles.summaryLabel}>{t('status.EN_ROUTE')}</span>
           </div>
           <div className={styles.summaryTile}>
             <span className={styles.summaryNum}>{String(summaryStats.arriving).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>Arrived</span>
+            <span className={styles.summaryLabel}>{t('status.ARRIVED')}</span>
           </div>
           <div className={styles.summaryTile}>
             <span className={styles.summaryNum}>88%</span>
-            <span className={styles.summaryLabel}>On-Time Rate</span>
+            <span className={styles.summaryLabel}>{t('common.status')}</span>
           </div>
         </div>
       </section>
@@ -393,12 +396,12 @@ export const Dispatch: React.FC = () => {
         <div className={styles.leftCol}>
           <div className={styles.mapHeader}>
             <div className={styles.mapTitleBlock}>
-              <span className={styles.mapTitle}>LIVE DISPATCH MAP</span>
-              <span className={styles.mapSubtitle}>DELHI REGION</span>
+              <span className={styles.mapTitle}>{t('dashboard.liveTelemetry')}</span>
+              <span className={styles.mapSubtitle}>{t('map.legendTitle')}</span>
             </div>
             <div className={styles.mapSyncBlock}>
               <span className={styles.mapPulse} />
-              <span className={styles.mapSyncLabel}>LIVE GPS TELEMETRY</span>
+              <span className={styles.mapSyncLabel}>{t('dashboard.liveStatus')}</span>
             </div>
           </div>
           <div className={styles.mapContainer}>
@@ -421,28 +424,28 @@ export const Dispatch: React.FC = () => {
           {activeMission && (
             <div className={styles.actionWorkspace}>
               <div className={styles.actionHeader}>
-                <span className={styles.actionEyebrow}>MISSION CONTROL ACTIONS</span>
-                <span className={styles.actionStatusLabel}>Current State: <strong>{activeMission.status.replace(/_/g, ' ')}</strong></span>
+                <span className={styles.actionEyebrow}>{t('dispatch.title')}</span>
+                <span className={styles.actionStatusLabel}>{t('common.status')}: <strong>{t(`status.${activeMission.status}`) || activeMission.status}</strong></span>
               </div>
               <div className={styles.actionButtons}>
                 {activeMission.status === 'DISPATCHED' && (
                   <button className={styles.primaryActionBtn} onClick={handleUpdateStatus}>
-                    AUTHORIZE DEPARTURE (EN ROUTE) <ArrowRight size={13} />
+                    {t('dispatch.confirmDispatch')} <ArrowRight size={13} />
                   </button>
                 )}
                 {activeMission.status === 'EN_ROUTE' && (
                   <button className={styles.primaryActionBtn} onClick={handleUpdateStatus}>
-                    CONFIRM TARGET ARRIVAL <ArrowRight size={13} />
+                    {t('status.ARRIVED')} <ArrowRight size={13} />
                   </button>
                 )}
                 {activeMission.status === 'ARRIVED' && (
                   <button className={styles.primaryActionBtn} onClick={handleUpdateStatus}>
-                    CONFIRM CARGO DELIVERY &amp; COMPLETE <CheckCircle size={13} />
+                    {t('delivery.verifyDelivery')} <CheckCircle size={13} />
                   </button>
                 )}
                 {activeMission.status === 'DELIVERED' && (
                   <div className={styles.completedBanner}>
-                    <Check size={14} /> Mission Completed &amp; Cargo Handover Verified.
+                    <Check size={14} /> {t('status.DELIVERED')}
                   </div>
                 )}
                 
@@ -571,7 +574,7 @@ export const Dispatch: React.FC = () => {
                   {activeMission.routePath.map((stop, idx) => (
                     <div key={idx} className={styles.routeStop}>
                       {idx > 0 && <span className={styles.routeArrow}>↓</span>}
-                      <span className={styles.routeStopName}>{stop}</span>
+                      <DynamicText text={stop} className={styles.routeStopName} />
                     </div>
                   ))}
                 </div>
@@ -639,11 +642,8 @@ export const Dispatch: React.FC = () => {
                       {a.id} - {a.quantity.toLocaleString()} {a.unit} {a.itemNeeded} to {a.zoneName.split(',')[0]}
                     </option>
                   ))}
-                  {/* Fallback to mock demands if registry list is empty for demo purpose */}
                   {allocationsAwaitingDispatch.length === 0 && (
-                    <option value="DEMO-ALLOC">
-                      [DEMO-ALLOC] 12,000 L Drinking Water to Yamuna Bank
-                    </option>
+                    <option value="" disabled>No approved allocations awaiting dispatch</option>
                   )}
                 </select>
               </div>

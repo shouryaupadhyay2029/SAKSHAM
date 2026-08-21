@@ -564,6 +564,20 @@ export function ShaderBackground({ className, style }: { className?: string; sty
   }, []);
 
   return (
-    <canvas ref={canvasRef} className={className} style={{ display: "block", width: "100%", height: "100%", ...style }} />
+    <canvas
+      ref={canvasRef}
+      className={className}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        ...style,
+      }}
+    />
   );
 }

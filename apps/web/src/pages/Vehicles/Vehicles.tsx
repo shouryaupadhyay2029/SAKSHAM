@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './Vehicles.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
@@ -12,33 +13,6 @@ const VEHICLE_TYPE_LABELS: Record<string, string> = {
   DRONE: 'DRONE',
 };
 
-const DEPOT_NAME: Record<string, string> = {
-  'VEH-TR-101': 'East Delhi Depot',
-  'VEH-TR-102': 'South Delhi Depot',
-  'VEH-AM-201': 'Central Command HQ',
-  'VEH-HL-301': 'Safdarjung Helipad',
-  'VEH-BT-401': 'Yamuna River Station',
-  'VEH-DR-501': 'Connaught Place Depot',
-};
-
-const DEST_NAME: Record<string, string> = {
-  'VEH-TR-101': 'Rohini Sector 15 Shelter',
-  'VEH-TR-102': 'Okhla Flood Zone',
-  'VEH-AM-201': 'Karol Bagh Medical Triage',
-  'VEH-HL-301': '—',
-  'VEH-BT-401': 'Yamuna Flood Zone Alpha',
-  'VEH-DR-501': '—',
-};
-
-const ROUTE_DIST: Record<string, string> = {
-  'VEH-TR-101': '8.4 km',
-  'VEH-TR-102': '11.2 km',
-  'VEH-AM-201': '5.1 km',
-  'VEH-HL-301': '—',
-  'VEH-BT-401': '3.7 km',
-  'VEH-DR-501': '—',
-};
-
 const STATUS_DISPLAY: Record<string, string> = {
   EN_ROUTE: 'EN ROUTE',
   DISPATCHED: 'DISPATCHED',
@@ -49,6 +23,7 @@ const STATUS_DISPLAY: Record<string, string> = {
 };
 
 export const Vehicles: React.FC = () => {
+  const { t } = useTranslation();
   const { vehicles } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -97,8 +72,8 @@ export const Vehicles: React.FC = () => {
             <span className={styles.eyebrow} style={{ marginBottom: 0 }}>FLEET OPERATIONS</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#3B82F6">Emergency Response Fleet</h1>
-          <p className={styles.lead}>Live fleet availability, mission assignments and field movement across the response network.</p>
+          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#3B82F6">{t('vehicles.title')}</h1>
+          <p className={styles.lead}>{t('vehicles.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.liveStatus}>
@@ -146,7 +121,7 @@ export const Vehicles: React.FC = () => {
           <SearchIcon className={styles.searchIcon} />
           <input
             type="text"
-            placeholder="Search vehicle ID, type, driver, mission..."
+            placeholder={t('vehicles.searchPlaceholder')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
@@ -159,19 +134,19 @@ export const Vehicles: React.FC = () => {
                 className={`${styles.filterPill} ${statusFilter === s ? styles.filterPillActive : ''}`}
                 onClick={() => setStatusFilter(s)}
               >
-                {s === 'EN_ROUTE' ? 'EN ROUTE' : s}
+                {s === 'ALL' ? t('common.all') : (t(`status.${s}`) || s)}
               </button>
             ))}
           </div>
           <div className={styles.pillDivider} />
           <div className={styles.filterPills}>
-            {typePills.map(t => (
+            {typePills.map(tKey => (
               <button
-                key={t}
-                className={`${styles.filterPill} ${typeFilter === t ? styles.filterPillActive : ''}`}
-                onClick={() => setTypeFilter(t)}
+                key={tKey}
+                className={`${styles.filterPill} ${typeFilter === tKey ? styles.filterPillActive : ''}`}
+                onClick={() => setTypeFilter(tKey)}
               >
-                {t === 'RESCUE_BOAT' ? 'RESCUE BOAT' : t}
+                {tKey === 'ALL' ? t('common.all') : tKey.replace('_', ' ')}
               </button>
             ))}
           </div>
@@ -186,7 +161,7 @@ export const Vehicles: React.FC = () => {
           {filteredVehicles.length === 0 ? (
             <div className={styles.emptyState}>
               <TruckIcon />
-              <p>No fleet units match current filter criteria.</p>
+              <p>{t('common.noResultsFound')}</p>
             </div>
           ) : (
             <div className={styles.fleetList}>
@@ -204,7 +179,7 @@ export const Vehicles: React.FC = () => {
                         {veh.status === 'EN_ROUTE' || veh.status === 'DISPATCHED' ? (
                           <span className={styles.statusPulse} />
                         ) : null}
-                        {STATUS_DISPLAY[veh.status] || veh.status}
+                        {t(`status.${veh.status}`) || veh.status}
                       </span>
                       <span className={styles.unitId}>{veh.id}</span>
                     </div>
@@ -254,12 +229,13 @@ export const Vehicles: React.FC = () => {
 
         {/* Right: Detail Panel */}
         <div className={styles.ledgerColumn}>
+          <ShaderBackground style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.85, pointerEvents: 'none', zIndex: 0 }} />
           {selectedVehicle ? (
             <div className={styles.ledgerContent}>
               <div className={styles.ledgerHeader}>
                 <div className={styles.titleArea}>
                   <div className={styles.metaRow}>
-                    <span className="tech-code font-bold">{selectedVehicle.id}</span>
+                    <span className="tech-code font-bold" style={{ color: '#FAF8F3' }}>{selectedVehicle.id}</span>
                     <span className={`${styles.detailStatus} ${styles['vStatus_' + selectedVehicle.status]}`}>
                       {selectedVehicle.status === 'EN_ROUTE' || selectedVehicle.status === 'DISPATCHED' ? (
                         <span className={styles.statusPulse} />
@@ -290,11 +266,11 @@ export const Vehicles: React.FC = () => {
                 <div className={styles.routeDiagram}>
                   <div className={styles.routeNode}>
                     <span className={styles.routeNodeLabel}>ORIGIN DEPOT</span>
-                    <span className={styles.routeNodeValue}>{DEPOT_NAME[selectedVehicle.id] || '—'}</span>
+                    <span className={styles.routeNodeValue}>{(selectedVehicle as any).depotName || (selectedVehicle as any).depot || 'Central Operations Base'}</span>
                   </div>
                   <div className={styles.routeConnector}>
                     <div className={styles.routeLine} />
-                    <span className={styles.routeDist}>{ROUTE_DIST[selectedVehicle.id] || '—'}</span>
+                    <span className={styles.routeDist}>{(selectedVehicle as any).distanceKm ? `${(selectedVehicle as any).distanceKm} km` : '—'}</span>
                     <div className={styles.routeLine} />
                   </div>
                   <div className={`${styles.routeNode} ${styles.routeNodeActive}`}>
@@ -315,7 +291,7 @@ export const Vehicles: React.FC = () => {
                       </div>
                       <div className={styles.routeNode}>
                         <span className={styles.routeNodeLabel}>DESTINATION</span>
-                        <span className={styles.routeNodeValue}>{DEST_NAME[selectedVehicle.id] || 'Active Zone'}</span>
+                        <span className={styles.routeNodeValue}>{(selectedVehicle as any).destinationName || `${selectedVehicle.destination.lat.toFixed(4)}°N, ${selectedVehicle.destination.lng.toFixed(4)}°E`}</span>
                       </div>
                     </>
                   )}
@@ -328,16 +304,16 @@ export const Vehicles: React.FC = () => {
                 <div className={styles.gridData}>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>LATITUDE</span>
-                    <span className="tech-code">{selectedVehicle.location.lat.toFixed(4)}° N</span>
+                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{selectedVehicle.location.lat.toFixed(4)}° N</span>
                   </div>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>LONGITUDE</span>
-                    <span className="tech-code">{selectedVehicle.location.lng.toFixed(4)}° E</span>
+                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{selectedVehicle.location.lng.toFixed(4)}° E</span>
                   </div>
                   {selectedVehicle.speedKmh && (
                     <div className={styles.gridRow}>
                       <span className={styles.gridLabel}>GROUND SPEED</span>
-                      <span className="tech-code">{selectedVehicle.speedKmh} km/h</span>
+                      <span className="tech-code" style={{ color: '#FAF8F3' }}>{selectedVehicle.speedKmh} km/h</span>
                     </div>
                   )}
                 </div>
@@ -349,19 +325,19 @@ export const Vehicles: React.FC = () => {
                 <div className={styles.gridData}>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>DRIVER / PILOT</span>
-                    <span style={{ fontWeight: 700 }}>{selectedVehicle.driverName}</span>
+                    <span style={{ fontWeight: 700, color: '#FAF8F3' }}>{selectedVehicle.driverName}</span>
                   </div>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>RADIO FREQUENCY</span>
-                    <span className="tech-code">{selectedVehicle.driverContact}</span>
+                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{selectedVehicle.driverContact}</span>
                   </div>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>VEHICLE TYPE</span>
-                    <span>{VEHICLE_TYPE_LABELS[selectedVehicle.type] || selectedVehicle.type}</span>
+                    <span style={{ color: '#FAF8F3' }}>{VEHICLE_TYPE_LABELS[selectedVehicle.type] || selectedVehicle.type}</span>
                   </div>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>CAPACITY</span>
-                    <span>{selectedVehicle.capacity}</span>
+                    <span style={{ color: '#FAF8F3' }}>{selectedVehicle.capacity}</span>
                   </div>
                 </div>
               </div>
@@ -372,9 +348,11 @@ export const Vehicles: React.FC = () => {
             </div>
           ) : (
             <div className={styles.emptyLedger}>
-              <TruckIcon size={32} />
-              <h4>SELECT A UNIT</h4>
-              <p>Click any fleet unit from the registry to view live mission details and route visualization.</p>
+              <div className={styles.emptyLedgerContent}>
+                <TruckIcon size={32} className={styles.emptyIcon} />
+                <h4>SELECT A UNIT</h4>
+                <p>Click any fleet unit from the registry to view live mission details and route visualization.</p>
+              </div>
             </div>
           )}
         </div>
@@ -404,8 +382,8 @@ const CloseIcon = () => (
   </svg>
 );
 
-const TruckIcon = ({ size = 24 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+const TruckIcon = ({ size = 24, className }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" />
     <rect width="9" height="11" x="11" y="6" rx="2" />
     <circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" />

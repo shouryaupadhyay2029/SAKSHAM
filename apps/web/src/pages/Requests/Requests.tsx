@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ChevronRight, FileText, Plus, AlertCircle, ArrowDown } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
+import { useTranslation } from 'react-i18next';
 import styles from './Requests.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 export const Requests: React.FC = () => {
+  const { t } = useTranslation();
   const { requests, resources } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
@@ -50,11 +52,11 @@ export const Requests: React.FC = () => {
         <ShaderBackground className="absolute inset-0" />
         <div className={styles.headerTitles}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
-            <span className={styles.eyebrow} style={{ marginBottom: 0 }}>DEMAND COORDINATION</span>
+            <span className={styles.eyebrow} style={{ marginBottom: 0 }}>{t('demands.title')}</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#7F00FF">Civilian Demand Registry</h1>
-          <p className={styles.lead}>Track incoming relief requests, prioritize unmet needs, and coordinate resource allocation.</p>
+          <h1 className={`${styles.title} reveal-block`} data-reveal-color="#7F00FF">{t('demands.title')}</h1>
+          <p className={styles.lead}>{t('demands.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.liveStatus}>
@@ -102,34 +104,43 @@ export const Requests: React.FC = () => {
           <Search size={14} className={styles.searchIcon} />
           <input 
             type="text" 
-            placeholder="Search request ID, location, material..."
+            placeholder={t('demands.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className={styles.filterPills}>
-          {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(pill => (
+          {[
+            { id: 'ALL', label: t('common.all') },
+            { id: 'CRITICAL', label: t('severity.CRITICAL') },
+            { id: 'HIGH', label: t('severity.HIGH') },
+            { id: 'MEDIUM', label: t('severity.MEDIUM') },
+            { id: 'LOW', label: t('severity.LOW') }
+          ].map(pill => (
             <button
-              key={pill}
-              className={`${styles.filterPill} ${priorityFilter === pill ? styles.filterPillActive : ''}`}
-              onClick={() => setPriorityFilter(pill)}
+              key={pill.id}
+              className={`${styles.filterPill} ${priorityFilter === pill.id ? styles.filterPillActive : ''}`}
+              onClick={() => setPriorityFilter(pill.id)}
             >
-              {pill}
+              {pill.label}
             </button>
           ))}
           <div className={styles.pillDivider} />
-          {['ALL STATUS', 'PENDING', 'ALLOCATED', 'DISPATCHED', 'FULFILLED'].map(pill => {
-            const val = pill === 'ALL STATUS' ? 'ALL' : pill;
-            return (
-              <button
-                key={pill}
-                className={`${styles.filterPill} ${statusFilter === val ? styles.filterPillActive : ''}`}
-                onClick={() => setStatusFilter(val)}
-              >
-                {pill}
-              </button>
-            );
-          })}
+          {[
+            { id: 'ALL', label: t('common.all') },
+            { id: 'PENDING', label: t('status.PENDING') },
+            { id: 'ALLOCATED', label: t('status.ALLOCATED') },
+            { id: 'DISPATCHED', label: t('status.DISPATCHED') },
+            { id: 'FULFILLED', label: t('status.FULFILLED') }
+          ].map(pill => (
+            <button
+              key={pill.id}
+              className={`${styles.filterPill} ${statusFilter === pill.id ? styles.filterPillActive : ''}`}
+              onClick={() => setStatusFilter(pill.id)}
+            >
+              {pill.label}
+            </button>
+          ))}
         </div>
       </section>
 
@@ -142,12 +153,12 @@ export const Requests: React.FC = () => {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>REQUEST ID</th>
-                  <th>AFFECTED ZONE</th>
-                  <th>MATERIAL / NEED</th>
-                  <th>PRIORITY</th>
-                  <th>AFFECTED</th>
-                  <th>MATCHING STATUS</th>
+                  <th>{t('demands.requestId')}</th>
+                  <th>{t('demands.shelterName')}</th>
+                  <th>{t('demands.itemCategory')}</th>
+                  <th>{t('common.priority')}</th>
+                  <th>{t('incidents.impact')}</th>
+                  <th>{t('common.status')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -156,8 +167,8 @@ export const Requests: React.FC = () => {
                   <tr>
                     <td colSpan={7} className={styles.emptyRow}>
                       <AlertCircle size={22} className={styles.emptyIcon} />
-                      <p>NO ACTIVE DEMAND ENTRIES</p>
-                      <span>Adjust filters or search parameters.</span>
+                      <p>{t('common.noResultsFound')}</p>
+                      <span>{t('demands.subtitle')}</span>
                     </td>
                   </tr>
                 ) : (
@@ -179,13 +190,13 @@ export const Requests: React.FC = () => {
                         </td>
                         <td>
                           <span className={`${styles.priorityBadge} ${styles['priority_' + req.priority]}`}>
-                            ● {req.priority}
+                            ● {t(`severity.${req.priority}`) || req.priority}
                           </span>
                         </td>
                         <td className="tech-code">{req.affectedCount.toLocaleString()}</td>
                         <td>
                           <span className={`${styles.statusLabel} ${styles['status_' + req.status]}`}>
-                            {req.status}
+                            {t(`status.${req.status}`) || req.status}
                           </span>
                         </td>
                         <td className={styles.actionCol}>
@@ -202,12 +213,13 @@ export const Requests: React.FC = () => {
 
         {/* Right Side: Operational Context Ledger Panel */}
         <div className={styles.ledgerColumn}>
+          <ShaderBackground style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.85, pointerEvents: 'none', zIndex: 0 }} />
           {selectedRequest ? (
             <div className={styles.ledgerContent}>
               <div className={styles.ledgerHeader}>
                 <div className={styles.titleArea}>
                   <div className={styles.metaRow}>
-                    <span className="tech-code font-bold">{selectedRequest.id}</span>
+                    <span className="tech-code font-bold" style={{ color: '#FAF8F3' }}>{selectedRequest.id}</span>
                     <span className={`${styles.statusLabel} ${styles['status_' + selectedRequest.status]}`}>
                       {selectedRequest.status}
                     </span>
@@ -230,15 +242,15 @@ export const Requests: React.FC = () => {
                 <div className={styles.gridData}>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>AFFECTED POPULATION</span>
-                    <span>{selectedRequest.affectedCount.toLocaleString()} people</span>
+                    <span style={{ color: '#FAF8F3' }}>{selectedRequest.affectedCount.toLocaleString()} people</span>
                   </div>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>PRIORITY INDEX</span>
-                    <span style={{ fontWeight: 800 }}>{selectedRequest.priority}</span>
+                    <span style={{ fontWeight: 800, color: '#FAF8F3' }}>{selectedRequest.priority}</span>
                   </div>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>MATCH STATE</span>
-                    <span>{selectedRequest.status === 'PENDING' ? 'Awaiting Allocation' : 'Assigned'}</span>
+                    <span style={{ color: '#FAF8F3' }}>{selectedRequest.status === 'PENDING' ? 'Awaiting Allocation' : 'Assigned'}</span>
                   </div>
                 </div>
               </div>
@@ -289,9 +301,11 @@ export const Requests: React.FC = () => {
             </div>
           ) : (
             <div className={styles.emptyLedger}>
-              <AlertCircle size={24} className={styles.ledgerIcon} />
-              <h4>CIVILIAN DEMAND LEDGER</h4>
-              <p>Select any active demand request from the registry to inspect priority indices, matching logistics engine status, and potential depot allocations.</p>
+              <div className={styles.emptyLedgerContent}>
+                <AlertCircle size={32} className={styles.emptyIcon} />
+                <h4>CIVILIAN DEMAND LEDGER</h4>
+                <p>Select any active demand request from the registry to inspect priority indices, matching logistics engine status, and potential depot allocations.</p>
+              </div>
             </div>
           )}
         </div>

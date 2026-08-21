@@ -16,12 +16,15 @@ import { ConnectionIndicator } from '../components/ui/SystemStates';
 import { useOperationalState } from '../context/OperationalStateContext';
 import type { DispatchMission, ReliefDelivery } from '../context/OperationalStateContext';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '../components/LanguageSwitcher/LanguageSwitcher';
 import { websocketService } from '../services/websocketService';
 import type { RealtimeEvent } from '../services/websocketService';
 import type { Incident } from '../types/incident';
 import type { DemandRequest } from '../types/request';
 
 export const OperationsLayout: React.FC = () => {
+  const { t } = useTranslation();
   const [time, setTime] = useState(new Date());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -55,7 +58,7 @@ export const OperationsLayout: React.FC = () => {
         const incData = event.data;
         if (incData && incData.id) {
           const newIncident: Incident = {
-            id: String(incData.id),
+            id: incData.incidentId || String(incData.id),
             type: incData.type || 'FLOOD',
             severity: incData.severity || 'HIGH',
             location: incData.location || 'Unknown Location',
@@ -88,8 +91,9 @@ export const OperationsLayout: React.FC = () => {
               },
             ],
           };
+          (newIncident as any).uuid = String(incData.id);
           setIncidents((prev) => {
-            if (prev.some((item) => item.id === newIncident.id)) return prev;
+            if (prev.some((item) => item.id === newIncident.id || (item as any).uuid === (newIncident as any).uuid)) return prev;
             return [newIncident, ...prev];
           });
         }
@@ -103,7 +107,7 @@ export const OperationsLayout: React.FC = () => {
         if (incData && incData.id) {
           setIncidents((prev) =>
             prev.map((item) =>
-              item.id === String(incData.id)
+              item.id === String(incData.id) || (item as any).uuid === String(incData.id) || item.id === incData.incidentId
                 ? {
                     ...item,
                     type: incData.type ?? item.type,
@@ -126,7 +130,7 @@ export const OperationsLayout: React.FC = () => {
         if (incData && incData.id) {
           setIncidents((prev) =>
             prev.map((item) =>
-              item.id === String(incData.id)
+              item.id === String(incData.id) || (item as any).uuid === String(incData.id) || item.id === incData.incidentId
                 ? {
                     ...item,
                     status: incData.status,
@@ -145,7 +149,7 @@ export const OperationsLayout: React.FC = () => {
         const demData = event.data;
         if (demData && demData.id) {
           const newRequest: DemandRequest = {
-            id: String(demData.id),
+            id: demData.requestId || String(demData.id),
             incidentId: demData.incidentId || 'INC-GENERAL',
             zoneName: demData.affectedZone || 'Delhi Relief Zone',
             coordinates: { lat: 28.6139, lng: 77.2090 },
@@ -158,8 +162,9 @@ export const OperationsLayout: React.FC = () => {
             status: demData.status || 'PENDING',
             requestedAt: demData.createdAt || new Date().toISOString(),
           };
+          (newRequest as any).uuid = String(demData.id);
           setRequests((prev) => {
-            if (prev.some((r) => r.id === newRequest.id)) return prev;
+            if (prev.some((r) => r.id === newRequest.id || (r as any).uuid === (newRequest as any).uuid)) return prev;
             return [newRequest, ...prev];
           });
           addToast('INFO', `DEMAND REQUEST: New ${demData.requestedType || 'supply'} demand logged (${demData.requestId || demData.id})`);
@@ -173,7 +178,7 @@ export const OperationsLayout: React.FC = () => {
         if (demData && demData.id) {
           setRequests((prev) =>
             prev.map((r) =>
-              r.id === String(demData.id)
+              r.id === String(demData.id) || (r as any).uuid === String(demData.id) || r.id === demData.requestId
                 ? {
                     ...r,
                     status: demData.status ?? r.status,
@@ -308,7 +313,7 @@ export const OperationsLayout: React.FC = () => {
         if (delData && delData.id) {
           setDeliveries((prev) =>
             prev.map((d) =>
-              d.id === String(delData.id)
+              d.id === String(delData.id) || (d as any).uuid === String(delData.id) || d.id === delData.deliveryId
                 ? {
                     ...d,
                     status: delData.status,
@@ -327,7 +332,7 @@ export const OperationsLayout: React.FC = () => {
         if (resData && resData.id) {
           setResources((prev) =>
             prev.map((r) =>
-              r.id === String(resData.id)
+              r.id === String(resData.id) || (r as any).uuid === String(resData.id) || r.id === resData.resourceId
                 ? {
                     ...r,
                     quantity: resData.availableQuantity ?? r.quantity,
@@ -347,7 +352,7 @@ export const OperationsLayout: React.FC = () => {
         if (vehData && vehData.id) {
           setVehicles((prev) =>
             prev.map((v) =>
-              v.id === String(vehData.id)
+              v.id === String(vehData.id) || (v as any).uuid === String(vehData.id) || v.id === vehData.vehicleId
                 ? {
                     ...v,
                     status: vehData.status ?? v.status,
@@ -424,10 +429,10 @@ export const OperationsLayout: React.FC = () => {
   };
 
   const navItems: { path: string; label: string; badge?: string }[] = [
-    { path: '/operations/command-center', label: 'Command Center' },
-    { path: '/operations/matching', label: 'Matching' },
-    { path: '/operations/dispatch', label: 'Dispatch' },
-    { path: '/operations/delivery', label: 'Delivery' }
+    { path: '/operations/command-center', label: t('navigation.commandCenter') },
+    { path: '/operations/matching', label: t('navigation.matching') },
+    { path: '/operations/dispatch', label: t('navigation.dispatch') },
+    { path: '/operations/delivery', label: t('navigation.delivery') }
   ];
 
   // Role display label
@@ -460,6 +465,7 @@ export const OperationsLayout: React.FC = () => {
         </div>
 
         <div className={styles.topbarRight}>
+          <LanguageSwitcher variant="navbar" />
           <ConnectionIndicator isOffline={isOffline} />
 
           {/* Delhi Operational Clock */}
@@ -476,7 +482,7 @@ export const OperationsLayout: React.FC = () => {
             <button
               className={styles.iconBtn}
               onClick={() => setNotificationsOpen(!notificationsOpen)}
-              aria-label="System Alerts"
+              aria-label={t('navigation.systemAlerts')}
             >
               <Bell size={15} />
               <span className={styles.notificationBadge}>3</span>
@@ -484,14 +490,14 @@ export const OperationsLayout: React.FC = () => {
 
             <div className={`${styles.notificationsDropdown} ${notificationsOpen ? styles.notificationsDropdownOpen : ''}`}>
               <div className={styles.dropdownHeader}>
-                <h4>SYSTEM ALERTS</h4>
-                <button onClick={() => setNotificationsOpen(false)}>Close</button>
+                <h4>{t('alertsDrawer.title')}</h4>
+                <button onClick={() => setNotificationsOpen(false)}>{t('common.close')}</button>
               </div>
               <div className={styles.dropdownContent}>
                 <div className={`${styles.alertItem} ${styles.alertCritical}`}>
                   <span className={styles.alertDot} />
                   <div className={styles.alertBody}>
-                    <p><strong>CRITICAL INCIDENT</strong></p>
+                    <p><strong>{t('alertsDrawer.criticalIncident')}</strong></p>
                     <p>Evacuation initiated at Yamuna Bank, East Delhi.</p>
                     <span className={styles.alertTime}>5 mins ago</span>
                   </div>
@@ -499,7 +505,7 @@ export const OperationsLayout: React.FC = () => {
                 <div className={`${styles.alertItem} ${styles.alertWarning}`}>
                   <span className={styles.alertDot} />
                   <div className={styles.alertBody}>
-                    <p><strong>WARNING</strong></p>
+                    <p><strong>{t('alertsDrawer.demandNotice')}</strong></p>
                     <p>South Depot trauma kit stocks running LOW.</p>
                     <span className={styles.alertTime}>12 mins ago</span>
                   </div>
@@ -507,7 +513,7 @@ export const OperationsLayout: React.FC = () => {
                 <div className={`${styles.alertItem} ${styles.alertInfo}`}>
                   <span className={styles.alertDot} />
                   <div className={styles.alertBody}>
-                    <p><strong>INFO</strong></p>
+                    <p><strong>{t('alertsDrawer.dispatchNotice')}</strong></p>
                     <p>Rescue Boat VEH-BT-401 dispatched to East Delhi.</p>
                     <span className={styles.alertTime}>18 mins ago</span>
                   </div>
@@ -537,7 +543,7 @@ export const OperationsLayout: React.FC = () => {
             {/* Profile dropdown */}
             <div className={`${styles.profileDropdown} ${profileOpen ? styles.profileDropdownOpen : ''}`}>
               <div className={styles.profileDropdownInfo}>
-                <span className={styles.profileName}>{authUser?.name ?? 'Officer'}</span>
+                <span className={styles.profileName}>{authUser?.name ?? t('navigation.officialRole')}</span>
                 <span className={styles.profileRole}>{authUser?.role?.replace('_', ' ') ?? 'OPERATOR'}</span>
                 <span className={styles.profileRegion}>{authUser?.region ?? '—'}</span>
                 <span className={styles.profileOrg}>{authUser?.organization ?? '—'}</span>
@@ -548,7 +554,7 @@ export const OperationsLayout: React.FC = () => {
                 onClick={handleLogout}
               >
                 <LogOut size={13} />
-                <span>Sign Out</span>
+                <span>{t('navigation.logout')}</span>
               </button>
             </div>
           </div>
@@ -567,6 +573,7 @@ export const OperationsLayout: React.FC = () => {
 
       {/* Mobile Navigation Drawer */}
       <div className={`${styles.mobileDrawer} ${isMobileOpen ? styles.mobileDrawerOpen : ''}`}>
+        <LanguageSwitcher variant="mobile" className="mb-3" />
         {navItems.map((item) => (
           <NavLink
             key={item.path}
@@ -580,7 +587,7 @@ export const OperationsLayout: React.FC = () => {
         ))}
         <button className={styles.mobileLogoutBtn} onClick={handleLogout}>
           <LogOut size={13} />
-          Sign Out
+          {t('navigation.logout')}
         </button>
       </div>
 

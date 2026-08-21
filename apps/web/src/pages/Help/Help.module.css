@@ -1,96 +1,731 @@
-.container {
-  max-width: 900px;
-  margin: 40px auto;
-  padding: 40px;
-  background-color: var(--color-warm-light);
-  border: 1px solid rgba(23, 61, 45, 0.08);
-  border-radius: var(--radius-lg);
+/* ═══════════════════════════════════════════════════════════
+   SAKSHAM CIVILIAN RESPONSE & SAFETY CENTER — Vanilla CSS
+   Help.module.css
+   ═══════════════════════════════════════════════════════════ */
+
+.pageContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: #101513;
+  box-sizing: border-box;
 }
 
-.header {
-  margin-bottom: 40px;
-  border-bottom: 1px solid rgba(23, 61, 45, 0.1);
-  padding-bottom: 20px;
+/* ── Back link ── */
+.backNav {
+  margin-bottom: 20px;
 }
 
-.header h2 {
-  font-size: 2.2rem;
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--color-deep-forest);
-  margin-bottom: 8px;
+  color: #1a3d2d;
+  text-decoration: none;
+  transition: color 200ms ease, transform 200ms ease;
 }
 
-.subtext {
-  font-size: 1.1rem;
-  color: var(--color-muted);
+.backLink:hover {
+  color: #e86f16;
+  transform: translateX(-2px);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 30px;
+/* ── 1. ATMOSPHERIC HERO ── */
+.heroCard {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: radial-gradient(circle at 20% 20%, rgba(20, 50, 40, 0.95) 0%, rgba(10, 28, 20, 0.98) 100%), #0a1c14;
+  border: 1px solid rgba(23, 61, 45, 0.2);
+  padding: 44px 40px;
+  color: #FAF8F3;
+  margin-bottom: 28px;
+  box-shadow: 0 16px 40px rgba(10, 28, 20, 0.12);
 }
 
-@media (min-width: 768px) {
-  .grid {
-    grid-template-columns: 2fr 1fr;
-  }
+.heroContent {
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
 }
 
-.sectionTitle {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--color-deep-forest);
+.heroTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.eyebrow {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #f47c20;
+}
+
+.statusIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #34d399;
+  letter-spacing: 0.06em;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  background-color: #34d399;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #34d399;
+  animation: pulseDot 2.5s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.heroTitle {
+  font-family: var(--font-display, 'Outfit', serif);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #FAF8F3;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.02em;
+}
+
+.heroTitleHighlight {
+  color: #f47c20;
+}
+
+.heroSubtitle {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: rgba(250, 248, 243, 0.75);
+  margin: 0 0 24px 0;
+  max-width: 680px;
+}
+
+.heroMetadata {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(250, 248, 243, 0.12);
+  padding-top: 18px;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(250, 248, 243, 0.65);
+  letter-spacing: 0.02em;
+}
+
+.metaIcon {
+  color: #f47c20;
+  opacity: 0.9;
+}
+
+/* ── 2. NEED HELP NOW ACTION STRIP ── */
+.actionStrip {
+  background: linear-gradient(135deg, #FAF6EE 0%, #F5EFE0 100%);
+  border: 1.5px solid rgba(244, 124, 32, 0.25);
+  border-left: 6px solid #e86f16;
+  border-radius: 14px;
+  padding: 24px 28px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  box-shadow: 0 8px 24px rgba(232, 111, 22, 0.06);
+}
+
+.actionStripText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.actionStripTitle {
+  font-family: var(--font-sans, sans-serif);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #92400e;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.card {
-  background-color: var(--color-cream);
-  border: 1px solid rgba(23, 61, 45, 0.08);
-  border-radius: var(--radius-md);
-  padding: 24px;
-  margin-bottom: 20px;
+.actionStripSubtitle {
+  font-size: 13.5px;
+  color: rgba(120, 53, 15, 0.85);
+  margin: 0;
+  line-height: 1.45;
 }
 
-.card h4 {
-  font-size: 1.1rem;
+.actionStripButtons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.call112Btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #dc2626;
+  color: #FAF8F3 !important;
+  font-weight: 800;
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
+  padding: 12px 22px;
+  border-radius: 8px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+  transition: transform 200ms ease, background-color 200ms ease, box-shadow 200ms ease;
+  white-space: nowrap;
+}
+
+.call112Btn:hover {
+  background-color: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.4);
+}
+
+.reportSosBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #1a3d2d;
+  color: #FAF8F3 !important;
+  font-weight: 800;
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
+  padding: 12px 22px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: transform 200ms ease, background-color 200ms ease;
+  white-space: nowrap;
+}
+
+.reportSosBtn:hover {
+  background-color: #10261c;
+  transform: translateY(-1px);
+}
+
+/* ── 3. CATEGORIES CHIPS ── */
+.categoriesBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.categoryChip {
+  background-color: #FAF8F3;
+  border: 1px solid rgba(23, 61, 45, 0.12);
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(23, 61, 45, 0.7);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 180ms ease;
+  user-select: none;
+}
+
+.categoryChip:hover {
+  border-color: #e86f16;
+  color: #101513;
+  background-color: rgba(232, 111, 22, 0.04);
+}
+
+.categoryChipActive {
+  background-color: #1a3d2d;
+  color: #FAF8F3 !important;
+  border-color: #1a3d2d;
+}
+
+/* ── 4. TWO-COLUMN MAIN GRID ── */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 36px;
+  margin-bottom: 40px;
+}
+
+@media (min-width: 900px) {
+  .mainGrid {
+    grid-template-columns: 1.4fr 1fr;
+  }
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(23, 61, 45, 0.08);
+}
+
+.sectionTitle {
+  font-family: var(--font-display, 'Outfit', serif);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0b2119;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sectionSubtitle {
+  font-size: 11px;
   font-weight: 700;
-  color: var(--color-deep-forest);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(23, 61, 45, 0.5);
+}
+
+/* ── Left Column: Workflows ── */
+.workflowsList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.workflowCard {
+  background-color: #FAF8F3;
+  border: 1px solid rgba(23, 61, 45, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  box-shadow: 0 4px 16px rgba(10, 28, 20, 0.03);
+}
+
+.workflowCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232, 111, 22, 0.3);
+  box-shadow: 0 8px 24px rgba(10, 28, 20, 0.07);
+}
+
+.workflowTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.workflowNumber {
+  font-family: var(--font-mono, monospace);
+  font-size: 2rem;
+  font-weight: 900;
+  color: rgba(232, 111, 22, 0.25);
+  line-height: 1;
+}
+
+.workflowCategory {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background-color: rgba(23, 61, 45, 0.06);
+  color: #1a3d2d;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.workflowHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 10px;
 }
 
-.card p {
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--color-dark);
+.workflowIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: rgba(232, 111, 22, 0.1);
+  color: #e86f16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.phoneList {
+.workflowTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0b2119;
+  margin: 0;
+}
+
+.workflowDesc {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgba(16, 21, 19, 0.8);
+  margin: 0 0 16px 0;
+}
+
+.workflowLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #e86f16;
+  text-decoration: none;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.workflowLink:hover {
+  color: #b35d38;
+  transform: translateX(3px);
+}
+
+/* ── Right Column: Helpline Directory ── */
+.contactsList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
-.phoneItem {
+.contactCard {
+  background-color: #FAF8F3;
+  border: 1px solid rgba(23, 61, 45, 0.1);
+  border-radius: 12px;
+  padding: 18px 20px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 12px;
-  background-color: var(--color-cream);
+  gap: 16px;
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  box-shadow: 0 2px 8px rgba(10, 28, 20, 0.03);
+}
+
+.contactCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(10, 28, 20, 0.06);
+  border-color: rgba(232, 111, 22, 0.3);
+}
+
+.contactCardPrimary {
+  background: linear-gradient(135deg, #FAF8F3 0%, #FEF9F6 100%);
+  border: 1.5px solid rgba(220, 38, 38, 0.25);
+  border-left: 5px solid #dc2626;
+}
+
+.contactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.contactHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contactIcon {
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.contactIconSecondary {
+  color: #1a3d2d;
+  flex-shrink: 0;
+}
+
+.contactName {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0b2119;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contactNumber {
+  font-family: var(--font-mono, monospace);
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #dc2626;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.contactNumberSecondary {
+  font-family: var(--font-mono, monospace);
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #1a3d2d;
+  line-height: 1.1;
+}
+
+.contactCategory {
+  font-size: 11px;
+  color: rgba(16, 21, 19, 0.6);
+  line-height: 1.35;
+}
+
+.callButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  background-color: rgba(23, 61, 45, 0.06);
+  color: #1a3d2d !important;
+  border: 1px solid rgba(23, 61, 45, 0.12);
+  transition: all 180ms ease;
+  flex-shrink: 0;
+}
+
+.callButton:hover {
+  background-color: #1a3d2d;
+  color: #FAF8F3 !important;
+  border-color: #1a3d2d;
+}
+
+.callButtonPrimary {
+  background-color: #dc2626;
+  color: #FAF8F3 !important;
+  border-color: #dc2626;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+}
+
+.callButtonPrimary:hover {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+/* ── 5. LIVE SAFETY ADVISORY ── */
+.advisoryCard {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-left: 6px solid #f59e0b;
+  border-radius: 14px;
+  padding: 24px 28px;
+  margin-bottom: 40px;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.08);
+}
+
+.advisoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.advisoryBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #b45309;
+}
+
+.advisoryPulse {
+  width: 7px;
+  height: 7px;
+  background-color: #f59e0b;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #f59e0b;
+  animation: pulseDot 2s infinite;
+}
+
+.advisoryHeading {
+  font-family: var(--font-sans, sans-serif);
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #78350f;
+  margin: 0 0 8px 0;
+  letter-spacing: 0.02em;
+}
+
+.advisoryBodyText {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #92400e;
+  margin: 0 0 16px 0;
+}
+
+.advisoryFooter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: rgba(146, 64, 14, 0.7);
+}
+
+/* ── 6. HOW TO RESPOND SECTION ── */
+.guidanceSection {
+  background-color: #FAF8F3;
+  border: 1px solid rgba(23, 61, 45, 0.1);
+  border-radius: 16px;
+  padding: 36px 32px;
+  margin-bottom: 32px;
+}
+
+.guidanceHeader {
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.guidanceMainTitle {
+  font-family: var(--font-display, 'Outfit', serif);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0b2119;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+}
+
+.guidanceSubTitle {
+  font-size: 13px;
+  color: rgba(16, 21, 19, 0.6);
+  margin: 0;
+}
+
+.principlesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 640px) {
+  .principlesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .principlesGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.principleCard {
+  background-color: #FAF6EE;
   border: 1px solid rgba(23, 61, 45, 0.08);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 180ms ease, border-color 180ms ease;
 }
 
-.phoneLabel {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--color-deep-forest);
+.principleCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232, 111, 22, 0.25);
 }
 
-.phoneValue {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  color: var(--color-primary);
+.principleNumber {
+  font-family: var(--font-mono, monospace);
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #e86f16;
+}
+
+.principleTitle {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0b2119;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.principleDesc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(16, 21, 19, 0.7);
+  margin: 0;
+}
+
+/* ── 7. RESPONSIVE MOBILE BREAKPOINTS ── */
+@media (max-width: 768px) {
+  .pageContainer {
+    padding: 20px 16px 40px;
+  }
+  
+  .heroCard {
+    padding: 28px 20px;
+  }
+
+  .actionStrip {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px;
+  }
+
+  .actionStripButtons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .call112Btn,
+  .reportSosBtn {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .contactCard {
+    flex-direction: flex-row;
+    align-items: center;
+    padding: 16px;
+  }
+
+  .guidanceSection {
+    padding: 24px 18px;
+  }
 }

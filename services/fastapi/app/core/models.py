@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Float, Integer, ForeignKey, text
+from sqlalchemy import Column, String, DateTime, Float, Integer, ForeignKey, text, ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -178,3 +178,22 @@ class DeliveryModel(Base):
     updatedAt = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     dispatch = relationship("DispatchModel", back_populates="deliveries")
+
+class ShelterModel(Base):
+    __tablename__ = "Shelter"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    shelterId = Column(String, unique=True, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    location = Column(String, nullable=False)
+    region = Column(String, nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    totalCapacity = Column(Integer, nullable=False)
+    currentOccupancy = Column(Integer, nullable=False, default=0)
+    status = Column(String, nullable=False, default="OPEN") # e.g. OPEN, NEAR_CAPACITY, FULL, CLOSED
+    facilities = Column(ARRAY(String), nullable=False, default=list)
+    contactPerson = Column(String, nullable=False)
+    contactInfo = Column(String, nullable=False)
+    createdAt = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updatedAt = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

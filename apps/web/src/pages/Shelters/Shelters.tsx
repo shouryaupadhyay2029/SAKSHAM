@@ -10,14 +10,6 @@ const STATUS_DISPLAY: Record<string, string> = {
   CLOSED: 'CLOSED',
 };
 
-// Demand/resource context cross-link per shelter (derived from mock data)
-const SHELTER_DEMAND: Record<string, { displaced: number; need: string; resourceNeed: string }> = {
-  'SHL-DEL-001': { displaced: 280, need: '280 displaced persons', resourceNeed: '500 Thermal Blankets' },
-  'SHL-DEL-002': { displaced: 90, need: '90 overflow displaced persons', resourceNeed: 'Emergency Food Packets' },
-  'SHL-DEL-003': { displaced: 0, need: '—', resourceNeed: '—' },
-  'SHL-DEL-004': { displaced: 0, need: '—', resourceNeed: '—' },
-};
-
 export const Shelters: React.FC = () => {
   const { shelters, requests } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
@@ -272,17 +264,24 @@ export const Shelters: React.FC = () => {
 
         {/* Right: Detail Ledger */}
         <div className={styles.ledgerColumn}>
+          <ShaderBackground style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.85, pointerEvents: 'none', zIndex: 0 }} />
           {selectedShelter ? (() => {
             const occPct = selectedShelter.capacityTotal > 0
               ? Math.round((selectedShelter.capacityOccupied / selectedShelter.capacityTotal) * 100)
               : 0;
             const available = selectedShelter.capacityTotal - selectedShelter.capacityOccupied;
             const capColor = occPct >= 90 ? '#DC2626' : occPct >= 70 ? '#E86F16' : '#059669';
-            const demandCtx = SHELTER_DEMAND[selectedShelter.id];
             const relatedRequests = pendingRequests.filter(r =>
-              Math.abs(r.coordinates.lat - selectedShelter.coordinates.lat) < 0.05 &&
-              Math.abs(r.coordinates.lng - selectedShelter.coordinates.lng) < 0.05
+              r.zoneName.toLowerCase().includes(selectedShelter.locationName.split(',')[0].toLowerCase()) ||
+              (Math.abs(r.coordinates.lat - selectedShelter.coordinates.lat) < 0.05 &&
+               Math.abs(r.coordinates.lng - selectedShelter.coordinates.lng) < 0.05)
             );
+            const linkedRequest = relatedRequests[0] || null;
+            const demandCtx = linkedRequest ? {
+              displaced: linkedRequest.affectedCount || 0,
+              need: `${linkedRequest.affectedCount || 0} displaced persons`,
+              resourceNeed: `${linkedRequest.quantity} ${linkedRequest.unit} ${linkedRequest.itemNeeded}`
+            } : null;
 
             return (
               <div className={styles.ledgerContent}>
@@ -311,10 +310,10 @@ export const Shelters: React.FC = () => {
                         {occPct}%
                       </span>
                       <div className={styles.occDetail}>
-                        <span style={{ fontWeight: 800, fontSize: 15, color: '#0B2119' }}>
+                        <span style={{ fontWeight: 800, fontSize: 15, color: '#FAF8F3' }}>
                           {selectedShelter.capacityOccupied.toLocaleString()} / {selectedShelter.capacityTotal.toLocaleString()}
                         </span>
-                        <span style={{ fontSize: 11, color: 'rgba(11,33,25,0.5)' }}>
+                        <span style={{ fontSize: 11, color: 'rgba(250,248,243,0.7)' }}>
                           {available.toLocaleString()} beds available
                         </span>
                       </div>
@@ -339,7 +338,7 @@ export const Shelters: React.FC = () => {
                   <span className={styles.sectionTitle}>AVAILABLE FACILITIES</span>
                   <div className={styles.facilitiesList}>
                     {selectedShelter.resourcesAvailable.length === 0 ? (
-                      <span style={{ fontSize: 12, color: 'rgba(11,33,25,0.4)' }}>No facilities logged.</span>
+                      <span style={{ fontSize: 12, color: 'rgba(250,248,243,0.6)' }}>No facilities logged.</span>
                     ) : selectedShelter.resourcesAvailable.map((f, fi) => (
                       <div key={fi} className={styles.facilityRow}>
                         <CheckIcon />
@@ -355,11 +354,11 @@ export const Shelters: React.FC = () => {
                   <div className={styles.gridData}>
                     <div className={styles.gridRow}>
                       <span className={styles.gridLabel}>ADDRESS</span>
-                      <span style={{ fontWeight: 600, fontSize: 12 }}>{selectedShelter.locationName}</span>
+                      <span style={{ fontWeight: 600, fontSize: 12, color: '#FAF8F3' }}>{selectedShelter.locationName}</span>
                     </div>
                     <div className={styles.gridRow}>
                       <span className={styles.gridLabel}>COORDINATES</span>
-                      <span className="tech-code">{selectedShelter.coordinates.lat.toFixed(4)}° N, {selectedShelter.coordinates.lng.toFixed(4)}° E</span>
+                      <span className="tech-code" style={{ color: '#FAF8F3' }}>{selectedShelter.coordinates.lat.toFixed(4)}° N, {selectedShelter.coordinates.lng.toFixed(4)}° E</span>
                     </div>
                   </div>
                 </div>
@@ -370,11 +369,11 @@ export const Shelters: React.FC = () => {
                   <div className={styles.gridData}>
                     <div className={styles.gridRow}>
                       <span className={styles.gridLabel}>COORDINATOR</span>
-                      <span style={{ fontWeight: 700 }}>{selectedShelter.contactPerson}</span>
+                      <span style={{ fontWeight: 700, color: '#FAF8F3' }}>{selectedShelter.contactPerson}</span>
                     </div>
                     <div className={styles.gridRow}>
                       <span className={styles.gridLabel}>PHONE</span>
-                      <span className="tech-code">{selectedShelter.contactNumber}</span>
+                      <span className="tech-code" style={{ color: '#FAF8F3' }}>{selectedShelter.contactNumber}</span>
                     </div>
                   </div>
                 </div>
@@ -415,9 +414,11 @@ export const Shelters: React.FC = () => {
             );
           })() : (
             <div className={styles.emptyLedger}>
-              <HomeIcon size={28} />
-              <h4>SELECT A FACILITY</h4>
-              <p>Click any shelter from the registry to view occupancy details, facilities and demand connections.</p>
+              <div className={styles.emptyLedgerContent}>
+                <HomeIcon size={32} className={styles.emptyIcon} />
+                <h4>SELECT A FACILITY</h4>
+                <p>Click any shelter from the registry to view occupancy details, facilities and demand connections.</p>
+              </div>
             </div>
           )}
         </div>
@@ -447,8 +448,8 @@ const CloseIcon = () => (
   </svg>
 );
 
-const HomeIcon = ({ size = 24 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+const HomeIcon = ({ size = 24, className }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
     <polyline points="9 22 9 12 15 12 15 22" />
   </svg>

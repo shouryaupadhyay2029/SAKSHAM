@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Auth
@@ -47,11 +47,22 @@ const queryClient = new QueryClient({
 import { ToastContainer } from './components/ui/SystemStates';
 import { useOperationalState } from './context/OperationalStateContext';
 
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 const AppRoutes: React.FC = () => {
   const { toasts, removeToast } = useOperationalState();
 
   return (
     <>
+      <ScrollToTop />
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <PageTransition>
         {(displayLocation) => (
@@ -68,6 +79,12 @@ const AppRoutes: React.FC = () => {
               <Route path="officer/forgot-password" element={<ForgotPassword />} />
 
               {/* Public read-only registries */}
+              <Route path="shelters" element={<Shelters />} />
+              <Route path="incidents" element={<Incidents />} />
+              <Route path="resources" element={<Resources />} />
+              <Route path="requests" element={<Requests />} />
+              <Route path="vehicles" element={<Vehicles />} />
+
               <Route path="operations/incidents" element={<Incidents />} />
               <Route path="operations/incidents/:incidentId/response" element={<IncidentWorkspace />} />
               <Route path="operations/resources" element={<Resources />} />
@@ -90,6 +107,11 @@ const AppRoutes: React.FC = () => {
                 <Route path="matching" element={<DemandMatching />} />
                 <Route path="dispatch" element={<Dispatch />} />
                 <Route path="delivery" element={<Delivery />} />
+                <Route path="incidents" element={<Incidents />} />
+                <Route path="resources" element={<Resources />} />
+                <Route path="requests" element={<Requests />} />
+                <Route path="vehicles" element={<Vehicles />} />
+                <Route path="shelters" element={<Shelters />} />
                 <Route path="incidents/:incidentId" element={<IncidentWorkspace />} />
               </Route>
             </Route>

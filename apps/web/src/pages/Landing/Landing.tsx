@@ -5,6 +5,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { SituationalAwarenessMap } from '../../components/map/SituationalAwarenessMap';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher/LanguageSwitcher';
 import { GradientBackground } from '../../components/ui/noisy-gradient-backgrounds';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
@@ -24,6 +26,7 @@ import {
 import styles from './Landing.module.css';
 
 export const Landing: React.FC = () => {
+  const { t } = useTranslation();
   const { incidents, vehicles, shelters, addIncidentFromSOS } = useOperationalState();
   const [sosSubmitted, setSosSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -578,29 +581,30 @@ export const Landing: React.FC = () => {
                 <h3 className={`${styles.parallaxBackWatermark} ${styles.parallaxBackWatermarkDark} parallax-back`}>RESPONSE</h3>
 
                 {/* Front Layer (Eyebrow text) */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }} className="parallax-front">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px', position: 'relative', zIndex: 20 }} className="parallax-front">
                   <span className={styles.eyebrowText} style={{ marginBottom: 0 }}>
                     LIVE SITUATIONAL AWARENESS
                   </span>
                   <PageGuideTrigger />
+                  <LanguageSwitcher variant="navbar" />
                 </div>
 
                 {/* Mid Layer (Actual Heading text) */}
                 <h1 className={`${styles.editorialHeading} parallax-mid`}>
                   <span className={styles.headingLineMask}>
                     <span className={styles.headingLine}>
-                      See everything.
+                      {t('landing.seeEverything')}
                     </span>
                   </span>
                   <span className={styles.headingLineMask}>
                     <span className={`${styles.headingLine} ${styles.accentOrangeText}`}>
-                      Respond anywhere.
+                      {t('landing.respondAnywhere')}
                     </span>
                   </span>
                 </h1>
               </div>
               <p className={`${styles.editorialDesc} ${styles.editorialDescDark}`}>
-                Live maps, real-time feeds, and intelligent dashboards keep you ahead of every situation.
+                {t('landing.heroDescription')}
               </p>
 
               {/* Capability feature stack with dynamic motion overlays */}
@@ -681,7 +685,7 @@ export const Landing: React.FC = () => {
               {/* Explore text link */}
               <div>
                 <Link to="/operations/command-center" className={styles.exploreTextLink}>
-                  EXPLORE COMMAND CENTER &rarr;
+                  {t('landing.exploreConsole')}
                 </Link>
               </div>
             </div>

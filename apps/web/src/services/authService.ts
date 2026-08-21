@@ -16,8 +16,7 @@ import { ROLE_PERMISSIONS } from '../types/auth';
 const SESSION_KEY = 'saksham_auth_session';
 export const TOKEN_KEY = 'saksham_auth_token';
 
-// FastAPI Backend URL
-const FASTAPI_BASE_URL = import.meta.env.VITE_FASTAPI_URL || 'http://127.0.0.1:8000/api/v1';
+const FASTAPI_BASE_URL = import.meta.env.VITE_FASTAPI_URL || import.meta.env.VITE_API_URL || '/api/v1';
 
 // ─── Demo user seed store fallback ───────────────────────────────────────────
 interface DemoCredential {

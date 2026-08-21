@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import styles from './PublicLayout.module.css';
 import { GradientBackground } from '../components/ui/noisy-gradient-backgrounds';
+import Footer from '../components/Footer/Footer';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -136,14 +137,14 @@ const NavItem: React.FC<NavItemProps> = ({ label, children, isActive }) => {
       onMouseLeave={close}
     >
       <button
-        className={`${styles.navLink} ${isActive || isOpen ? styles.navLinkActive : ''}`}
+        className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
         onClick={() => (isOpen ? close() : open())}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
         {label}
         <ChevronDown size={12} className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} />
-        <span className={styles.activeIndicator} />
+        {isActive && <span className={styles.activeIndicator} />}
       </button>
 
       <div
@@ -181,10 +182,15 @@ const DropItem: React.FC<DropItemProps> = ({ icon: Icon, to, anchor, title, desc
     </div>
   );
 
+  const handleClick = () => {
+    window.scrollTo(0, 0);
+    if (onClick) onClick();
+  };
+
   if (anchor) {
-    return <a href={anchor} className={styles.dropItemLink} onClick={onClick}>{inner}</a>;
+    return <a href={anchor} className={styles.dropItemLink} onClick={handleClick}>{inner}</a>;
   }
-  return <Link to={to!} className={styles.dropItemLink} onClick={onClick}>{inner}</Link>;
+  return <Link to={to!} className={styles.dropItemLink} onClick={handleClick}>{inner}</Link>;
 };
 
 // ─── Main Layout ─────────────────────────────────────────────────────────────
@@ -623,60 +629,8 @@ export const PublicLayout: React.FC = () => {
         <Outlet />
       </main>
 
-      {/* ── FOOTER (unchanged) ── */}
-      <footer ref={footerRef} className={`${styles.footer} textureForest`}>
-        <div className={`${styles.footerTopDivider} footer-animate`}>
-          <div className={styles.footerTopDividerSignal} />
-        </div>
-
-        <div className={styles.footerContent}>
-          <div className={`${styles.footerBrand} footer-animate`}>
-            <h3>SAKSHAM</h3>
-            <p>Resilient Disaster Relief &amp; Logistics Systems</p>
-          </div>
-          <div className={styles.footerLinks}>
-            <div className="footer-animate">
-              <h4>OPERATIONS</h4>
-              <Link to="/operations/command-center" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> Command Center
-              </Link>
-              <Link to="/operations/incidents" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> Live Incidents
-              </Link>
-              <Link to="/operations/resources" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> Resource Registry
-              </Link>
-            </div>
-            <div className="footer-animate">
-              <h4>RESOURCES</h4>
-              <Link to="/help" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> Helplines
-              </Link>
-              <Link to="/report" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> File SOS Report
-              </Link>
-              <a href="#" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> System Status
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className={`${styles.footerStatus} footer-animate`}>
-          <span className={styles.statusDot} />
-          <span>RESPONSE NETWORK ONLINE</span>
-        </div>
-
-        <div className={`${styles.footerBottom} footer-animate`}>
-          <p>&copy; {new Date().getFullYear()} SAKSHAM. Designed for SIH 2026. All rights reserved.</p>
-          <div className={styles.footerSystemLabel}>
-            <span>SAKSHAM RESPONSE NETWORK</span>
-            <span>SYSTEM STATUS / ONLINE</span>
-          </div>
-        </div>
-
-        <div className={styles.hugeWordmark} aria-hidden="true">SAKSHAM</div>
-      </footer>
+      {/* ── GLOBAL FOOTER ── */}
+      <Footer />
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MapView } from '../../components/map/MapView';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import {
@@ -12,22 +11,12 @@ import {
   AlertTriangle,
   ArrowRight
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import styles from './CommandCenter.module.css';
 
 import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
-
-gsap.registerPlugin(ScrollTrigger);
-
-const incidentTypeLabel: Record<string, string> = {
-  FLOOD: 'Flood',
-  FIRE: 'Fire',
-  EARTHQUAKE: 'Earthquake',
-  MEDICAL_EMERGENCY: 'Medical Emergency',
-  STRUCTURAL_COLLAPSE: 'Structural Collapse',
-  RESOURCE_SHORTAGE: 'Resource Shortage',
-};
 
 const fmtTimeAgo = (iso: string): string => {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -62,6 +51,7 @@ function useCountUp(target: number, duration = 1500, triggerStart = false) {
 }
 
 export const CommandCenter: React.FC = () => {
+  const { t } = useTranslation();
   const { incidents, vehicles, resources, shelters, requests } = useOperationalState();
 
   const [layerFilters, setLayerFilters] = useState({
@@ -233,18 +223,17 @@ export const CommandCenter: React.FC = () => {
               <PageGuideTrigger />
             </div>
             <div style={{ overflow: 'hidden' }}>
-              <h1 className={`${styles.heroTitle} reveal-block`} data-reveal-color="#F47C20">Live Operational Overview</h1>
+              <h1 className={`${styles.heroTitle} reveal-block`} data-reveal-color="#F47C20">{t('dashboard.title')}</h1>
             </div>
             <p className={styles.heroLead}>
-              A unified monitoring layout connecting emergency incidents, resource supply coordinates,
-              rescue fleet routing, and shelter capacities across the region.
+              {t('dashboard.subtitle')}
             </p>
           </div>
           <div className={styles.heroStatus}>
             <span className={styles.statusDotPulse} />
             <div className={styles.statusDetails}>
-              <span className={styles.statusLabel}>SYSTEM OPERATIONAL</span>
-              <span className={styles.syncLabel}>LAST SYNC: JUST NOW</span>
+              <span className={styles.statusLabel}>{t('dashboard.operationalReadiness')}</span>
+              <span className={styles.syncLabel}>{t('dashboard.liveStatus')}</span>
             </div>
           </div>
         </div>
@@ -255,23 +244,23 @@ export const CommandCenter: React.FC = () => {
         <div className={styles.statsGrid}>
           <div className={styles.statCell}>
             <span className={styles.statNumber}>{String(activeCountVal).padStart(2, '0')}</span>
-            <span className={styles.statLabel}>Active Incidents</span>
+            <span className={styles.statLabel}>{t('dashboard.activeIncidents')}</span>
           </div>
           <div className={styles.statCell}>
             <span className={styles.statNumber}>{String(pendingCountVal).padStart(2, '0')}</span>
-            <span className={styles.statLabel}>Pending Demands</span>
+            <span className={styles.statLabel}>{t('dashboard.criticalDemands')}</span>
           </div>
           <div className={styles.statCell}>
             <span className={styles.statNumber}>{String(availResCountVal).padStart(2, '0')}</span>
-            <span className={styles.statLabel}>Active Depots</span>
+            <span className={styles.statLabel}>{t('resources.depotLocation')}</span>
           </div>
           <div className={styles.statCell}>
             <span className={styles.statNumber}>{String(onMissionCountVal).padStart(2, '0')}</span>
-            <span className={styles.statLabel}>Vehicles On Mission</span>
+            <span className={styles.statLabel}>{t('dashboard.activeDispatches')}</span>
           </div>
           <div className={styles.statCell}>
             <span className={styles.statNumber}>{shelterPctCountVal}%</span>
-            <span className={styles.statLabel}>Shelter Capacity</span>
+            <span className={styles.statLabel}>{t('navigation.shelters')}</span>
           </div>
         </div>
       </section>
@@ -280,8 +269,8 @@ export const CommandCenter: React.FC = () => {
       <section ref={mapRef} className={styles.mapSection}>
         <div className={styles.sectionHeader}>
           <div>
-            <h2 className={styles.sectionTitle}>LIVE SITUATIONAL AWARENESS</h2>
-            <p className={styles.sectionSubtitle}>Delhi NCR Regional Operations Grid</p>
+            <h2 className={styles.sectionTitle}>{t('dashboard.liveTelemetry')}</h2>
+            <p className={styles.sectionSubtitle}>{t('map.legendTitle')}</p>
           </div>
 
           {/* Layer controls */}
@@ -291,13 +280,13 @@ export const CommandCenter: React.FC = () => {
               onClick={() => setIsLayersOpen(!isLayersOpen)}
             >
               <Layers size={13} />
-              <span>Map Layers</span>
+              <span>{t('map.legendTitle')}</span>
             </button>
 
             {isLayersOpen && (
               <div className={styles.layerDropdown}>
                 <div className={styles.dropdownSection}>
-                  <span className={styles.dropdownLabel}>VISIBLE LAYERS</span>
+                  <span className={styles.dropdownLabel}>{t('common.filter')}</span>
                   {(Object.entries(layerFilters) as [keyof typeof layerFilters, boolean][]).map(([key, on]) => (
                     <label key={key} className={styles.layerCheckboxRow}>
                       <input
@@ -311,11 +300,11 @@ export const CommandCenter: React.FC = () => {
                 </div>
                 <div className={styles.dropdownDivider} />
                 <div className={styles.dropdownSection}>
-                  <span className={styles.dropdownLabel}>LEGEND</span>
-                  <div className={styles.legendRow}><span className={`${styles.legendDot} ${styles.ldCritical}`} />Critical Threats</div>
-                  <div className={styles.legendRow}><span className={`${styles.legendDot} ${styles.ldHigh}`} />High Severity</div>
-                  <div className={styles.legendRow}><span className={`${styles.legendDot} ${styles.ldMedium}`} />Medium Priority</div>
-                  <div className={styles.legendRow}><span className={`${styles.legendDot} ${styles.ldShelter}`} />Active Shelters</div>
+                  <span className={styles.dropdownLabel}>{t('map.legendTitle')}</span>
+                  <div className={styles.legendRow}><span className={`${styles.legendDot} ${styles.ldCritical}`} />{t('severity.CRITICAL')}</div>
+                  <div className={styles.legendRow}><span className={`${styles.legendDot} ${styles.ldHigh}`} />{t('severity.HIGH')}</div>
+                  <div className={styles.legendRow}><span className={`${styles.legendDot} ${styles.ldMedium}`} />{t('severity.MEDIUM')}</div>
+                  <div className={styles.legendRow}><span className={`${styles.legendDot} ${styles.ldShelter}`} />{t('navigation.shelters')}</div>
                 </div>
               </div>
             )}
@@ -346,14 +335,18 @@ export const CommandCenter: React.FC = () => {
           {/* Priority Incidents Feed Column */}
           <div className={styles.gridCol}>
             <div className={styles.gridColHeader}>
-              <h3>Priority Operational Focus</h3>
+              <h3>{t('dashboard.recentActivity')}</h3>
               <Link to="/operations/incidents" className={styles.viewRegistryLink}>
-                View Incident Registry <ArrowRight size={12} />
+                {t('dashboard.viewAllIncidents')} <ArrowRight size={12} />
               </Link>
             </div>
 
             <div className={styles.incidentList}>
-              {topIncidents.map((incident) => (
+              {topIncidents.length === 0 ? (
+                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'rgba(250, 248, 243, 0.65)', fontSize: '13px', fontWeight: 600 }}>
+                  No active incidents recorded.
+                </div>
+              ) : topIncidents.map((incident) => (
                 <button
                   key={incident.id}
                   className={`${styles.incidentRow} ${selectedItem?.obj?.id === incident.id ? styles.incidentRowActive : ''}`}
@@ -364,10 +357,10 @@ export const CommandCenter: React.FC = () => {
                     <div className={styles.incHeaderRow}>
                       <span className={styles.incId}>{incident.id}</span>
                       <span className={`${styles.sevBadge} ${styles['badge_' + incident.severity]}`}>
-                        {incident.severity}
+                        {t(`severity.${incident.severity}`) || incident.severity}
                       </span>
                     </div>
-                    <div className={styles.incType}>{incidentTypeLabel[incident.type] || incident.type}</div>
+                    <div className={styles.incType}>{incident.type}</div>
                     <div className={styles.incLocation}><MapPin size={10} /> {incident.location}</div>
                   </div>
                   <ChevronRight size={14} className={styles.rowArrow} />
@@ -379,10 +372,10 @@ export const CommandCenter: React.FC = () => {
           {/* Interactive Inspection Column */}
           <div className={styles.gridCol}>
             <div className={styles.gridColHeader}>
-              <h3>Inspector Context Panel</h3>
+              <h3>{t('common.details')}</h3>
               {selectedItem && (
                 <button className={styles.clearPanelBtn} onClick={() => setSelectedItem(null)}>
-                  Clear selection
+                  {t('common.cancel')}
                 </button>
               )}
             </div>
@@ -392,64 +385,41 @@ export const CommandCenter: React.FC = () => {
                 <div className={styles.inspectorBody}>
                   {selectedItem.type === 'incident' && (
                     <div className={styles.inspectorDetails}>
-                      <span className={styles.inspectorSubtitle}>INCIDENT DETAILS</span>
-                      <h4 className={styles.inspectorTitle}>{incidentTypeLabel[selectedItem.obj.type] || selectedItem.obj.type}</h4>
+                      <span className={styles.inspectorSubtitle}>{t('incidents.incident')}</span>
+                      <h4 className={styles.inspectorTitle}>{selectedItem.obj.type}</h4>
                       <p className={styles.inspectorLoc}><MapPin size={11} /> {selectedItem.obj.location}</p>
 
                       <div className={styles.metaRow}>
-                        <span className={styles.metaBadge}>STATUS: {selectedItem.obj.status}</span>
-                        <span className={styles.metaBadge}>REPORTED: {fmtTimeAgo(selectedItem.obj.time)}</span>
-                      </div>
-
-                      <div className={styles.statsSnippet}>
-                        <div>
-                          <span className={styles.snippetLabel}>Affected Count</span>
-                          <span className={styles.snippetValue}>{selectedItem.obj.casualtiesCount || 0} casualties</span>
-                        </div>
-                        <div>
-                          <span className={styles.snippetLabel}>Displaced Count</span>
-                          <span className={styles.snippetValue}>{selectedItem.obj.displacedCount || 0} evacuees</span>
-                        </div>
+                        <span className={styles.metaBadge}>{t('common.status')}: {t(`status.${selectedItem.obj.status}`) || selectedItem.obj.status}</span>
+                        <span className={styles.metaBadge}>{t('incidents.reported')}: {fmtTimeAgo(selectedItem.obj.time)}</span>
                       </div>
 
                       <p className={styles.inspectorDesc}>{selectedItem.obj.description}</p>
 
                       <Link to={`/operations/incidents/${selectedItem.obj.id}`} className={styles.inspectCta}>
-                        Action Dispatch Workspace &rarr;
+                        {t('common.view')} &rarr;
                       </Link>
                     </div>
                   )}
 
                   {selectedItem.type === 'vehicle' && (
                     <div className={styles.inspectorDetails}>
-                      <span className={styles.inspectorSubtitle}>VEHICLE DETAILS</span>
+                      <span className={styles.inspectorSubtitle}>{t('vehicles.vehicleId')}</span>
                       <h4 className={styles.inspectorTitle}>{selectedItem.obj.name}</h4>
-                      <p className={styles.inspectorLoc}><CheckCircle size={11} /> Status: {selectedItem.obj.status}</p>
-                      <div className={styles.metaRow}>
-                        <span className={styles.metaBadge}>DRIVE: {selectedItem.obj.driverName}</span>
-                        <span className={styles.metaBadge}>CAP: {selectedItem.obj.capacity}</span>
-                      </div>
-                      {selectedItem.obj.cargo && (
-                        <div className={styles.cargoInfo}>
-                          <strong>Cargo:</strong> {selectedItem.obj.cargo}
-                        </div>
-                      )}
+                      <p className={styles.inspectorLoc}><CheckCircle size={11} /> {t('common.status')}: {t(`status.${selectedItem.obj.status}`) || selectedItem.obj.status}</p>
                       <Link to="/operations/vehicles" className={styles.inspectCta}>
-                        Inspect Fleet &rarr;
+                        {t('common.view')} &rarr;
                       </Link>
                     </div>
                   )}
 
                   {selectedItem.type === 'shelter' && (
                     <div className={styles.inspectorDetails}>
-                      <span className={styles.inspectorSubtitle}>SHELTER DETAILS</span>
+                      <span className={styles.inspectorSubtitle}>{t('navigation.shelters')}</span>
                       <h4 className={styles.inspectorTitle}>{selectedItem.obj.name}</h4>
                       <p className={styles.inspectorLoc}><MapPin size={11} /> {selectedItem.obj.locationName}</p>
-                      <div className={styles.metaRow}>
-                        <span className={styles.metaBadge}>CAP: {selectedItem.obj.capacityOccupied}/{selectedItem.obj.capacityTotal} occupied</span>
-                      </div>
                       <Link to="/operations/shelters" className={styles.inspectCta}>
-                        Manage Shelter Occupancy &rarr;
+                        {t('common.view')} &rarr;
                       </Link>
                     </div>
                   )}
@@ -457,8 +427,7 @@ export const CommandCenter: React.FC = () => {
               ) : (
                 <div className={styles.inspectorPlaceholder}>
                   <AlertTriangle size={24} className={styles.phIcon} />
-                  <p>No operational object selected</p>
-                  <span>Select a map marker or registry item to view status coordinates and dispatch routes.</span>
+                  <p>{t('common.noData')}</p>
                 </div>
               )}
             </div>

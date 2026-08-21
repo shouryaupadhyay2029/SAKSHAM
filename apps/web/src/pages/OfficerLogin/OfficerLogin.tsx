@@ -3,6 +3,8 @@ import { useState, useEffect, useId, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "../../components/LanguageSwitcher/LanguageSwitcher";
 import { Shield, Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
 import styles from "./OfficerLogin.module.css";
 
@@ -111,6 +113,7 @@ function OrbitalLinesBackground() {
 }
 
 export default function OfficerLogin() {
+  const { t } = useTranslation();
   const { isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -181,24 +184,27 @@ export default function OfficerLogin() {
             </Link>
 
             {/* Brand */}
-            <div className={styles.brand}>
-              <div className={styles.brandMark}>
-                <Shield size={18} />
+            <div className="flex items-center justify-between w-full mb-6">
+              <div className={styles.brand}>
+                <div className={styles.brandMark}>
+                  <Shield size={18} />
+                </div>
+                <span className={styles.brandName}>{t('common.appName')}</span>
               </div>
-              <span className={styles.brandName}>SAKSHAM</span>
+              <LanguageSwitcher variant="compact" />
             </div>
 
             {/* Heading block */}
             <div className={styles.headingBlock}>
               <p className={styles.accessLabel}>AUTHORIZED RESPONSE ACCESS</p>
-              <h1 className={styles.heading}>Officer Sign In</h1>
-              <p className={styles.subtext}>Sign in to access the SAKSHAM operational network.</p>
+              <h1 className={styles.heading}>{t('auth.loginTitle')}</h1>
+              <p className={styles.subtext}>{t('auth.loginSubtitle')}</p>
             </div>
 
             {/* Official notice */}
             <div className={styles.notice}>
               <AlertCircle size={14} className={styles.noticeIcon} />
-              <span><strong>OFFICIAL ACCESS ONLY</strong> — This portal is intended for authorized emergency-response personnel.</span>
+              <span><strong>{t('auth.loginTitle')}</strong> — {t('auth.loginSubtitle')}</span>
             </div>
 
             {/* Error banner */}
@@ -229,7 +235,7 @@ export default function OfficerLogin() {
                     }}
                     className={styles.fieldInput}
                   />
-                  <span className={styles.fieldLabel}>Official ID / Email</span>
+                  <span className={styles.fieldLabel}>{t('auth.emailPlaceholder')}</span>
                 </div>
                 {fieldErrors.email && <span className={styles.fieldError}>{fieldErrors.email}</span>}
               </div>
@@ -251,7 +257,7 @@ export default function OfficerLogin() {
                     }}
                     className={styles.fieldInput}
                   />
-                  <span className={styles.fieldLabel}>Password</span>
+                  <span className={styles.fieldLabel}>{t('auth.passwordPlaceholder')}</span>
                   <button
                     type="button"
                     className={styles.togglePw}
@@ -267,7 +273,7 @@ export default function OfficerLogin() {
 
               {/* Forgot */}
               <div className={styles.forgotRow}>
-                <Link to="/officer/forgot-password" className={styles.forgotLink}>Forgot password?</Link>
+                <Link to="/officer/forgot-password" className={styles.forgotLink}>{t('auth.forgotPassword')}</Link>
               </div>
 
               {/* Submit */}
@@ -278,15 +284,15 @@ export default function OfficerLogin() {
                 aria-busy={isSubmitting}
               >
                 {isSubmitting ? (
-                  <><span className={styles.spinner} aria-hidden="true" /> SIGNING IN…</>
-                ) : 'SIGN IN'}
+                  <><span className={styles.spinner} aria-hidden="true" /> {t('auth.signIn')}…</>
+                ) : t('auth.signIn')}
               </button>
             </form>
 
             {/* Civilian */}
             <div className={styles.civilianRow}>
-              <p>Civilian? You do not need an account to request emergency assistance.</p>
-              <Link to="/report" className={styles.civilianLink}>Get Emergency Help &rarr;</Link>
+              <p>{t('auth.loginSubtitle')}</p>
+              <Link to="/report" className={styles.civilianLink}>{t('landing.seekRelief')} &rarr;</Link>
             </div>
 
             {/* Demo panel */}

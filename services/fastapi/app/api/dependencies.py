@@ -128,6 +128,8 @@ def get_dispatch_service(db: Session = Depends(get_db)) -> DispatchService:
     return DispatchService(dispatch, alloc, vehicle, resource, demand, incident)
 
 from app.repositories.postgres.delivery_repository import SqlAlchemyDeliveryRepository
+from app.repositories.postgres.shelter_repository import SqlAlchemyShelterRepository
+from app.domain.shelter.service import ShelterService
 
 def get_delivery_service(db: Session = Depends(get_db)) -> DeliveryService:
     delivery = SqlAlchemyDeliveryRepository(db)
@@ -138,3 +140,7 @@ def get_delivery_service(db: Session = Depends(get_db)) -> DeliveryService:
     demand = SqlAlchemyDemandRepository(db)
     incident = SqlAlchemyIncidentRepository(db)
     return DeliveryService(delivery, dispatch, alloc, vehicle, resource, demand, incident)
+
+def get_shelter_service(db: Session = Depends(get_db)) -> ShelterService:
+    repo = SqlAlchemyShelterRepository(db)
+    return ShelterService(repo)

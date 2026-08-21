@@ -3,7 +3,7 @@
  * Bridges React frontend modules to backend REST APIs.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<{ data: T; meta?: any }> {
   const url = `${API_BASE_URL}${path}`;
@@ -20,7 +20,11 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<{ data
     throw new Error(errorBody.error?.message || `HTTP Error ${response.status}: ${response.statusText}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  if (json && typeof json === 'object' && 'data' in json) {
+    return json;
+  }
+  return { data: json };
 }
 
 export const apiClient = {
