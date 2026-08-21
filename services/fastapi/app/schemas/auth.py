@@ -16,5 +16,7 @@ class OfficerProfile(BaseModel):
 
 class LoginResponse(BaseModel):
     accessToken: str
+    access_token: Optional[str] = None
     tokenType: str = "bearer"
+    token_type: str = "bearer"
     officer: OfficerProfile

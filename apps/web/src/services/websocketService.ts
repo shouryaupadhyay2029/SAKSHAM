@@ -17,41 +17,51 @@ class WebSocketService {
     onError?: (error: Event) => void,
     onClose?: () => void
   ) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
+    // 1. Guard against duplicate connection attempts if active or connecting
+    if (
+      this.socket?.readyState === WebSocket.OPEN ||
+      this.socket?.readyState === WebSocket.CONNECTING
+    ) {
       return;
     }
 
-    // Read token from sessionStorage or localStorage to support authentication handshake
+    // 2. Retrieve token from canonical storage key
     const token = sessionStorage.getItem('saksham_auth_token') || '';
-    const url = token ? `${WS_BASE_URL}?token=${token}` : WS_BASE_URL;
+
+    // 3. Defer connection if unauthenticated
+    if (!token) {
+      console.warn('[WebSocket] Unauthenticated: No saksham_auth_token found. Connection deferred.');
+      return;
+    }
+
+    const url = `${WS_BASE_URL}?token=${encodeURIComponent(token)}`;
 
     this.socket = new WebSocket(url);
 
     this.socket.onopen = () => {
-      console.log('Frontend WebSocket connected');
+      console.log('⚡ [WebSocket] Connection established successfully');
     };
 
     this.socket.onmessage = (message) => {
       try {
         const event: RealtimeEvent = JSON.parse(message.data);
-        console.log('Realtime event received:', event);
+        console.log('⚡ [WebSocket] Event received:', event.event, event.entityId || '');
         onMessage(event);
       } catch (error) {
-        console.error('Failed to parse WebSocket event:', error);
+        console.error('[WebSocket] Failed to parse event payload:', error);
       }
     };
 
     this.socket.onerror = (error) => {
-      console.error('Frontend WebSocket error:', error);
-
+      console.error('[WebSocket] Connection error:', error);
       if (onError) {
         onError(error);
       }
     };
 
-    this.socket.onclose = () => {
-      console.log('Frontend WebSocket disconnected');
-
+    this.socket.onclose = (evt) => {
+      console.log(`[WebSocket] Connection closed (code: ${evt.code})`);
+      this.socket = null;
       if (onClose) {
         onClose();
       }
@@ -60,9 +70,27 @@ class WebSocketService {
 
   disconnect() {
     if (this.socket) {
-      this.socket.close();
+      const sock = this.socket;
       this.socket = null;
+
+      // Detach listeners to prevent spurious 1006 abnormal close logs on intentional disconnect
+      sock.onopen = null;
+      sock.onmessage = null;
+      sock.onerror = null;
+      sock.onclose = null;
+
+      if (sock.readyState === WebSocket.OPEN || sock.readyState === WebSocket.CONNECTING) {
+        try {
+          sock.close(1000, 'Normal Closure');
+        } catch {
+          // ignore
+        }
+      }
     }
+  }
+
+  isConnected(): boolean {
+    return this.socket?.readyState === WebSocket.OPEN;
   }
 }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Bell,
   Clock,
@@ -13,8 +14,12 @@ import {
 import styles from './OperationsLayout.module.css';
 import { ConnectionIndicator } from '../components/ui/SystemStates';
 import { useOperationalState } from '../context/OperationalStateContext';
+import type { DispatchMission, ReliefDelivery } from '../context/OperationalStateContext';
 import { useAuth } from '../context/AuthContext';
-
+import { websocketService } from '../services/websocketService';
+import type { RealtimeEvent } from '../services/websocketService';
+import type { Incident } from '../types/incident';
+import type { DemandRequest } from '../types/request';
 
 export const OperationsLayout: React.FC = () => {
   const [time, setTime] = useState(new Date());
@@ -25,8 +30,350 @@ export const OperationsLayout: React.FC = () => {
   const navigate = useNavigate();
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-  const { isOffline } = useOperationalState();
+  const queryClient = useQueryClient();
+  const {
+    isOffline,
+    addToast,
+    setIncidents,
+    setRequests,
+    setResources,
+    setVehicles,
+    setMissions,
+    setDeliveries,
+  } = useOperationalState();
   const { authUser, logout } = useAuth();
+
+  // ─── Single Global WebSocket Connection Lifecycle ─────────────────────────────
+  const handleEventRef = useRef<(event: RealtimeEvent) => void>(() => {});
+
+  handleEventRef.current = (event: RealtimeEvent) => {
+    console.log('⚡ [Global Realtime Event]:', event);
+
+    switch (event.event) {
+      case 'INCIDENT_CREATED': {
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+        const incData = event.data;
+        if (incData && incData.id) {
+          const newIncident: Incident = {
+            id: String(incData.id),
+            type: incData.type || 'FLOOD',
+            severity: incData.severity || 'HIGH',
+            location: incData.location || 'Unknown Location',
+            coordinates: {
+              lat: incData.latitude ?? 28.6139,
+              lng: incData.longitude ?? 77.2090,
+            },
+            time: incData.reportedAt || new Date().toISOString(),
+            status: incData.status || 'REPORTED',
+            assignedTeam: incData.assignedUnit || 'UNASSIGNED',
+            description: incData.description || incData.title || '',
+            reporterName: incData.reporterName || 'Field Reporter',
+            reporterContact: incData.reporterContact || '',
+            displacedCount: incData.displacedPeople || 0,
+            reportedAt: incData.reportedAt || new Date().toISOString(),
+            updatedAt: incData.updatedAt || new Date().toISOString(),
+            source: incData.source || 'OFFICER DISPATCH',
+            peopleAffected: incData.affectedPeople || 0,
+            requiredResources: [],
+            timeline: [
+              {
+                time: new Date().toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                  timeZone: 'Asia/Kolkata',
+                }),
+                title: 'INCIDENT CREATED',
+                description: incData.title || incData.description || 'Incident logged into response network.',
+              },
+            ],
+          };
+          setIncidents((prev) => {
+            if (prev.some((item) => item.id === newIncident.id)) return prev;
+            return [newIncident, ...prev];
+          });
+        }
+        addToast('WARNING', `CRITICAL INCIDENT: ${incData?.title || event.entityId || 'New Incident Reported'}`);
+        break;
+      }
+
+      case 'INCIDENT_UPDATED': {
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+        const incData = event.data;
+        if (incData && incData.id) {
+          setIncidents((prev) =>
+            prev.map((item) =>
+              item.id === String(incData.id)
+                ? {
+                    ...item,
+                    type: incData.type ?? item.type,
+                    severity: incData.severity ?? item.severity,
+                    location: incData.location ?? item.location,
+                    description: incData.description ?? item.description,
+                    status: incData.status ?? item.status,
+                    updatedAt: new Date().toISOString(),
+                  }
+                : item
+            )
+          );
+        }
+        break;
+      }
+
+      case 'INCIDENT_STATUS_CHANGED': {
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+        const incData = event.data;
+        if (incData && incData.id) {
+          setIncidents((prev) =>
+            prev.map((item) =>
+              item.id === String(incData.id)
+                ? {
+                    ...item,
+                    status: incData.status,
+                    updatedAt: new Date().toISOString(),
+                  }
+                : item
+            )
+          );
+          addToast('INFO', `INCIDENT STATUS: ${incData.incidentId || incData.id} is now ${incData.status}`);
+        }
+        break;
+      }
+
+      case 'DEMAND_CREATED': {
+        queryClient.invalidateQueries({ queryKey: ['demands'] });
+        const demData = event.data;
+        if (demData && demData.id) {
+          const newRequest: DemandRequest = {
+            id: String(demData.id),
+            incidentId: demData.incidentId || 'INC-GENERAL',
+            zoneName: demData.affectedZone || 'Delhi Relief Zone',
+            coordinates: { lat: 28.6139, lng: 77.2090 },
+            itemNeeded: demData.requestedType || 'Supplies',
+            category: demData.requestedType || 'FOOD',
+            quantity: demData.quantity || 100,
+            unit: demData.unit || 'Units',
+            priority: demData.priority || 'HIGH',
+            affectedCount: demData.affectedPeople || 50,
+            status: demData.status || 'PENDING',
+            requestedAt: demData.createdAt || new Date().toISOString(),
+          };
+          setRequests((prev) => {
+            if (prev.some((r) => r.id === newRequest.id)) return prev;
+            return [newRequest, ...prev];
+          });
+          addToast('INFO', `DEMAND REQUEST: New ${demData.requestedType || 'supply'} demand logged (${demData.requestId || demData.id})`);
+        }
+        break;
+      }
+
+      case 'DEMAND_UPDATED': {
+        queryClient.invalidateQueries({ queryKey: ['demands'] });
+        const demData = event.data;
+        if (demData && demData.id) {
+          setRequests((prev) =>
+            prev.map((r) =>
+              r.id === String(demData.id)
+                ? {
+                    ...r,
+                    status: demData.status ?? r.status,
+                    quantity: demData.quantity ?? r.quantity,
+                    priority: demData.priority ?? r.priority,
+                  }
+                : r
+            )
+          );
+        }
+        break;
+      }
+
+      case 'ALLOCATION_CREATED': {
+        queryClient.invalidateQueries({ queryKey: ['allocations'] });
+        queryClient.invalidateQueries({ queryKey: ['matching'] });
+        addToast('INFO', `ALLOCATION REQUESTED: Matching allocation ${event.entityId}`);
+        break;
+      }
+
+      case 'ALLOCATION_APPROVED': {
+        queryClient.invalidateQueries({ queryKey: ['allocations'] });
+        queryClient.invalidateQueries({ queryKey: ['demands'] });
+        queryClient.invalidateQueries({ queryKey: ['resources'] });
+        const allocData = event.data;
+        addToast('SUCCESS', `ALLOCATION APPROVED: Allocation ${allocData?.allocationId || event.entityId} confirmed`);
+        break;
+      }
+
+      case 'ALLOCATION_REJECTED': {
+        queryClient.invalidateQueries({ queryKey: ['allocations'] });
+        queryClient.invalidateQueries({ queryKey: ['demands'] });
+        addToast('WARNING', `ALLOCATION REJECTED: Allocation ${event.entityId} rejected`);
+        break;
+      }
+
+      case 'DISPATCH_CREATED': {
+        queryClient.invalidateQueries({ queryKey: ['dispatches'] });
+        queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+        const dispData = event.data;
+        if (dispData && dispData.id) {
+          const newMission: DispatchMission = {
+            id: String(dispData.id),
+            requestId: dispData.allocationId || 'ALLOC-GEN',
+            vehicleId: dispData.vehicleId || 'VEH-TR-101',
+            status: dispData.status || 'DISPATCHED',
+            destinationName: dispData.destination || 'Relief Target',
+            resourceType: 'Emergency Cargo',
+            quantity: 1000,
+            unit: 'Units',
+            etaMinutes: 20,
+            operatorName: dispData.assignedOfficer || 'Officer',
+            speedKmh: 45,
+            distanceKm: 5.0,
+            signalStrength: 95,
+            fuelPct: 80,
+            trafficLevel: 'MODERATE',
+            routePath: [dispData.origin || 'Depot', dispData.destination || 'Site'],
+            timeline: [
+              {
+                time: new Date().toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                  timeZone: 'Asia/Kolkata',
+                }),
+                title: 'DISPATCH AUTHORIZED',
+                done: true,
+              },
+            ],
+          };
+          setMissions((prev) => {
+            if (prev.some((m) => m.id === newMission.id)) return prev;
+            return [newMission, ...prev];
+          });
+        }
+        addToast('INFO', `DISPATCH INITIATED: Mission ${dispData?.dispatchId || event.entityId} authorized`);
+        break;
+      }
+
+      case 'DISPATCH_STATUS_CHANGED': {
+        queryClient.invalidateQueries({ queryKey: ['dispatches'] });
+        queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+        const dispData = event.data;
+        if (dispData && dispData.id) {
+          setMissions((prev) =>
+            prev.map((m) =>
+              m.id === String(dispData.id)
+                ? {
+                    ...m,
+                    status: dispData.status,
+                  }
+                : m
+            )
+          );
+          addToast('INFO', `DISPATCH STATUS: Mission ${dispData.dispatchId || dispData.id} status is now ${dispData.status}`);
+        }
+        break;
+      }
+
+      case 'DELIVERY_CREATED': {
+        queryClient.invalidateQueries({ queryKey: ['deliveries'] });
+        const delData = event.data;
+        if (delData && delData.id) {
+          const newDelivery: ReliefDelivery = {
+            id: String(delData.id),
+            dispatchId: delData.dispatchId || 'DSP-001',
+            demandId: 'DEM-001',
+            incidentId: 'INC-001',
+            resourceId: 'RES-001',
+            vehicleId: 'VEH-001',
+            requestedQty: delData.quantity || 100,
+            allocatedQty: delData.quantity || 100,
+            deliveredQty: 0,
+            unit: delData.unit || 'Units',
+            status: delData.status || 'PENDING',
+            resourceType: 'Relief Cargo',
+            destinationName: 'Relief Site',
+          };
+          setDeliveries((prev) => {
+            if (prev.some((d) => d.id === newDelivery.id)) return prev;
+            return [newDelivery, ...prev];
+          });
+        }
+        break;
+      }
+
+      case 'DELIVERY_STATUS_CHANGED': {
+        queryClient.invalidateQueries({ queryKey: ['deliveries'] });
+        queryClient.invalidateQueries({ queryKey: ['resources'] });
+        const delData = event.data;
+        if (delData && delData.id) {
+          setDeliveries((prev) =>
+            prev.map((d) =>
+              d.id === String(delData.id)
+                ? {
+                    ...d,
+                    status: delData.status,
+                  }
+                : d
+            )
+          );
+          addToast('SUCCESS', `DELIVERY UPDATE: ${delData.deliveryId || delData.id} status changed to ${delData.status}`);
+        }
+        break;
+      }
+
+      case 'RESOURCE_UPDATED': {
+        queryClient.invalidateQueries({ queryKey: ['resources'] });
+        const resData = event.data;
+        if (resData && resData.id) {
+          setResources((prev) =>
+            prev.map((r) =>
+              r.id === String(resData.id)
+                ? {
+                    ...r,
+                    quantity: resData.availableQuantity ?? r.quantity,
+                    status: resData.status ?? r.status,
+                    lastUpdated: new Date().toISOString(),
+                  }
+                : r
+            )
+          );
+        }
+        break;
+      }
+
+      case 'VEHICLE_STATUS_CHANGED': {
+        queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+        const vehData = event.data;
+        if (vehData && vehData.id) {
+          setVehicles((prev) =>
+            prev.map((v) =>
+              v.id === String(vehData.id)
+                ? {
+                    ...v,
+                    status: vehData.status ?? v.status,
+                    speedKmh: vehData.speed ?? v.speedKmh,
+                  }
+                : v
+            )
+          );
+        }
+        break;
+      }
+
+      default:
+        break;
+    }
+  };
+
+  useEffect(() => {
+    // Connect single WebSocket client on layout mount
+    websocketService.connect((event) => handleEventRef.current(event));
+
+    return () => {
+      // Disconnect cleanly when OperationsLayout unmounts
+      websocketService.disconnect();
+    };
+  }, []);
 
   // Close mobile drawer on route change
   useEffect(() => {

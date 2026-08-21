@@ -83,8 +83,28 @@ export const Landing: React.FC = () => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const headerEl = document.querySelector('header');
 
+    const safeSet = (targets: any, vars: gsap.TweenVars) => {
+      if (!targets) return;
+      if (typeof targets === 'string') {
+        if (document.querySelector(targets)) {
+          gsap.set(targets, vars);
+        }
+      } else if (Array.isArray(targets)) {
+        const valid = targets.filter(t => {
+          if (!t) return false;
+          if (typeof t === 'string') return document.querySelector(t) !== null;
+          return true;
+        });
+        if (valid.length > 0) {
+          gsap.set(valid, vars);
+        }
+      } else {
+        gsap.set(targets, vars);
+      }
+    };
+
     if (mediaQuery.matches) {
-      gsap.set([
+      safeSet([
         headerEl,
         `.${styles.eyebrowText}`,
         `.${styles.headingLine}`,
@@ -112,35 +132,35 @@ export const Landing: React.FC = () => {
 
     // Set initial states for elements
     if (headerEl) {
-      gsap.set(headerEl, { opacity: 0, y: -8 });
+      safeSet(headerEl, { opacity: 0, y: -8 });
     }
-    gsap.set('.parallax-back', { opacity: 0, y: 0 });
-    gsap.set(`.${styles.eyebrowText}`, { opacity: 0, y: 12 });
-    gsap.set(`.${styles.headingLine}`, { opacity: 0, y: '105%' });
-    gsap.set(`.${styles.editorialDesc}`, { opacity: 0, y: 14 });
-    gsap.set(`.${styles.featureRow}`, { opacity: 0, y: 14 });
+    safeSet('.parallax-back', { opacity: 0, y: 0 });
+    safeSet(`.${styles.eyebrowText}`, { opacity: 0, y: 12 });
+    safeSet(`.${styles.headingLine}`, { opacity: 0, y: '105%' });
+    safeSet(`.${styles.editorialDesc}`, { opacity: 0, y: 14 });
+    safeSet(`.${styles.featureRow}`, { opacity: 0, y: 14 });
 
     // Telemetry section initial states
-    gsap.set('.radar-eyebrow', { opacity: 0, y: 15 });
-    gsap.set(`.${styles.radarHeadingLine}`, { opacity: 0, y: '105%' });
-    gsap.set('.radar-description', { opacity: 0, y: 16 });
-    gsap.set('.radar-card-container', { opacity: 0, y: 35 });
+    safeSet('.radar-eyebrow', { opacity: 0, y: 15 });
+    safeSet(`.${styles.radarHeadingLine}`, { opacity: 0, y: '105%' });
+    safeSet('.radar-description', { opacity: 0, y: 16 });
+    safeSet('.radar-card-container', { opacity: 0, y: 35 });
 
     // SOS section initial states
-    gsap.set('.sos-eyebrow', { opacity: 0, y: 15 });
-    gsap.set(`.${styles.sosHeadingLine}`, { opacity: 0, y: '105%' });
-    gsap.set('.sos-description', { opacity: 0, y: 16 });
-    gsap.set('.sos-reassurance-item', { opacity: 0, y: 12 });
-    gsap.set('.sos-form-card-container', { opacity: 0, y: 24 });
+    safeSet('.sos-eyebrow', { opacity: 0, y: 15 });
+    safeSet(`.${styles.sosHeadingLine}`, { opacity: 0, y: '105%' });
+    safeSet('.sos-description', { opacity: 0, y: 16 });
+    safeSet('.sos-reassurance-item', { opacity: 0, y: 12 });
+    safeSet('.sos-form-card-container', { opacity: 0, y: 24 });
 
     // Child targets inside rows
-    gsap.set(`.${styles.featureRow} .${styles.featureIconContainer}`, { opacity: 0, x: -4 });
-    gsap.set(`.${styles.featureRow} .${styles.featureRowText}`, { opacity: 0, y: 8 });
+    safeSet(`.${styles.featureRow} .${styles.featureIconContainer}`, { opacity: 0, x: -4 });
+    safeSet(`.${styles.featureRow} .${styles.featureRowText}`, { opacity: 0, y: 8 });
 
-    gsap.set(`.${styles.exploreTextLink}`, { opacity: 0, y: 8 });
-    gsap.set(`.${styles.rightMapCol}`, { opacity: 0, y: 22, scale: 0.985 });
+    safeSet(`.${styles.exploreTextLink}`, { opacity: 0, y: 8 });
+    safeSet(`.${styles.rightMapCol}`, { opacity: 0, y: 22, scale: 0.985 });
 
-    gsap.set([
+    safeSet([
       '.map-header-overlay',
       '.map-legend-overlay',
       '.map-right-overlay',

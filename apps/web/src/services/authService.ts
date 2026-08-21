@@ -12,12 +12,14 @@
 import type { AuthUser, LoginResult, Permission, Role } from '../types/auth';
 import { ROLE_PERMISSIONS } from '../types/auth';
 
-// ─── Storage key (single place) ──────────────────────────────────────────────
+// ─── Storage keys ──────────────────────────────────────────────────────────────
 const SESSION_KEY = 'saksham_auth_session';
+export const TOKEN_KEY = 'saksham_auth_token';
 
-// ─── Demo user seed store ─────────────────────────────────────────────────────
-// ⚠  DO NOT place real credentials here. This is for development/demo use only.
-// In production builds, the backend replaces this entirely.
+// FastAPI Backend URL
+const FASTAPI_BASE_URL = import.meta.env.VITE_FASTAPI_URL || 'http://127.0.0.1:8000/api/v1';
+
+// ─── Demo user seed store fallback ───────────────────────────────────────────
 interface DemoCredential {
   password: string;
   user: AuthUser;
@@ -28,11 +30,11 @@ const DEMO_USERS: Record<string, DemoCredential> = {
     password: 'demo-op-2026',
     user: {
       id: 'USR-001',
-      name: 'Priya Sharma',
+      name: 'Harshit Sharma',
       email: 'operator@saksham.demo',
       role: 'OPERATOR' as Role,
       organization: 'SAKSHAM Response Network',
-      region: 'East Delhi',
+      region: 'Delhi NCR',
       permissions: ROLE_PERMISSIONS['OPERATOR'],
     },
   },
@@ -40,11 +42,11 @@ const DEMO_USERS: Record<string, DemoCredential> = {
     password: 'demo-auth-2026',
     user: {
       id: 'USR-002',
-      name: 'Col. Rakesh Verma',
+      name: 'Pradeep Kumar',
       email: 'authority@saksham.demo',
       role: 'REGIONAL_AUTHORITY' as Role,
       organization: 'Delhi Disaster Management Authority',
-      region: 'Delhi NCR',
+      region: 'East Delhi',
       permissions: ROLE_PERMISSIONS['REGIONAL_AUTHORITY'],
     },
   },
@@ -52,56 +54,86 @@ const DEMO_USERS: Record<string, DemoCredential> = {
     password: 'demo-admin-2026',
     user: {
       id: 'USR-003',
-      name: 'System Administrator',
+      name: 'Rajesh Nair',
       email: 'admin@saksham.demo',
       role: 'ADMIN' as Role,
       organization: 'SAKSHAM Core System',
-      region: 'All Regions',
+      region: 'National',
       permissions: ROLE_PERMISSIONS['ADMIN'],
     },
   },
 };
 
-// ─── Public authService API ───────────────────────────────────────────────────
-// These are the ONLY methods AuthContext and the rest of the app should call.
-// Swap the internals here when integrating a real auth backend.
-
 export const authService = {
   /**
-   * Attempt to authenticate with credentials.
-   * Returns a LoginResult — never throws.
+   * Attempt to authenticate officer credentials via FastAPI backend.
+   * On success, stores the JWT accessToken into sessionStorage under 'saksham_auth_token'.
    */
   async login(email: string, password: string): Promise<LoginResult> {
-    // Simulate network latency for realism
-    await new Promise((r) => setTimeout(r, 800));
-
     const normalised = email.toLowerCase().trim();
-    const record = DEMO_USERS[normalised];
 
-    if (!record) {
-      // Do not reveal whether the email exists
-      return { success: false, error: 'INVALID_CREDENTIALS' };
-    }
-
-    if (record.password !== password) {
-      return { success: false, error: 'INVALID_CREDENTIALS' };
-    }
-
-    // Persist session
     try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(record.user));
-    } catch {
-      // sessionStorage unavailable (private browsing extreme mode, etc.)
+      // 1. Try real FastAPI JWT login endpoint
+      const response = await fetch(`${FASTAPI_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: normalised, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.accessToken && data.officer) {
+          // Persist token for WebSocket and API calls
+          sessionStorage.setItem(TOKEN_KEY, data.accessToken);
+
+          const role = data.officer.role as Role;
+          const authUser: AuthUser = {
+            id: String(data.officer.id),
+            name: data.officer.name,
+            email: data.officer.email,
+            role,
+            organization: data.officer.region ? `${data.officer.region} Command Unit` : 'SAKSHAM Response Network',
+            region: data.officer.region || 'Delhi NCR',
+            permissions: ROLE_PERMISSIONS[role] || [],
+          };
+
+          // Persist user session
+          sessionStorage.setItem(SESSION_KEY, JSON.stringify(authUser));
+          return { success: true, user: authUser };
+        }
+      } else {
+        const errJson = await response.json().catch(() => ({}));
+        if (errJson.error?.code === 'INVALID_CREDENTIALS' || response.status === 401) {
+          return { success: false, error: 'INVALID_CREDENTIALS' };
+        }
+      }
+    } catch (networkError) {
+      console.warn('FastAPI auth connection failed, attempting local fallback check...', networkError);
     }
 
-    return { success: true, user: record.user };
+    // 2. Local Demo fallback (if server is unreachable or offline mode)
+    const record = DEMO_USERS[normalised];
+    if (record && record.password === password) {
+      try {
+        sessionStorage.setItem(TOKEN_KEY, `demo-token-${record.user.role}`);
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(record.user));
+      } catch {
+        // sessionStorage unavailable
+      }
+      return { success: true, user: record.user };
+    }
+
+    return { success: false, error: 'INVALID_CREDENTIALS' };
   },
 
   /**
-   * Clear session and auth state.
+   * Clear session and token state.
    */
   logout(): void {
     try {
+      sessionStorage.removeItem(TOKEN_KEY);
       sessionStorage.removeItem(SESSION_KEY);
     } catch {
       // ignore
@@ -116,7 +148,6 @@ export const authService = {
       const raw = sessionStorage.getItem(SESSION_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw) as AuthUser;
-      // Minimal shape validation
       if (!parsed.id || !parsed.role) return null;
       return parsed;
     } catch {
@@ -149,10 +180,8 @@ export const authService = {
 
   /**
    * Expose demo credentials hint for development UI.
-   * Returns null in production builds.
    */
   getDemoHints(): { email: string; role: string }[] | null {
-    // Only expose in non-production environments
     if (import.meta.env.PROD) return null;
     return Object.entries(DEMO_USERS).map(([email, record]) => ({
       email,
