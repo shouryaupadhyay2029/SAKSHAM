@@ -26,8 +26,117 @@ import {
 } from '../../services/optimizerService';
 import styles from './RouteOptimizer.module.css';
 
-// ── Default Mock Delhi Data for Seamless Out-of-the-Box Demo ────────────────
-const DEFAULT_DEPOTS: Depot[] = [
+// ── 1. National India Disaster Logistics Grid (Multi-State View) ───────────────
+const NATIONAL_INDIA_DEPOTS: Depot[] = [
+  {
+    id: 'DEPOT-NORTH-DELHI',
+    name: 'National Disaster Command Hub (New Delhi)',
+    lat: 28.6139,
+    lng: 77.2090,
+    vehicles: [
+      { id: 'VEH-IN-101', name: 'Convoy Alpha (Northern)', type: 'HEAVY_CARRIER', capacity: 5000 },
+      { id: 'VEH-IN-102', name: 'Rapid Air/Road Transport 01', type: 'TRUCK', capacity: 3000 },
+    ],
+  },
+  {
+    id: 'DEPOT-WEST-MUMBAI',
+    name: 'Western Maritime & Coastal Hub (Mumbai)',
+    lat: 19.0760,
+    lng: 72.8777,
+    vehicles: [
+      { id: 'VEH-IN-201', name: 'Western Carrier Bravo', type: 'HEAVY_CARRIER', capacity: 6000 },
+      { id: 'VEH-IN-202', name: 'Fast Response Truck', type: 'TRUCK', capacity: 2500 },
+    ],
+  },
+  {
+    id: 'DEPOT-EAST-KOLKATA',
+    name: 'Eastern Regional Logistics Base (Kolkata)',
+    lat: 22.5726,
+    lng: 88.3639,
+    vehicles: [
+      { id: 'VEH-IN-301', name: 'Eastern Supply Delta', type: 'HEAVY_CARRIER', capacity: 5500 },
+    ],
+  },
+  {
+    id: 'DEPOT-SOUTH-CHENNAI',
+    name: 'Southern Peninsular Depot (Chennai)',
+    lat: 13.0827,
+    lng: 80.2707,
+    vehicles: [
+      { id: 'VEH-IN-401', name: 'Southern Express Echo', type: 'HEAVY_CARRIER', capacity: 4500 },
+    ],
+  },
+];
+
+const NATIONAL_INDIA_DEMANDS: DemandPoint[] = [
+  {
+    id: 'DEM-SRINAGAR',
+    name: 'Srinagar Valley Relief Staging (J&K)',
+    lat: 34.0837,
+    lng: 74.7973,
+    demand: 1200,
+    priority: 'CRITICAL',
+  },
+  {
+    id: 'DEM-GUJARAT',
+    name: 'Kutch Coastal Evacuation Base (Gujarat)',
+    lat: 23.2420,
+    lng: 69.6669,
+    demand: 1400,
+    priority: 'CRITICAL',
+  },
+  {
+    id: 'DEM-GUWAHATI',
+    name: 'Brahmaputra Flood Command (Guwahati, Assam)',
+    lat: 26.1445,
+    lng: 91.7362,
+    demand: 1800,
+    priority: 'CRITICAL',
+  },
+  {
+    id: 'DEM-PATNA',
+    name: 'Bihar Emergency Supply Depot (Patna)',
+    lat: 25.5941,
+    lng: 85.1376,
+    demand: 950,
+    priority: 'HIGH',
+  },
+  {
+    id: 'DEM-HYDERABAD',
+    name: 'Deccan Central Relief Center (Hyderabad)',
+    lat: 17.3850,
+    lng: 78.4867,
+    demand: 1100,
+    priority: 'HIGH',
+  },
+  {
+    id: 'DEM-BENGALURU',
+    name: 'Karnataka Emergency Hub (Bengaluru)',
+    lat: 12.9716,
+    lng: 77.5946,
+    demand: 850,
+    priority: 'MEDIUM',
+  },
+  {
+    id: 'DEM-ODISHA',
+    name: 'Cyclone Response Staging (Bhubaneswar, Odisha)',
+    lat: 20.2961,
+    lng: 85.8245,
+    demand: 1300,
+    priority: 'HIGH',
+  },
+  {
+    id: 'DEM-KOCHI',
+    name: 'Kerala Maritime Support Center (Kochi)',
+    lat: 9.9312,
+    lng: 76.2673,
+    demand: 900,
+    priority: 'MEDIUM',
+  },
+];
+
+// ── 2. Regional Delhi NCR Preset ──────────────────────────────────────────────
+const DELHI_NCR_DEPOTS: Depot[] = [
   {
     id: 'DEPOT-CENTRAL',
     name: 'Central Secretariat Relief Hub',
@@ -51,7 +160,7 @@ const DEFAULT_DEPOTS: Depot[] = [
   },
 ];
 
-const DEFAULT_DEMANDS: DemandPoint[] = [
+const DELHI_NCR_DEMANDS: DemandPoint[] = [
   {
     id: 'DEM-001',
     name: 'Rohini Sector 15 Shelter',
@@ -92,14 +201,6 @@ const DEFAULT_DEMANDS: DemandPoint[] = [
     demand: 400,
     priority: 'MEDIUM',
   },
-  {
-    id: 'DEM-006',
-    name: 'Karol Bagh Medical Camp',
-    lat: 28.6520,
-    lng: 77.1900,
-    demand: 250,
-    priority: 'MEDIUM',
-  },
 ];
 
 const DEFAULT_HAZARDS: HazardZone[] = [
@@ -124,13 +225,15 @@ const DEFAULT_HAZARDS: HazardZone[] = [
 export const RouteOptimizer: React.FC = () => {
   const { resources, vehicles, requests, addToast, setMissions, setRequests } = useOperationalState();
 
+  const [gridScope, setGridScope] = useState<'NATIONAL' | 'REGIONAL'>('NATIONAL');
   const [backendHealthy, setBackendHealthy] = useState<boolean>(true);
   const [activeHazards, setActiveHazards] = useState<HazardZone[]>(DEFAULT_HAZARDS);
   const [inspectingRoute, setInspectingRoute] = useState<OptimizedRoute | null>(null);
 
-  // ── Construct Depots and Demands from Operational State ───────────────────
+  // ── Construct Depots and Demands from Scope / Operational State ───────────
   const depots: Depot[] = useMemo(() => {
-    if (!resources || resources.length === 0) return DEFAULT_DEPOTS;
+    if (gridScope === 'NATIONAL') return NATIONAL_INDIA_DEPOTS;
+    if (!resources || resources.length === 0) return DELHI_NCR_DEPOTS;
 
     const depotMap = new Map<string, Depot>();
     resources.forEach((res, idx) => {
@@ -150,16 +253,17 @@ export const RouteOptimizer: React.FC = () => {
         name: `${res.locationName} Hub (${res.name})`,
         lat: res.coordinates?.lat || 28.6139,
         lng: res.coordinates?.lng || 77.2090,
-        vehicles: depotVehicles.length > 0 ? depotVehicles : DEFAULT_DEPOTS[0].vehicles,
+        vehicles: depotVehicles.length > 0 ? depotVehicles : DELHI_NCR_DEPOTS[0].vehicles,
       });
     });
 
     const list = Array.from(depotMap.values()).slice(0, 3);
-    return list.length > 0 ? list : DEFAULT_DEPOTS;
-  }, [resources, vehicles]);
+    return list.length > 0 ? list : DELHI_NCR_DEPOTS;
+  }, [gridScope, resources, vehicles]);
 
   const demandPoints: DemandPoint[] = useMemo(() => {
-    if (!requests || requests.length === 0) return DEFAULT_DEMANDS;
+    if (gridScope === 'NATIONAL') return NATIONAL_INDIA_DEMANDS;
+    if (!requests || requests.length === 0) return DELHI_NCR_DEMANDS;
 
     return requests.map((req, idx) => ({
       id: req.id || `DEM-${idx + 1}`,
@@ -169,7 +273,7 @@ export const RouteOptimizer: React.FC = () => {
       demand: req.quantity || 300,
       priority: req.priority || 'MEDIUM',
     }));
-  }, [requests]);
+  }, [gridScope, requests]);
 
   const [selectedDepotIds, setSelectedDepotIds] = useState<string[]>(() => depots.map((d) => d.id));
   const [selectedDemandIds, setSelectedDemandIds] = useState<string[]>(() => demandPoints.map((dp) => dp.id));
@@ -377,6 +481,52 @@ export const RouteOptimizer: React.FC = () => {
             </span>
           </div>
           <p className={styles.engineSub}>OSRM OpenStreetMap Routing Matrix · VRP v9.9</p>
+
+          {/* Scope Selector Controls */}
+          <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+            <button
+              style={{
+                background: gridScope === 'NATIONAL' ? '#0B2119' : '#FFFFFF',
+                color: gridScope === 'NATIONAL' ? '#FFFFFF' : '#0B2119',
+                border: '1px solid rgba(11, 33, 25, 0.15)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onClick={() => {
+                setGridScope('NATIONAL');
+                setSelectedDepotIds(NATIONAL_INDIA_DEPOTS.map((d) => d.id));
+                setSelectedDemandIds(NATIONAL_INDIA_DEMANDS.map((dp) => dp.id));
+                setOptimizeResult(null);
+              }}
+            >
+              🇮🇳 All-India National Grid
+            </button>
+            <button
+              style={{
+                background: gridScope === 'REGIONAL' ? '#0B2119' : '#FFFFFF',
+                color: gridScope === 'REGIONAL' ? '#FFFFFF' : '#0B2119',
+                border: '1px solid rgba(11, 33, 25, 0.15)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onClick={() => {
+                setGridScope('REGIONAL');
+                setSelectedDepotIds(DELHI_NCR_DEPOTS.map((d) => d.id));
+                setSelectedDemandIds(DELHI_NCR_DEMANDS.map((dp) => dp.id));
+                setOptimizeResult(null);
+              }}
+            >
+              📍 Delhi NCR Regional
+            </button>
+          </div>
         </div>
       </section>
 

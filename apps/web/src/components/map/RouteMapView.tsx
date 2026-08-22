@@ -34,8 +34,8 @@ export const RouteMapView: React.FC<RouteMapViewProps> = ({
   hazards = [],
   selectedVehicleId,
   onSelectRoute,
-  center = [77.22, 28.61],
-  zoom = 11,
+  center = [78.96, 21.8],
+  zoom = 4.2,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -57,8 +57,8 @@ export const RouteMapView: React.FC<RouteMapViewProps> = ({
       style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
       center: center,
       zoom: zoom,
-      minZoom: 8,
-      maxZoom: 18,
+      minZoom: 1,
+      maxZoom: 19,
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
@@ -296,7 +296,7 @@ export const RouteMapView: React.FC<RouteMapViewProps> = ({
           (b, coord) => b.extend(coord),
           new maplibregl.LngLatBounds(allCoords[0], allCoords[0])
         );
-        map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 1000 });
+        map.fitBounds(bounds, { padding: 80, maxZoom: 11.5, duration: 1000 });
       }
     };
 

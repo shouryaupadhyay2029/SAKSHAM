@@ -56,9 +56,9 @@ export const MapView: React.FC<MapViewProps> = ({
       container: mapContainerRef.current,
       style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
       center: [77.22, 28.61],
-      zoom: 11,
-      minZoom: 9,
-      maxZoom: 18
+      zoom: 9.5,
+      minZoom: 2,
+      maxZoom: 19
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
