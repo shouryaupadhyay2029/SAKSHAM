@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
     HOST: str = "0.0.0.0"
     DATABASE_URL: str = "postgresql://saksham:saksham_secure_pass_2026@localhost:5432/saksham_db"
+    OPTIMIZER_SERVICE_URL: str = "http://localhost:8001"
 
     class Config:
         env_file = ".env"

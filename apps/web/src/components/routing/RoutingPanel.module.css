@@ -1,0 +1,134 @@
+.routingPanel {
+  background: #FFFFFF;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  padding: 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panelTitle {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0B2119;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.badgeAI {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(232, 111, 22, 0.12);
+  color: #E86F16;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #FAF8F3;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(11, 33, 25, 0.04);
+}
+
+.metricItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.metricLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(11, 33, 25, 0.45);
+  text-transform: uppercase;
+}
+
+.metricValue {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0B2119;
+  font-family: 'Inter', monospace;
+}
+
+.activeRoutesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.routeMiniCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #FAF8F3;
+  border-left: 3px solid var(--card-color, #E86F16);
+  font-size: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.15s ease;
+}
+
+.routeMiniCard:hover {
+  background: #F3EFE6;
+  transform: translateX(2px);
+}
+
+.routeMiniName {
+  font-weight: 700;
+  color: #0B2119;
+}
+
+.routeMiniSub {
+  font-size: 10.5px;
+  color: #64748B;
+}
+
+.routeMiniDist {
+  font-size: 11px;
+  font-weight: 700;
+  color: #E86F16;
+  font-family: monospace;
+}
+
+.panelFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid rgba(11, 33, 25, 0.06);
+}
+
+.consoleLink {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #E86F16;
+  text-decoration: none;
+  transition: gap 0.2s ease;
+}
+
+.consoleLink:hover {
+  gap: 7px;
+  color: #D45F0D;
+}

@@ -12,7 +12,8 @@ from app.api.v1 import (
     delivery,
     websocket,
     translation,
-    shelters
+    shelters,
+    routing
 )
 
 api_router = APIRouter()
@@ -33,5 +34,6 @@ api_router.include_router(matching.router, prefix="/matching", tags=["Matching"]
 api_router.include_router(allocations.router, prefix="/allocations", tags=["Allocations"])
 api_router.include_router(dispatch.router, prefix="/dispatch", tags=["Dispatch"])
 api_router.include_router(delivery.router, prefix="/delivery", tags=["Delivery"])
+api_router.include_router(routing.router, prefix="/routing", tags=["Routing & Optimizer"])
 api_router.include_router(translation.router, prefix="/translation", tags=["Translation"])
 api_router.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])

@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # ─── Google OR-Tools + OpenStreetMap Optimizer Service ───────────────────────
+  optimizer:
+    build:
+      context: ./services/optimizer
+      dockerfile: Dockerfile
+    container_name: saksham-optimizer
+    ports:
+      - "8001:8001"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+      - OSRM_BASE_URL=https://router.project-osrm.org
+    restart: unless-stopped
+    networks:
+      - saksham-network
+
+  # ─── SAKSHAM Core FastAPI Backend ────────────────────────────────────────────
+  api:
+    build:
+      context: ./services/fastapi
+      dockerfile: Dockerfile
+    container_name: saksham-api
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - OPTIMIZER_URL=http://optimizer:8001
+    restart: unless-stopped
+    depends_on:
+      - optimizer
+    networks:
+      - saksham-network
+
+  # ─── SAKSHAM React Operations Web Dashboard ──────────────────────────────────
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: saksham-web
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_OPTIMIZER_API_URL=http://localhost:8001
+    restart: unless-stopped
+    depends_on:
+      - api
+      - optimizer
+    networks:
+      - saksham-network
+
+  # ─── Optional Local OSRM Backend (Production high-throughput road engine) ────
+  # To run with local OSRM: docker compose --profile with-local-osrm up
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:latest
+    container_name: saksham-osrm-local
+    profiles:
+      - with-local-osrm
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./infrastructure/osrm-data:/data
+    command: osrm-routed --algorithm mld /data/delhi-ncr.osrm
+    restart: unless-stopped
+    networks:
+      - saksham-network
+
+networks:
+  saksham-network:
+    driver: bridge

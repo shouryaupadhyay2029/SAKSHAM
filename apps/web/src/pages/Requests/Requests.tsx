@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronRight, FileText, Plus, AlertCircle, ArrowDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, ChevronRight, FileText, Plus, AlertCircle, ArrowDown, Navigation } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { useTranslation } from 'react-i18next';
 import styles from './Requests.module.css';
@@ -63,6 +64,27 @@ export const Requests: React.FC = () => {
             <span className={styles.statusDot} />
             <span className={styles.statusLabel}>LIVE DEMAND FEED</span>
           </div>
+          <Link
+            to="/operations/route-optimizer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#E86F16',
+              color: '#FFFFFF',
+              border: 'none',
+              padding: '6px 14px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              textDecoration: 'none',
+              transition: 'background 0.2s',
+            }}
+          >
+            <Navigation size={12} />
+            <span>OPTIMIZE FLEET (OR-TOOLS)</span>
+          </Link>
           <button className={styles.addBtn} onClick={() => alert('Feature incoming: Manual SOS ingestion.')}>
             <Plus size={13} />
             <span>MANUAL REQUEST</span>
