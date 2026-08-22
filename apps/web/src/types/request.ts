@@ -19,6 +19,7 @@ export interface DemandRequest {
   incidentId?: string;
   zoneName: string;
   coordinates: Coordinates;
+  detailedAddress?: string;
   itemNeeded: string;
   category: string;
   quantity: number;

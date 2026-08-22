@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
@@ -402,196 +402,209 @@ export const Delivery: React.FC = () => {
       </section>
 
       {/* ── Main Workspace ── */}
-      <div ref={workspaceRef} className={styles.workspace}>
-        
-        {/* Left Column: Delivery Queue */}
-        <div className={styles.leftCol}>
-          <div className={styles.queueHeader}>
-            <span className={styles.queueTitle}>{t('delivery.title')}</span>
-            <span className={styles.queueSubtitle}>{deliveries.length} total</span>
-          </div>
+      {deliveries.length > 0 ? (
+        <div ref={workspaceRef} className={styles.workspace}>
           
-          <div className={styles.deliveryList}>
-            {deliveries.map(d => {
-              const isActive = d.id === selectedDelId;
-              const reqObj = requests.find(r => r.id === d.demandId);
-              return (
-                <button
-                  key={d.id}
-                  className={`${styles.deliveryRow} ${isActive ? styles.deliveryRowActive : ''}`}
-                  onClick={() => setSelectedDelId(d.id)}
-                >
-                  <div className={styles.drLeft}>
-                    <span className={styles.drId}>{d.id}</span>
-                    <span className={`${styles.drBadge} ${styles['status_' + d.status]}`}>
-                      {t(`status.${d.status}`) || d.status.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                  <div className={styles.drMiddle}>
-                    <span className={styles.drTarget}>{reqObj?.zoneName.split(',')[0]}</span>
-                    <span className={styles.drCargo}>{d.allocatedQty.toLocaleString()} {d.unit} {d.resourceType}</span>
-                  </div>
-                  <div className={styles.drRight}>
-                    <span className={styles.drActionText}>
-                      {d.status === 'VERIFIED' ? t('status.DELIVERED') : t('status.PENDING')}
-                    </span>
-                    <ArrowRight size={12} className={styles.drArrow} />
-                  </div>
-                </button>
-              );
-            })}
+          {/* Left Column: Delivery Queue */}
+          <div className={styles.leftCol}>
+            <div className={styles.queueHeader}>
+              <span className={styles.queueTitle}>{t('delivery.title')}</span>
+              <span className={styles.queueSubtitle}>{deliveries.length} total</span>
+            </div>
+            
+            <div className={styles.deliveryList}>
+              {deliveries.map(d => {
+                const isActive = d.id === selectedDelId;
+                const reqObj = requests.find(r => r.id === d.demandId);
+                return (
+                  <button
+                    key={d.id}
+                    className={`${styles.deliveryRow} ${isActive ? styles.deliveryRowActive : ''}`}
+                    onClick={() => setSelectedDelId(d.id)}
+                  >
+                    <div className={styles.drLeft}>
+                      <span className={styles.drId}>{d.id}</span>
+                      <span className={`${styles.drBadge} ${styles['status_' + d.status]}`}>
+                        {t(`status.${d.status}`) || d.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <div className={styles.drMiddle}>
+                      <span className={styles.drTarget}>{reqObj?.zoneName.split(',')[0]}</span>
+                      <span className={styles.drCargo}>{d.allocatedQty.toLocaleString()} {d.unit} {d.resourceType}</span>
+                    </div>
+                    <div className={styles.drRight}>
+                      <span className={styles.drActionText}>
+                        {d.status === 'VERIFIED' ? t('status.DELIVERED') : t('status.PENDING')}
+                      </span>
+                      <ArrowRight size={12} className={styles.drArrow} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Delivery Exception Alert Component */}
+            {activeDelivery && activeDelivery.status !== 'VERIFIED' && (
+              <div className={styles.exceptionCard}>
+                <div className={styles.excHeader}>
+                  <AlertTriangle size={14} className={styles.excIcon} />
+                  <span>FIELD TELEMETRY DELAY ALERT</span>
+                </div>
+                <p className={styles.excText}>
+                  No auto-GPS updates received from vehicle {activeDelivery.vehicleId} in the last 15 minutes. Manual dispatcher verification required to progress status.
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* Delivery Exception Alert Component */}
-          {activeDelivery && activeDelivery.status !== 'VERIFIED' && (
-            <div className={styles.exceptionCard}>
-              <div className={styles.excHeader}>
-                <AlertTriangle size={14} className={styles.excIcon} />
-                <span>FIELD TELEMETRY DELAY ALERT</span>
-              </div>
-              <p className={styles.excText}>
-                No auto-GPS updates received from vehicle {activeDelivery.vehicleId} in the last 15 minutes. Manual dispatcher verification required to progress status.
-              </p>
-            </div>
-          )}
-        </div>
+          {/* Right Column: Delivery Workspace Panel */}
+          <div className={styles.rightCol}>
+            {activeDelivery && (
+              <div ref={detailRef} className={styles.workspacePanel}>
+                <div className={styles.wpHeader}>
+                  <span className={styles.wpEyebrow}>DELIVERY BRIEF</span>
+                  <span className={styles.wpId}>{activeDelivery.id}</span>
+                </div>
 
-        {/* Right Column: Delivery Workspace Panel */}
-        <div className={styles.rightCol}>
-          {activeDelivery && (
-            <div ref={detailRef} className={styles.workspacePanel}>
-              <div className={styles.wpHeader}>
-                <span className={styles.wpEyebrow}>DELIVERY BRIEF</span>
-                <span className={styles.wpId}>{activeDelivery.id}</span>
-              </div>
+                <div className={styles.briefInfo}>
+                  <h3 className={styles.briefLocation}>{linkedRequest?.zoneName.split(',')[0]}</h3>
+                  <span className={styles.briefSubtitle}>{linkedRequest?.zoneName.includes(',') ? linkedRequest.zoneName.split(',').slice(1).join(',').trim() : 'Active Area'}</span>
+                </div>
 
-              <div className={styles.briefInfo}>
-                <h3 className={styles.briefLocation}>{linkedRequest?.zoneName.split(',')[0]}</h3>
-                <span className={styles.briefSubtitle}>{linkedRequest?.zoneName.includes(',') ? linkedRequest.zoneName.split(',').slice(1).join(',').trim() : 'Active Area'}</span>
-              </div>
-
-              {/* Progress Tracker */}
-              <div className={styles.progressSection}>
-                <span className={styles.sectionLabel}>LIFECYCLE PIPELINE</span>
-                <div className={styles.pipeline}>
-                  {[
-                    { label: 'ALLOCATED', done: true },
-                    { label: 'DISPATCHED', done: true },
-                    { label: 'ARRIVED', done: activeDelivery.status !== 'PENDING' },
-                    { label: 'DELIVERY', done: activeDelivery.status === 'IN_DELIVERY' || activeDelivery.status === 'VERIFIED' },
-                    { label: 'VERIFIED', done: activeDelivery.status === 'VERIFIED' }
-                  ].map((p, idx) => (
-                    <div key={idx} className={`${styles.pipeStep} ${p.done ? styles.pipeDone : ''}`}>
-                      <div className={styles.pipeDot} />
-                      <span className={styles.pipeLabel}>{p.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className={styles.briefGrid}>
-                <div>
-                  <span className={styles.briefLabel}>REQUEST REFERENCE</span>
-                  <span className={styles.briefValue}>{activeDelivery.demandId}</span>
-                </div>
-                <div>
-                  <span className={styles.briefLabel}>CARGO TYPE</span>
-                  <span className={styles.briefValue}>{activeDelivery.resourceType}</span>
-                </div>
-                <div>
-                  <span className={styles.briefLabel}>REQUESTED UNITS</span>
-                  <span className={styles.briefValue}>{activeDelivery.requestedQty.toLocaleString()} {activeDelivery.unit}</span>
-                </div>
-                <div>
-                  <span className={styles.briefLabel}>ALLOCATED UNITS</span>
-                  <span className={styles.briefValue}>{activeDelivery.allocatedQty.toLocaleString()} {activeDelivery.unit}</span>
-                </div>
-                <div>
-                  <span className={styles.briefLabel}>LOGISTICS VEHICLE</span>
-                  <span className={styles.briefValue}>{activeDelivery.vehicleId}</span>
-                </div>
-                <div>
-                  <span className={styles.briefLabel}>OPERATOR IN CHARGE</span>
-                  <span className={styles.briefValue}>{linkedVehicle?.driverName || 'Sgt. Harish Negi'}</span>
-                </div>
-              </div>
-
-              {/* Contextual Flow Buttons */}
-              <div className={styles.flowActions}>
-                {activeDelivery.status === 'PENDING' && (
-                  <button className={styles.primaryFlowBtn} onClick={() => setShowConfirmArrival(true)}>
-                    CONFIRM SITE ARRIVAL &rarr;
-                  </button>
-                )}
-                {activeDelivery.status === 'ARRIVED' && (
-                  <button className={styles.primaryFlowBtn} onClick={() => setShowStartDelivery(true)}>
-                    START SUPPLY DELIVERY &rarr;
-                  </button>
-                )}
-                {activeDelivery.status === 'IN_DELIVERY' && (
-                  <button className={styles.primaryFlowBtn} onClick={() => setShowVerification(true)}>
-                    ENTER QUANTITY &amp; VERIFY &rarr;
-                  </button>
-                )}
-                {activeDelivery.status === 'VERIFIED' && (
-                  <div className={styles.verifiedCard}>
-                    <div className={styles.vcTitleRow}>
-                      <CheckCircle size={15} />
-                      <span>DELIVERY VERIFIED</span>
-                    </div>
-                    <div className={styles.vcStats}>
-                      <span>Delivered: <strong>{activeDelivery.deliveredQty.toLocaleString()} {activeDelivery.unit}</strong></span>
-                      <span>Verified by: <strong>{activeDelivery.verifiedBy}</strong></span>
-                    </div>
-                    {activeDelivery.notes && <p className={styles.vcNotes}>"{activeDelivery.notes}"</p>}
-                  </div>
-                )}
-              </div>
-
-              {/* Reconcile meter preview for verified status */}
-              {activeDelivery.status === 'VERIFIED' && (
-                <div className={styles.reconcilePreview}>
-                  <span className={styles.sectionLabel}>QUANTITY RECONCILIATION</span>
-                  <div className={styles.reconcileBar}>
-                    <div
-                      className={styles.reconcileFill}
-                      style={{ width: `${Math.min(100, (activeDelivery.deliveredQty / activeDelivery.requestedQty) * 100)}%` }}
-                    />
-                  </div>
-                  <div className={styles.reconcileText}>
-                    <span>Reconciled: {Math.round((activeDelivery.deliveredQty / activeDelivery.requestedQty) * 100)}% of demand satisfied</span>
-                    <span>Remaining: {(activeDelivery.requestedQty - activeDelivery.deliveredQty).toLocaleString()} {activeDelivery.unit}</span>
+                {/* Progress Tracker */}
+                <div className={styles.progressSection}>
+                  <span className={styles.sectionLabel}>LIFECYCLE PIPELINE</span>
+                  <div className={styles.pipeline}>
+                    {[
+                      { label: 'ALLOCATED', done: true },
+                      { label: 'DISPATCHED', done: true },
+                      { label: 'ARRIVED', done: activeDelivery.status !== 'PENDING' },
+                      { label: 'DELIVERY', done: activeDelivery.status === 'IN_DELIVERY' || activeDelivery.status === 'VERIFIED' },
+                      { label: 'VERIFIED', done: activeDelivery.status === 'VERIFIED' }
+                    ].map((p, idx) => (
+                      <div key={idx} className={`${styles.pipeStep} ${p.done ? styles.pipeDone : ''}`}>
+                        <div className={styles.pipeDot} />
+                        <span className={styles.pipeLabel}>{p.label}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )}
 
-              {/* Incident Closure Block */}
-              {linkedIncident && activeDelivery.status === 'VERIFIED' && (
-                <div className={styles.closureContainer}>
-                  <span className={styles.sectionLabel}>INCIDENT CLOSED PROTOCOL</span>
-                  <p className={styles.closureText}>
-                    Incident: <strong>{linkedIncident.id} ({linkedIncident.location})</strong> is currently <strong>{linkedIncident.status}</strong>.
-                  </p>
-                  
-                  {incidentClosureCheck.ready ? (
-                    <div className={styles.closureReadyBox}>
-                      <span>✓ ALL CRITICAL DEMANDS FULLY SATISFIED</span>
-                      <button className={styles.closureBtn} onClick={() => setShowClosureModal(true)}>
-                        CLOSE INCIDENT OPERATIONS
-                      </button>
-                    </div>
-                  ) : (
-                    <div className={styles.closureBlockBox}>
-                      <Info size={13} />
-                      <span>{incidentClosureCheck.activeCount} outstanding demand requests still active. Incident cannot be closed.</span>
+                <div className={styles.briefGrid}>
+                  <div>
+                    <span className={styles.briefLabel}>REQUEST REFERENCE</span>
+                    <span className={styles.briefValue}>{activeDelivery.demandId}</span>
+                  </div>
+                  <div>
+                    <span className={styles.briefLabel}>CARGO TYPE</span>
+                    <span className={styles.briefValue}>{activeDelivery.resourceType}</span>
+                  </div>
+                  <div>
+                    <span className={styles.briefLabel}>REQUESTED UNITS</span>
+                    <span className={styles.briefValue}>{activeDelivery.requestedQty.toLocaleString()} {activeDelivery.unit}</span>
+                  </div>
+                  <div>
+                    <span className={styles.briefLabel}>ALLOCATED UNITS</span>
+                    <span className={styles.briefValue}>{activeDelivery.allocatedQty.toLocaleString()} {activeDelivery.unit}</span>
+                  </div>
+                  <div>
+                    <span className={styles.briefLabel}>LOGISTICS VEHICLE</span>
+                    <span className={styles.briefValue}>{activeDelivery.vehicleId}</span>
+                  </div>
+                  <div>
+                    <span className={styles.briefLabel}>OPERATOR IN CHARGE</span>
+                    <span className={styles.briefValue}>{linkedVehicle?.driverName || 'Sgt. Harish Negi'}</span>
+                  </div>
+                </div>
+
+                {/* Contextual Flow Buttons */}
+                <div className={styles.flowActions}>
+                  {activeDelivery.status === 'PENDING' && (
+                    <button className={styles.primaryFlowBtn} onClick={() => setShowConfirmArrival(true)}>
+                      CONFIRM SITE ARRIVAL &rarr;
+                    </button>
+                  )}
+                  {activeDelivery.status === 'ARRIVED' && (
+                    <button className={styles.primaryFlowBtn} onClick={() => setShowStartDelivery(true)}>
+                      START SUPPLY DELIVERY &rarr;
+                    </button>
+                  )}
+                  {activeDelivery.status === 'IN_DELIVERY' && (
+                    <button className={styles.primaryFlowBtn} onClick={() => setShowVerification(true)}>
+                      ENTER QUANTITY &amp; VERIFY &rarr;
+                    </button>
+                  )}
+                  {activeDelivery.status === 'VERIFIED' && (
+                    <div className={styles.verifiedCard}>
+                      <div className={styles.vcTitleRow}>
+                        <CheckCircle size={15} />
+                        <span>DELIVERY VERIFIED</span>
+                      </div>
+                      <div className={styles.vcStats}>
+                        <span>Delivered: <strong>{activeDelivery.deliveredQty.toLocaleString()} {activeDelivery.unit}</strong></span>
+                        <span>Verified by: <strong>{activeDelivery.verifiedBy}</strong></span>
+                      </div>
+                      {activeDelivery.notes && <p className={styles.vcNotes}>"{activeDelivery.notes}"</p>}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
-          )}
+
+                {/* Reconcile meter preview for verified status */}
+                {activeDelivery.status === 'VERIFIED' && (
+                  <div className={styles.reconcilePreview}>
+                    <span className={styles.sectionLabel}>QUANTITY RECONCILIATION</span>
+                    <div className={styles.reconcileBar}>
+                      <div
+                        className={styles.reconcileFill}
+                        style={{ width: `${Math.min(100, (activeDelivery.deliveredQty / activeDelivery.requestedQty) * 100)}%` }}
+                      />
+                    </div>
+                    <div className={styles.reconcileText}>
+                      <span>Reconciled: {Math.round((activeDelivery.deliveredQty / activeDelivery.requestedQty) * 100)}% of demand satisfied</span>
+                      <span>Remaining: {(activeDelivery.requestedQty - activeDelivery.deliveredQty).toLocaleString()} {activeDelivery.unit}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Incident Closure Block */}
+                {linkedIncident && activeDelivery.status === 'VERIFIED' && (
+                  <div className={styles.closureContainer}>
+                    <span className={styles.sectionLabel}>INCIDENT CLOSED PROTOCOL</span>
+                    <p className={styles.closureText}>
+                      Incident: <strong>{linkedIncident.id} ({linkedIncident.location})</strong> is currently <strong>{linkedIncident.status}</strong>.
+                    </p>
+                    
+                    {incidentClosureCheck.ready ? (
+                      <div className={styles.closureReadyBox}>
+                        <span>✓ ALL CRITICAL DEMANDS FULLY SATISFIED</span>
+                        <button className={styles.closureBtn} onClick={() => setShowClosureModal(true)}>
+                          CLOSE INCIDENT OPERATIONS
+                        </button>
+                      </div>
+                    ) : (
+                      <div className={styles.closureBlockBox}>
+                        <Info size={13} />
+                        <span>{incidentClosureCheck.activeCount} outstanding demand requests still active. Incident cannot be closed.</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div ref={workspaceRef} style={{ padding: '40px 48px' }}>
+          <div className={styles.emptyState}>
+            <AlertTriangle size={24} style={{ color: 'rgba(11, 33, 25, 0.45)', marginBottom: '16px' }} />
+            <h3 className={styles.emptyTitle}>NO DELIVERIES AWAITING VERIFICATION</h3>
+            <p className={styles.emptyText}>
+              There are currently no active or pending delivery records.
+              The verification queue will populate automatically when dispatches are completed.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Arrival Modal ── */}
       {showConfirmArrival && activeDelivery && (
@@ -797,34 +810,7 @@ export const Delivery: React.FC = () => {
         </section>
       )}
 
-      {/* ── Mission Lifecycle Pipeline ── */}
-      <section className={styles.lifecycleSection}>
-        <div className={styles.lcTitleBlock}>
-          <span className={styles.lcEyebrow}>MISSION LIFECYCLE</span>
-          <h2 className={styles.lcTitle}>SAKSHAM Dispatch Execution Pipeline</h2>
-        </div>
-        <div className={styles.lcPipeline}>
-          {[
-            { step: 'ALLOCATED', label: 'Match engine commits stock resources.' },
-            { step: 'DISPATCHED', label: 'Operator assigns logistics vehicle and departs.' },
-            { step: 'EN ROUTE', label: 'Field telemetry feeds real-time coordinates.' },
-            { step: 'ARRIVED', label: 'Vehicle registers destination geo-fence arrival.' },
-            { step: 'DELIVERED', label: 'Operator uploads relief handover certificate.' }
-          ].map((l, idx) => (
-            <div key={idx} className={styles.lcStep}>
-              <div className={styles.lcCircle}>{idx + 1}</div>
-              <strong className={styles.lcStepTitle}>{l.step}</strong>
-              <span className={styles.lcStepDesc}>{l.label}</span>
-            </div>
-          ))}
-        </div>
-        <div className={styles.lcTransition}>
-          <span>LIFECYCLE TARGET PIPELINE COMPLETE</span>
-          <Link to="/operations/analytics" className={styles.lcLink}>
-            CONTINUE TO DECISION-SUPPORT ANALYTICS &rarr;
-          </Link>
-        </div>
-      </section>
+
 
       <PageGuidebook guideKey="delivery" />
     </div>

@@ -1,18 +1,31 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronRight, Package, MapPin, AlertTriangle, AlertCircle, Plus } from 'lucide-react';
-import { useOperationalState } from '../../context/OperationalStateContext';
+import { Search, ChevronRight, Package, MapPin, AlertTriangle, AlertCircle, Plus, Send, X as CloseIcon } from 'lucide-react';
+import { useOperationalState, normalizeResource } from '../../context/OperationalStateContext';
 import { useTranslation } from 'react-i18next';
 import styles from './Resources.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
+import { AddressPicker } from '../../components/ui/AddressPicker';
+import apiClient from '../../services/apiClient';
 
 export const Resources: React.FC = () => {
   const { t } = useTranslation();
-  const { resources, requests } = useOperationalState();
+  const { resources, requests, setResources } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
+
+  // --- Add Resource Modal State ---
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [depotName, setDepotName] = useState('');
+  const [resourceName, setResourceName] = useState('');
+  const [qty, setQty] = useState('1000');
+  const [unit, setUnit] = useState('Units');
+  const [category, setCategory] = useState('WATER');
+  const [poc, setPoc] = useState('');
+  const [locationData, setLocationData] = useState<{ address: string; lat: number; lng: number } | null>(null);
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
 
   const filteredResources = useMemo(() => {
     return resources.filter(res => {
@@ -82,7 +95,7 @@ export const Resources: React.FC = () => {
             <span className={styles.statusDot} />
             <span className={styles.statusLabel}>LIVE INVENTORY</span>
           </div>
-          <button className={styles.addBtn} onClick={() => alert('Feature coming: Register Resource Supply Depot.')}>
+          <button className={styles.addBtn} onClick={() => setIsAddModalOpen(true)}>
             <Plus size={13} />
             <span>{t('resources.addResource')}</span>
           </button>
@@ -357,6 +370,157 @@ export const Resources: React.FC = () => {
       )}
 
       <PageGuidebook guideKey="resources" />
+
+      {/* --- + REGISTER RESOURCE / DEPOT MODAL --- */}
+      {isAddModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Register Resource Supply Depot</h3>
+              <button className={styles.closeLedgerBtn} onClick={() => setIsAddModalOpen(false)}>
+                <CloseIcon size={18} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!depotName || !resourceName || !qty || !unit || !poc) {
+                  alert('Please fill in all required fields.');
+                  return;
+                }
+                if (!locationData || !locationConfirmed) {
+                  alert('Please select and confirm the depot location coordinates on the map.');
+                  return;
+                }
+                try {
+                  const payload = {
+                    materialName: resourceName,
+                    description: `Stock: ${resourceName} Depot`,
+                    category: category,
+                    availableQuantity: parseFloat(qty) || 0,
+                    reservedQuantity: 0.0,
+                    unit: unit,
+                    storageDepot: depotName,
+                    location: locationData.address,
+                    latitude: locationData.lat,
+                    longitude: locationData.lng,
+                    status: 'AVAILABLE',
+                    pointOfContact: poc,
+                  };
+                  const res = await apiClient.createResource(payload);
+                  if (res && res.data) {
+                    setResources(prev => [normalizeResource(res.data), ...prev]);
+                    setIsAddModalOpen(false);
+                    setDepotName('');
+                    setResourceName('');
+                    setQty('1000');
+                    setUnit('Units');
+                    setPoc('');
+                    setLocationData(null);
+                    setLocationConfirmed(false);
+                  }
+                } catch (err: any) {
+                  alert(`Failed to register resource depot: ${err.message}`);
+                }
+              }}
+              className={styles.modalForm}
+            >
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label>Depot Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. East Delhi Depot"
+                    value={depotName}
+                    onChange={(e) => setDepotName(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Resource Category *</label>
+                  <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                    <option value="WATER">Water Supplies</option>
+                    <option value="FOOD">Food Supplies</option>
+                    <option value="MEDICAL">Medical Equipment</option>
+                    <option value="SHELTER_SUPPLIES">Shelter Supplies</option>
+                    <option value="CLOTHING">Clothing &amp; Beds</option>
+                    <option value="RESCUE_EQUIPMENT">Rescue Equipment</option>
+                  </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Resource Name / Material *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Clean Water Tank, Trauma Kit"
+                    value={resourceName}
+                    onChange={(e) => setResourceName(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.formGroup} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div>
+                    <label>Quantity *</label>
+                    <input
+                      type="number"
+                      required
+                      value={qty}
+                      onChange={(e) => setQty(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label>Unit *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. L, Packs, Units"
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Point of Contact (POC) Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Inspector Amit Sharma"
+                    value={poc}
+                    onChange={(e) => setPoc(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
+                  <label>Depot Location &amp; Map Coordinates *</label>
+                  <AddressPicker
+                    onChange={(data, confirmed) => {
+                      setLocationData(data);
+                      setLocationConfirmed(confirmed);
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formActions}>
+                <button
+                  type="button"
+                  className={styles.cancelFormBtn}
+                  onClick={() => setIsAddModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className={styles.submitFormBtn}>
+                  <Send size={12} /> Register Depot
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

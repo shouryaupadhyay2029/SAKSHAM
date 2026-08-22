@@ -1,139 +1,306 @@
+.pageWrapper {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  padding: 60px 40px; /* Equal spacing from all sides so background is visible */
+  box-sizing: border-box;
+  background-color: #060807; /* Dark background matching Officer Login canvas */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .pageWrapper {
+    padding: 20px;
+  }
+}
+
 .container {
-  max-width: 680px;
-  margin: 60px auto;
-  padding: 40px;
-  background-color: var(--color-warm-light);
-  border: 1px solid rgba(23, 61, 45, 0.08);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  max-width: 1100px; /* Wider card to fit two columns */
+  background: rgba(13, 20, 24, 0.85); /* EOC dark console glass */
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(250, 248, 243, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr; /* Split form left, image right */
+  overflow: hidden;
+  min-height: 780px;
+}
+
+@media (max-width: 900px) {
+  .container {
+    grid-template-columns: 1fr; /* Stack columns on narrow viewports */
+    min-height: auto;
+  }
+}
+
+/* ── Form Column Styling ── */
+.formCol {
+  background-color: #0d1418; /* Solid EOC dark background as requested */
+  padding: 48px 52px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+@media (max-width: 768px) {
+  .formCol {
+    padding: 32px 24px;
+  }
+}
+
+.backPortalLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(250, 248, 243, 0.45);
+  transition: color 0.2s ease, transform 0.2s ease;
+  text-decoration: none;
+}
+
+.backPortalLink:hover {
+  color: #F47C20;
+  transform: translateX(-2px);
+  text-decoration: none;
 }
 
 .header {
-  margin-bottom: 30px;
-  text-align: center;
+  margin-top: 12px;
+  margin-bottom: 24px;
+  text-align: left;
 }
 
 .header h2 {
-  font-family: var(--font-sans);
+  font-family: var(--font-display), 'Playfair Display', Georgia, serif;
   font-size: 2.2rem;
   font-weight: 700;
-  color: var(--color-deep-forest);
-  margin-bottom: 8px;
+  color: #FAF8F3;
+  line-height: 1.15;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.01em;
 }
 
 .subtext {
-  font-size: 1.05rem;
-  color: var(--color-muted);
+  font-size: 13.5px;
+  color: rgba(250, 248, 243, 0.5);
+  line-height: 1.5;
+  margin: 0;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .label {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--color-deep-forest);
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(250, 248, 243, 0.65);
+  margin-bottom: 2px;
 }
 
 .input, .select, .textarea {
   width: 100%;
-  padding: 14px 16px;
-  font-family: var(--font-sans);
-  font-size: 1rem;
-  background-color: var(--color-cream);
-  border: 1px solid rgba(23, 61, 45, 0.15);
-  border-radius: var(--radius-sm);
-  color: var(--color-dark);
-  transition: border-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+  height: 48px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: 13.5px;
+  background: rgba(250, 248, 243, 0.02);
+  border: 1px solid rgba(250, 248, 243, 0.1);
+  border-radius: 6px;
+  color: #FAF8F3;
+  transition: all 0.2s ease-in-out;
+}
+
+.input::placeholder, .textarea::placeholder {
+  color: rgba(250, 248, 243, 0.25);
 }
 
 .input:focus, .select:focus, .textarea:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(244, 124, 32, 0.1);
+  border-color: #F47C20;
+  background: rgba(244, 124, 32, 0.02);
+  box-shadow: 0 0 0 3px rgba(244, 124, 32, 0.15);
+}
+
+.select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(250, 248, 243, 0.4)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 14px;
+  padding-right: 40px;
+}
+
+.select option {
+  background-color: #0d1418;
+  color: #FAF8F3;
 }
 
 .textarea {
-  min-height: 120px;
+  min-height: 100px;
+  height: auto;
+  padding: 12px 16px;
   resize: vertical;
 }
 
 .submitBtn {
-  margin-top: 10px;
-  padding: 16px;
-  font-family: var(--font-sans);
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--color-cream);
-  background-color: var(--color-primary);
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
+  margin-top: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  transition: transform var(--transition-fast) ease, background-color var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+  width: 100%;
+  height: 50px;
+  background: linear-gradient(135deg, #E06A1B 0%, #C3550F 100%);
+  color: #FAF8F3;
+  border: 1px solid rgba(244, 124, 32, 0.4);
+  border-radius: 6px;
+  font-family: var(--font-sans), 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 12px rgba(195, 85, 15, 0.2);
 }
 
 .submitBtn:hover {
-  background-color: #e06b12;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(244, 124, 32, 0.2);
+  background: linear-gradient(135deg, #F47C20 0%, #D45D10 100%);
+  border-color: rgba(244, 124, 32, 0.6);
+  box-shadow: 0 6px 16px rgba(244, 124, 32, 0.3);
 }
 
 .submitBtn:active {
-  transform: translateY(0);
+  transform: scale(0.985);
 }
 
-/* Success Card */
+.securityNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 28px;
+  font-size: 11.5px;
+  color: rgba(250, 248, 243, 0.45);
+  line-height: 1.5;
+  border-top: 1px solid rgba(250, 248, 243, 0.06);
+  padding-top: 16px;
+}
+
+.shieldIcon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* ── Success Card ── */
 .successCard {
   text-align: center;
-  padding: 30px;
-  border-radius: var(--radius-md);
-  background-color: rgba(79, 143, 91, 0.08);
-  border: 1px solid rgba(79, 143, 91, 0.2);
+  padding: 40px 24px;
+  border-radius: 6px;
+  background-color: rgba(16, 185, 129, 0.04);
+  border: 1px solid rgba(16, 185, 129, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  animation: fadeIn 0.4s ease-out;
+  gap: 20px;
 }
 
 .successIcon {
-  color: var(--color-secondary);
+  color: #10B981;
 }
 
 .successTitle {
   font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-deep-forest);
+  font-weight: 800;
+  color: #FAF8F3;
+}
+
+.successCard p {
+  color: rgba(250, 248, 243, 0.6);
+  line-height: 1.6;
 }
 
 .ticketCode {
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--color-primary);
+  color: #10B981;
   padding: 8px 16px;
-  background-color: var(--color-cream);
-  border: 1px dashed rgba(23, 61, 45, 0.2);
-  border-radius: var(--radius-sm);
+  background-color: rgba(16, 185, 129, 0.08);
+  border: 1px dashed rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
 }
 
 .backLink {
   margin-top: 10px;
-  color: var(--color-deep-forest);
+  color: rgba(250, 248, 243, 0.5);
   text-decoration: underline;
   cursor: pointer;
   font-weight: 600;
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.backLink:hover {
+  color: #F47C20;
+}
+
+/* ── Right Column Visual image ── */
+.visualCol {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
+  background-color: #060907;
+}
+
+@media (max-width: 900px) {
+  .visualCol {
+    display: none; /* Hide visual artwork on tablet / mobile grids */
+  }
+}
+
+.visualImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.visualGridOverlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(250, 248, 243, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(250, 248, 243, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center;
+  pointer-events: none;
 }

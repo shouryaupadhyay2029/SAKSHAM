@@ -13,6 +13,7 @@ import { DynamicText } from '../../components/ui/DynamicText';
 import styles from './Incidents.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
+import { AddressPicker } from '../../components/ui/AddressPicker';
 
 const severityColor: Record<string, string> = {
   CRITICAL: '#EF4444',
@@ -46,6 +47,7 @@ export const Incidents: React.FC = () => {
   const [manualLocation, setManualLocation] = useState('');
   const [manualLat, setManualLat] = useState('28.6139');
   const [manualLng, setManualLng] = useState('77.2090');
+  const [manualConfirmed, setManualConfirmed] = useState(false);
   const [manualAffected, setManualAffected] = useState('0');
   const [manualDesc, setManualDesc] = useState('');
   const [manualReporter, setManualReporter] = useState('');
@@ -122,6 +124,10 @@ export const Incidents: React.FC = () => {
       alert('Please fill in required fields: Location, Situation, and Reporter Name.');
       return;
     }
+    if (!manualConfirmed) {
+      alert('Please search/select and confirm the location on the map before submitting.');
+      return;
+    }
 
     const lat = parseFloat(manualLat);
     const lng = parseFloat(manualLng);
@@ -169,6 +175,7 @@ export const Incidents: React.FC = () => {
     setManualReporter('');
     setManualContact('');
     setManualAffected('0');
+    setManualConfirmed(false);
   };
 
   return (
@@ -550,33 +557,14 @@ export const Incidents: React.FC = () => {
                 </div>
 
                 <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                  <label>{t('common.location')} *</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Sector 12 Park Inundated Zone, Delhi"
-                    value={manualLocation}
-                    onChange={(e) => setManualLocation(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label>Latitude *</label>
-                  <input 
-                    type="text" 
-                    value={manualLat}
-                    onChange={(e) => setManualLat(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label>Longitude *</label>
-                  <input 
-                    type="text" 
-                    value={manualLng}
-                    onChange={(e) => setManualLng(e.target.value)}
-                    required
+                  <label>{t('common.location')} &amp; Map Verification *</label>
+                  <AddressPicker 
+                    onChange={(data, confirmed) => {
+                      setManualLocation(data.address);
+                      setManualLat(String(data.lat));
+                      setManualLng(String(data.lng));
+                      setManualConfirmed(confirmed);
+                    }}
                   />
                 </div>
 

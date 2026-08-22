@@ -4,8 +4,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { SituationalAwarenessMap } from '../../components/map/SituationalAwarenessMap';
-import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
-import { useTranslation } from 'react-i18next';
+import { PageGuidebook } from '../../components/ui/PageGuide';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher/LanguageSwitcher';
 import { GradientBackground } from '../../components/ui/noisy-gradient-backgrounds';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
@@ -13,24 +12,42 @@ import { ShaderBackground } from '../../components/ui/ShaderBackground';
 gsap.registerPlugin(ScrollTrigger);
 import {
   ShieldAlert,
-  MapPin,
   ArrowRight,
   Send,
   FileCheck,
   Truck,
-  CloudSun,
-  BarChart3,
   Layers,
   Link2
 } from 'lucide-react';
 import styles from './Landing.module.css';
 
 export const Landing: React.FC = () => {
-  const { t } = useTranslation();
   const { incidents, vehicles, shelters, addIncidentFromSOS } = useOperationalState();
   const [sosSubmitted, setSosSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ticketId, setTicketId] = useState('');
+
+  const [mapPhase, setMapPhase] = useState<'MONITOR' | 'INCIDENT' | 'PRIORITY' | 'RESPONSE' | 'RETURN'>('MONITOR');
+  const [activeStage, setActiveStage] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveStage((prev) => (prev + 1) % 4);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const phases: ('MONITOR' | 'INCIDENT' | 'PRIORITY' | 'RESPONSE' | 'RETURN')[] = [
+      'MONITOR', 'INCIDENT', 'PRIORITY', 'RESPONSE', 'RETURN'
+    ];
+    let idx = 0;
+    const interval = setInterval(() => {
+      idx = (idx + 1) % phases.length;
+      setMapPhase(phases[idx]);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
 
   const [sosForm, setSosForm] = useState({
     name: '',
@@ -40,21 +57,7 @@ export const Landing: React.FC = () => {
     details: ''
   });
 
-  // State hooks for capability rail continuous surveying (motion Level 2 & 3)
-  const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
-  const [isFeatureHovered, setIsFeatureHovered] = useState(false);
 
-  React.useEffect(() => {
-    // Check prefers-reduced-motion to respect system options
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (mediaQuery.matches || isFeatureHovered) return;
-
-    const interval = setInterval(() => {
-      setActiveFeatureIndex(prev => (prev + 1) % 4);
-    }, 8000); // Surveying capabilities every 8s
-
-    return () => clearInterval(interval);
-  }, [isFeatureHovered]);
 
   const handleSosSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,19 +159,11 @@ export const Landing: React.FC = () => {
     safeSet('.sos-reassurance-item', { opacity: 0, y: 12 });
     safeSet('.sos-form-card-container', { opacity: 0, y: 24 });
 
-    // Child targets inside rows
-    safeSet(`.${styles.featureRow} .${styles.featureIconContainer}`, { opacity: 0, x: -4 });
-    safeSet(`.${styles.featureRow} .${styles.featureRowText}`, { opacity: 0, y: 8 });
+    // Hero element initial states
+    safeSet(`.${styles.heroCta}`, { opacity: 0, y: 10 });
+    safeSet(`.${styles.heroCapabilityRail}`, { opacity: 0, y: 12 });
 
-    safeSet(`.${styles.exploreTextLink}`, { opacity: 0, y: 8 });
     safeSet(`.${styles.rightMapCol}`, { opacity: 0, y: 22, scale: 0.985 });
-
-    safeSet([
-      '.map-header-overlay',
-      '.map-legend-overlay',
-      '.map-right-overlay',
-      '.map-team-overlay'
-    ], { opacity: 0, y: 10 });
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ delay: 0.1 });
@@ -224,7 +219,7 @@ export const Landing: React.FC = () => {
         ease: 'power2.out'
       }, '-=0.55');
 
-      // 5. Map Panel Outer reveal (starts slightly after headline starts)
+      // 5. Map panel reveal
       tl.to(`.${styles.rightMapCol}`, {
         opacity: 1,
         y: 0,
@@ -233,53 +228,21 @@ export const Landing: React.FC = () => {
         ease: 'power3.out'
       }, '-=1.2');
 
-      // 6. Feature Stack rows staggered entry
-      const rows = gsap.utils.toArray(`.${styles.featureStack} .${styles.featureRow}`);
-      rows.forEach((row: any, idx: number) => {
-        const rowTl = gsap.timeline();
-        rowTl.to(row, {
-          opacity: 1,
-          y: 0,
-          duration: 0.5,
-          ease: 'power2.out'
-        });
-        rowTl.to(row.querySelector(`.${styles.featureIconContainer}`), {
-          opacity: 1,
-          x: 0,
-          duration: 0.4,
-          ease: 'power2.out'
-        }, '-=0.4');
-        rowTl.to(row.querySelector(`.${styles.featureRowText}`), {
-          opacity: 1,
-          y: 0,
-          duration: 0.4,
-          ease: 'power2.out'
-        }, '-=0.4');
+      // 6. CTA reveal
+      tl.to(`.${styles.heroCta}`, {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: 'power2.out'
+      }, '-=0.45');
 
-        tl.add(rowTl, `-=${idx === 0 ? 0.35 : 0.4}`);
-      });
-
-      // 7. Map internal overlays stagger
-      tl.to([
-        '.map-header-overlay',
-        '.map-legend-overlay',
-        '.map-right-overlay',
-        '.map-team-overlay'
-      ], {
+      // 7. Capability rail reveal
+      tl.to(`.${styles.heroCapabilityRail}`, {
         opacity: 1,
         y: 0,
         duration: 0.6,
-        stagger: 0.1,
         ease: 'power2.out'
-      }, '-=0.75');
-
-      // 8. Explore CTA link
-      tl.to(`.${styles.exploreTextLink}`, {
-        opacity: 1,
-        y: 0,
-        duration: 0.45,
-        ease: 'power2.out'
-      }, '-=0.4');
+      }, '-=0.3');
 
       // 9. Parallax scroll-driven depth triggers (Level 2 Ambient / interaction motion)
       gsap.to('.parallax-back', {
@@ -577,122 +540,135 @@ export const Landing: React.FC = () => {
             {/* Left Content Column */}
             <div className={styles.leftContentCol}>
               <div className={styles.parallaxHeaderContainer}>
-                {/* Back Layer Watermark (Absolute Positioned behind content) */}
+                {/* Back Layer Watermark */}
                 <h3 className={`${styles.parallaxBackWatermark} ${styles.parallaxBackWatermarkDark} parallax-back`}>RESPONSE</h3>
 
-                {/* Front Layer (Eyebrow text) */}
+                {/* Eyebrow row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px', position: 'relative', zIndex: 20 }} className="parallax-front">
                   <span className={styles.eyebrowText} style={{ marginBottom: 0 }}>
-                    LIVE SITUATIONAL AWARENESS
+                    <span className={styles.eyebrowDot} />● LIVE SITUATIONAL AWARENESS
                   </span>
-                  <PageGuideTrigger />
                   <LanguageSwitcher variant="navbar" />
                 </div>
 
-                {/* Mid Layer (Actual Heading text) */}
+                {/* Main editorial headline */}
                 <h1 className={`${styles.editorialHeading} parallax-mid`}>
                   <span className={styles.headingLineMask}>
-                    <span className={styles.headingLine}>
-                      {t('landing.seeEverything')}
+                    <span className={styles.headingLine} style={{ color: '#FAF8F3' }}>
+                      From the first signal
                     </span>
                   </span>
                   <span className={styles.headingLineMask}>
                     <span className={`${styles.headingLine} ${styles.accentOrangeText}`}>
-                      {t('landing.respondAnywhere')}
+                      to the right response.
                     </span>
                   </span>
                 </h1>
               </div>
+
               <p className={`${styles.editorialDesc} ${styles.editorialDescDark}`}>
-                {t('landing.heroDescription')}
+                SAKSHAM connects incidents, risk signals, available resources, and field operations into one coordinated response picture.
               </p>
 
-              {/* Capability feature stack with dynamic motion overlays */}
-              <div className={styles.featureStack}>
-                <div
-                  className={`${styles.featureRow} ${activeFeatureIndex === 0 ? styles.featureRowActive : ''}`}
-                  onMouseEnter={() => {
-                    setActiveFeatureIndex(0);
-                    setIsFeatureHovered(true);
-                  }}
-                  onMouseLeave={() => setIsFeatureHovered(false)}
-                >
-                  <div className={styles.featureIconContainer}>
-                    <MapPin size={16} />
-                  </div>
-                  <div className={styles.featureRowText}>
-                    <h4>REAL-TIME INCIDENT MAP</h4>
-                    <p>Real-time location &amp; status</p>
-                  </div>
-                  <span className={styles.orangeIndicator} />
-                </div>
+              {/* Redesigned Response Chain Component */}
+              <div className={styles.responseChainContainer}>
+                <div className={styles.responseChain}>
 
-                <div
-                  className={`${styles.featureRow} ${activeFeatureIndex === 1 ? styles.featureRowActive : ''}`}
-                  onMouseEnter={() => {
-                    setActiveFeatureIndex(1);
-                    setIsFeatureHovered(true);
-                  }}
-                  onMouseLeave={() => setIsFeatureHovered(false)}
-                >
-                  <div className={styles.featureIconContainer}>
-                    <CloudSun size={16} />
+                  {/* Stage 1: SIGNAL */}
+                  <div className={`${styles.chainStage} ${activeStage === 0 ? styles.stageActive : ''} ${styles.stageSignal}`}>
+                    <div className={styles.stageIndicator} />
+                    <div className={styles.stageContent}>
+                      <span className={styles.stageNumber}>01</span>
+                      <span className={styles.stageLabel}>SIGNAL</span>
+                      <p className={styles.stageDesc}>What is happening?</p>
+                    </div>
                   </div>
-                  <div className={styles.featureRowText}>
-                    <h4>WEATHER INTELLIGENCE</h4>
-                    <p>Predictive alerts &amp; risk zones</p>
-                  </div>
-                  <span className={styles.orangeIndicator} />
-                </div>
 
-                <div
-                  className={`${styles.featureRow} ${activeFeatureIndex === 2 ? styles.featureRowActive : ''}`}
-                  onMouseEnter={() => {
-                    setActiveFeatureIndex(2);
-                    setIsFeatureHovered(true);
-                  }}
-                  onMouseLeave={() => setIsFeatureHovered(false)}
-                >
-                  <div className={styles.featureIconContainer}>
-                    <Truck size={16} />
+                  <div className={styles.chainConnector}>
+                    <div className={`${styles.connectorLine} ${styles.lineSignalToAssess}`} style={{ transform: activeStage >= 1 ? 'scale(1)' : 'scale(0)' }} />
                   </div>
-                  <div className={styles.featureRowText}>
-                    <h4>RESOURCE TRACKING</h4>
-                    <p>Assets, supplies &amp; teams live</p>
-                  </div>
-                  <span className={styles.orangeIndicator} />
-                </div>
 
-                <div
-                  className={`${styles.featureRow} ${activeFeatureIndex === 3 ? styles.featureRowActive : ''}`}
-                  onMouseEnter={() => {
-                    setActiveFeatureIndex(3);
-                    setIsFeatureHovered(true);
-                  }}
-                  onMouseLeave={() => setIsFeatureHovered(false)}
-                >
-                  <div className={styles.featureIconContainer}>
-                    <BarChart3 size={16} />
+                  {/* Stage 2: ASSESS */}
+                  <div className={`${styles.chainStage} ${activeStage === 1 ? styles.stageActive : ''} ${styles.stageAssess}`}>
+                    <div className={styles.stageIndicator} />
+                    <div className={styles.stageContent}>
+                      <span className={styles.stageNumber}>02</span>
+                      <span className={styles.stageLabel}>ASSESS</span>
+                      <p className={styles.stageDesc}>What matters now?</p>
+                    </div>
                   </div>
-                  <div className={styles.featureRowText}>
-                    <h4>DECISION SUPPORT</h4>
-                    <p>Data-driven insights for smarter choices</p>
+
+                  <div className={styles.chainConnector}>
+                    <div className={`${styles.connectorLine} ${styles.lineAssessToMatch}`} style={{ transform: activeStage >= 2 ? 'scale(1)' : 'scale(0)' }} />
                   </div>
-                  <span className={styles.orangeIndicator} />
+
+                  {/* Stage 3: MATCH */}
+                  <div className={`${styles.chainStage} ${activeStage === 2 ? styles.stageActive : ''} ${styles.stageMatch}`}>
+                    <div className={styles.stageIndicator} />
+                    <div className={styles.stageContent}>
+                      <span className={styles.stageNumber}>03</span>
+                      <span className={styles.stageLabel}>MATCH</span>
+                      <p className={styles.stageDesc}>What can respond?</p>
+                    </div>
+                  </div>
+
+                  <div className={styles.chainConnector}>
+                    <div className={`${styles.connectorLine} ${styles.lineMatchToAct}`} style={{ transform: activeStage >= 3 ? 'scale(1)' : 'scale(0)' }} />
+                  </div>
+
+                  {/* Stage 4: ACT */}
+                  <div className={`${styles.chainStage} ${activeStage === 3 ? styles.stageActive : ''} ${styles.stageAct}`}>
+                    <div className={styles.stageIndicator} />
+                    <div className={styles.stageContent}>
+                      <span className={styles.stageNumber}>04</span>
+                      <span className={styles.stageLabel}>ACT</span>
+                      <p className={styles.stageDesc}>Who moves next?</p>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
-              {/* Explore text link */}
-              <div>
-                <Link to="/operations/command-center" className={styles.exploreTextLink}>
-                  {t('landing.exploreConsole')}
-                </Link>
+              {/* Visually subordinated guidebook link */}
+              <div className={styles.guidebookWrapper}>
+                <button
+                  onClick={() => {
+                    const guideEl = document.getElementById('page-guidebook');
+                    if (guideEl) {
+                      guideEl.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className={styles.subordinatedGuideLink}
+                  aria-label="Scroll to Situational Awareness Guidebook"
+                >
+                  <span className={styles.guideInfoIcon}>ⓘ</span>
+                  <span>Situational Awareness Guidebook →</span>
+                </button>
               </div>
             </div>
 
-            {/* Right Map Column - Dominates first viewport */}
+            {/* Right Column — Real-time incident map with living annotation */}
             <div className={styles.rightMapCol}>
+              {/* The existing real-time map — unchanged */}
               <SituationalAwarenessMap />
+
+              {/* Living annotation overlay — sits above the map, below the map's own overlays */}
+              <div className={styles.mapAnnotationOverlay} aria-hidden="true">
+                <div className={`${styles.annotationBadge} ${mapPhase === 'INCIDENT' ? styles.annotationBadgeAlert :
+                  mapPhase === 'PRIORITY' ? styles.annotationBadgePriority :
+                    mapPhase === 'RESPONSE' ? styles.annotationBadgeResponse :
+                      styles.annotationBadgeMonitor
+                  }`}>
+                  <span className={styles.annotationDot} />
+                  <span className={styles.annotationText}>
+                    {mapPhase === 'MONITOR' && 'MONITORING'}
+                    {mapPhase === 'INCIDENT' && 'INCIDENT DETECTED'}
+                    {mapPhase === 'PRIORITY' && 'PRIORITY ASSESSED'}
+                    {mapPhase === 'RESPONSE' && 'RESPONDING'}
+                    {mapPhase === 'RETURN' && 'LIVE MONITORING'}
+                  </span>
+                </div>
+              </div>
             </div>
 
           </div>

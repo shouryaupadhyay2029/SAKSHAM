@@ -63,7 +63,7 @@ class SqlAlchemyDemandRepository(DemandRepositoryInterface):
             unit=demand.unit,
             affectedPeople=demand.affectedPeople or 0,
             priority=demand.priority.value,
-            status=demand.status.value if demand.status else "PENDING",
+            status=getattr(demand, "status").value if getattr(demand, "status", None) else "PENDING",
             requiredBy=demand.requiredBy
         )
         self.db.add(db_obj)

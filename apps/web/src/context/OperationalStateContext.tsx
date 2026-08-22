@@ -77,6 +77,9 @@ interface OperationalStateContextType {
     zone: string;
     need: string;
     details: string;
+    latitude?: number;
+    longitude?: number;
+    address?: string;
   }) => string; // Returns request ID
 
   addManualIncident: (manualData: {
@@ -117,7 +120,20 @@ interface OperationalStateContextType {
   setShelters: React.Dispatch<React.SetStateAction<Shelter[]>>;
 }
 
+export function ensureUtcString(dateVal: any): string {
+  if (!dateVal) return new Date().toISOString();
+  if (typeof dateVal === 'string') {
+    if (!dateVal.includes('Z') && !dateVal.includes('+') && !dateVal.includes('-')) {
+      return `${dateVal}Z`;
+    }
+    return dateVal;
+  }
+  return new Date(dateVal).toISOString();
+}
+
 export function normalizeIncident(backendInc: any): Incident {
+  const reportedStr = ensureUtcString(backendInc.reportedAt);
+  const createdStr = ensureUtcString(backendInc.createdAt);
   return {
     id: backendInc.incidentId || backendInc.id,
     type: backendInc.type,
@@ -127,7 +143,7 @@ export function normalizeIncident(backendInc: any): Incident {
       lat: backendInc.latitude,
       lng: backendInc.longitude
     },
-    time: backendInc.reportedAt || backendInc.createdAt || new Date().toISOString(),
+    time: reportedStr || createdStr || new Date().toISOString(),
     status: backendInc.status,
     assignedTeam: backendInc.assignedUnit || 'UNASSIGNED',
     description: backendInc.description,
@@ -135,14 +151,14 @@ export function normalizeIncident(backendInc: any): Incident {
     reporterContact: backendInc.reporterContact || '',
     casualtiesCount: 0,
     displacedCount: backendInc.displacedPeople || 0,
-    reportedAt: backendInc.reportedAt,
-    updatedAt: backendInc.updatedAt,
+    reportedAt: reportedStr,
+    updatedAt: ensureUtcString(backendInc.updatedAt),
     source: backendInc.region || 'HEADQUARTERS',
     peopleAffected: backendInc.affectedPeople || 0,
     requiredResources: backendInc.requiredResources || [],
     timeline: backendInc.timeline || [
       {
-        time: new Date(backendInc.reportedAt || backendInc.createdAt || Date.now()).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        time: new Date(reportedStr || createdStr || Date.now()).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' }),
         title: 'INCIDENT REPORTED',
         description: 'Incident registered in the command network database.'
       }
@@ -164,7 +180,7 @@ export function normalizeResource(backendRes: any): ResourceItem {
       lng: backendRes.longitude
     },
     status: backendRes.status,
-    lastUpdated: backendRes.lastUpdated || backendRes.updatedAt || new Date().toISOString(),
+    lastUpdated: ensureUtcString(backendRes.lastUpdated || backendRes.updatedAt),
     contactPerson: backendRes.pointOfContact || 'Depot Manager',
     contactNumber: '+91-99999-88888'
   };
@@ -190,12 +206,22 @@ export function normalizeVehicle(backendVeh: any): Vehicle {
   };
 }
 
-export function normalizeDemand(backendDem: any): DemandRequest {
+export function normalizeDemand(backendDem: any, incidents?: Incident[]): DemandRequest {
+  let coords = { lat: 28.6139, lng: 77.2090 };
+  let detailedAddress = '';
+  if (incidents) {
+    const inc = incidents.find(i => i.id === backendDem.incidentId || (i as any).uuid === backendDem.incidentId);
+    if (inc) {
+      coords = inc.coordinates;
+      detailedAddress = inc.location;
+    }
+  }
   return {
     id: backendDem.requestId || backendDem.id,
     incidentId: backendDem.incidentId,
     zoneName: backendDem.affectedZone,
-    coordinates: { lat: 28.6139, lng: 77.2090 },
+    coordinates: coords,
+    detailedAddress: detailedAddress,
     itemNeeded: backendDem.requestedType,
     category: backendDem.requestedType,
     quantity: backendDem.quantity,
@@ -203,10 +229,72 @@ export function normalizeDemand(backendDem: any): DemandRequest {
     priority: backendDem.priority,
     affectedCount: backendDem.affectedPeople || 0,
     status: backendDem.status,
-    requestedAt: backendDem.createdAt || new Date().toISOString()
+    requestedAt: ensureUtcString(backendDem.createdAt || backendDem.requestedAt)
   };
 }
 
+export function normalizeDispatchToMission(backendDsp: any, demandRequests: DemandRequest[]): DispatchMission {
+  const demand = demandRequests.find(r => r.id === backendDsp.allocationId || r.id === backendDsp.demandId);
+  const statusMap: Record<string, DispatchMission['status']> = {
+    'PLANNED': 'AWAITING_DISPATCH',
+    'READY': 'AWAITING_DISPATCH',
+    'DISPATCHED': 'DISPATCHED',
+    'EN_ROUTE': 'EN_ROUTE',
+    'ARRIVED': 'ARRIVED',
+    'COMPLETED': 'DELIVERED'
+  };
+  return {
+    id: backendDsp.dispatchId || backendDsp.id,
+    requestId: demand?.id || backendDsp.allocationId,
+    vehicleId: backendDsp.vehicleId,
+    status: statusMap[backendDsp.status] || 'DISPATCHED',
+    destinationName: backendDsp.destination || 'Incident Location',
+    resourceType: demand?.itemNeeded || 'Supplies',
+    quantity: backendDsp.quantity || demand?.quantity || 100,
+    unit: demand?.unit || 'Units',
+    etaMinutes: backendDsp.status === 'COMPLETED' ? 0 : 20,
+    operatorName: backendDsp.assignedOfficer || 'Sgt. Amit Sharma',
+    speedKmh: backendDsp.status === 'COMPLETED' ? 0 : 50,
+    distanceKm: backendDsp.status === 'COMPLETED' ? 0 : 8.5,
+    signalStrength: 95,
+    fuelPct: 88,
+    trafficLevel: 'LOW',
+    routePath: ['Central Depot', 'Ring Road Bypass', backendDsp.destination?.split(',')[0] || 'Target'],
+    timeline: [
+      { time: '09:00', title: 'ALLOCATION APPROVED', done: true },
+      { time: '09:05', title: 'VEHICLE ASSIGNED', done: true },
+      { time: '09:10', title: 'DISPATCH AUTHORIZED', done: backendDsp.status !== 'PLANNED' },
+      { time: '--:--', title: 'EN ROUTE TO TARGET', done: ['EN_ROUTE', 'ARRIVED', 'COMPLETED'].includes(backendDsp.status) },
+      { time: '--:--', title: 'DESTINATION ARRIVAL', done: ['ARRIVED', 'COMPLETED'].includes(backendDsp.status) },
+      { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: backendDsp.status === 'COMPLETED' }
+    ]
+  };
+}
+
+export function normalizeReliefDelivery(backendDel: any): ReliefDelivery {
+  const statusMap: Record<string, ReliefDelivery['status']> = {
+    'PENDING': 'PENDING',
+    'ARRIVED': 'ARRIVED',
+    'IN_DELIVERY': 'IN_DELIVERY',
+    'DELIVERED': 'DELIVERED',
+    'VERIFIED': 'VERIFIED'
+  };
+  return {
+    id: backendDel.id,
+    dispatchId: backendDel.dispatchId,
+    demandId: backendDel.demandId,
+    incidentId: backendDel.incidentId,
+    resourceId: backendDel.resourceId,
+    vehicleId: backendDel.vehicleId,
+    requestedQty: backendDel.requestedQty,
+    allocatedQty: backendDel.allocatedQty,
+    deliveredQty: backendDel.deliveredQty,
+    unit: backendDel.unit || 'Units',
+    status: statusMap[backendDel.status] || 'PENDING',
+    resourceType: backendDel.resourceType || 'Supplies',
+    destinationName: backendDel.destinationName || 'Incident Site'
+  };
+}
 export function normalizeShelter(backendShelter: any): Shelter {
   return {
     id: backendShelter.shelterId || backendShelter.id,
@@ -243,42 +331,38 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     let isMounted = true;
     const loadRealData = async () => {
       try {
-        const [incRes, reqRes, resRes, vehRes, shlRes] = await Promise.allSettled([
+        const [incRes, reqRes, resRes, vehRes, shlRes, dspRes, delRes] = await Promise.allSettled([
           apiClient.getIncidents(),
           apiClient.getDemands(),
           apiClient.getResources(),
           apiClient.getVehicles(),
           apiClient.getShelters(),
+          apiClient.getDispatches(),
+          apiClient.getDeliveries()
         ]);
         if (!isMounted) return;
+        
+        let normalizedIncidents: Incident[] = [];
         if (incRes.status === 'fulfilled') {
           const raw = incRes.value;
           const parsedArray = (raw as any)?.data || [];
-          console.log('[INCIDENT DEBUG] API response:', raw);
-          console.log('[INCIDENT DEBUG] parsed incidents:', parsedArray);
-          console.log('[INCIDENT DEBUG] count:', parsedArray.length);
-          if (parsedArray.length > 0) {
-            console.log('[INCIDENT DEBUG] first incident:', parsedArray[0]);
-            const firstNorm = normalizeIncident(parsedArray[0]);
-            console.log('[INCIDENT DEBUG] normalized first incident:', firstNorm);
-          }
-          const normalized = parsedArray.map((inc: any) => {
+          normalizedIncidents = parsedArray.map((inc: any) => {
             const norm = normalizeIncident(inc);
             (norm as any).uuid = inc.id;
             return norm;
           });
-          console.log('[INCIDENT DEBUG] normalized incidents:', normalized);
-          console.log('[INCIDENT DEBUG] setting incidents state:', normalized);
-          setIncidents(normalized);
+          setIncidents(normalizedIncidents);
         }
+
+        let normalizedRequests: DemandRequest[] = [];
         if (reqRes.status === 'fulfilled') {
           const raw = (reqRes.value as any)?.data || [];
-          const normalized = raw.map((item: any) => {
-            const norm = normalizeDemand(item);
+          normalizedRequests = raw.map((item: any) => {
+            const norm = normalizeDemand(item, normalizedIncidents);
             (norm as any).uuid = item.id;
             return norm;
           });
-          setRequests(normalized);
+          setRequests(normalizedRequests);
         }
         if (resRes.status === 'fulfilled') {
           const raw = (resRes.value as any)?.data || [];
@@ -289,14 +373,14 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
           });
           setResources(normalized);
         }
+        let normalizedVehicles: Vehicle[] = [];
         if (vehRes.status === 'fulfilled') {
           const raw = (vehRes.value as any)?.data || [];
-          const normalized = raw.map((item: any) => {
+          normalizedVehicles = raw.map((item: any) => {
             const norm = normalizeVehicle(item);
             (norm as any).uuid = item.id;
             return norm;
           });
-          setVehicles(normalized);
         }
         if (shlRes.status === 'fulfilled') {
           const raw = (shlRes.value as any)?.data || [];
@@ -306,6 +390,38 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
             return norm;
           });
           setShelters(normalized);
+        }
+        if (dspRes.status === 'fulfilled') {
+          const raw = (dspRes.value as any)?.data || [];
+          const normalized = raw.map((item: any) => {
+            return normalizeDispatchToMission(item, normalizedRequests);
+          });
+          setMissions(normalized);
+
+          // Enrich vehicle objects with current coordinates destination
+          normalizedVehicles = normalizedVehicles.map(veh => {
+            const activeDsp = raw.find((d: any) => d.vehicleId === (veh as any).uuid || d.vehicleId === veh.id);
+            if (activeDsp && (veh.status === 'EN_ROUTE' || veh.status === 'DISPATCHED' || activeDsp.status === 'DISPATCHED' || activeDsp.status === 'EN_ROUTE')) {
+              let destCoords = undefined;
+              if (activeDsp.latitude !== undefined && activeDsp.latitude !== null) {
+                destCoords = { lat: activeDsp.latitude, lng: activeDsp.longitude };
+              }
+              return {
+                ...veh,
+                status: 'EN_ROUTE', // Make it active so MapView draws it
+                destination: destCoords,
+                cargo: activeDsp.notes || `Relief Cargo: Dispatch ${activeDsp.dispatchId}`,
+                incidentId: activeDsp.allocationId
+              };
+            }
+            return veh;
+          });
+        }
+        setVehicles(normalizedVehicles);
+        if (delRes.status === 'fulfilled') {
+          const raw = (delRes.value as any)?.data || [];
+          const normalized = raw.map(normalizeReliefDelivery);
+          setDeliveries(normalized);
         }
       } catch (err) {
         console.warn('Backend API connection notice:', err);
@@ -369,8 +485,14 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     zone: string;
     need: string;
     details: string;
+    latitude?: number;
+    longitude?: number;
+    address?: string;
   }) => {
-    const coords = getZoneCoordinates(sosData.zone);
+    const coords = (sosData.latitude !== undefined && sosData.longitude !== undefined)
+      ? { lat: sosData.latitude, lng: sosData.longitude }
+      : getZoneCoordinates(sosData.zone);
+    const resolvedAddress = sosData.address || `${sosData.zone} SOS Zone`;
     const incidentId = `INC-2026-${Math.floor(Math.random() * 800) + 200}`;
     const requestId = `DEM-${Math.floor(Math.random() * 800) + 200}`;
 
@@ -378,7 +500,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       id: incidentId,
       type: 'RESOURCE_SHORTAGE',
       severity: 'HIGH',
-      location: `${sosData.zone} SOS Zone`,
+      location: resolvedAddress,
       coordinates: coords,
       time: new Date().toISOString(),
       status: 'REPORTED', // Starts in reported status
@@ -420,6 +542,54 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
 
     setIncidents(prev => [newIncident, ...prev]);
     setRequests(prev => [newRequest, ...prev]);
+
+    // Async background save to DB
+    (async () => {
+      try {
+        const incPayload = {
+          type: 'RESOURCE_SHORTAGE',
+          title: `Civilian SOS: ${sosData.need}`,
+          description: `Civilian SOS reported by ${sosData.name} (${sosData.phone}). Details: ${sosData.details}`,
+          location: resolvedAddress,
+          latitude: coords.lat,
+          longitude: coords.lng,
+          region: sosData.zone.toUpperCase(),
+          severity: 'HIGH',
+          status: 'REPORTED',
+          affectedPeople: 50,
+          displacedPeople: 0,
+          assignedUnit: null
+        };
+        const incRes = await apiClient.createIncident(incPayload);
+        if (incRes && incRes.data) {
+          const dbIncident = incRes.data;
+          
+          const demPayload = {
+            incidentId: dbIncident.id,
+            affectedZone: sosData.zone,
+            requestedType: sosData.need,
+            description: `Civilian SOS: needs ${sosData.need}. Details: ${sosData.details}`,
+            quantity: 100,
+            unit: 'Units',
+            affectedPeople: 50,
+            priority: 'HIGH',
+            status: 'PENDING'
+          };
+          const demRes = await apiClient.createDemand(demPayload);
+          if (demRes && demRes.data) {
+            console.log('[SOS PIPELINE] Persisted successfully in database:', demRes.data);
+            const normalizedInc = normalizeIncident(dbIncident);
+            const normalizedDem = normalizeDemand(demRes.data, [normalizedInc]);
+            
+            // Map generated IDs/UUIDs back to local state
+            setIncidents(prev => prev.map(inc => inc.id === incidentId ? normalizedInc : inc));
+            setRequests(prev => prev.map(req => req.id === requestId ? normalizedDem : req));
+          }
+        }
+      } catch (err: any) {
+        console.error('[SOS PIPELINE ERROR] Failed to save civilian demand to backend:', err);
+      }
+    })();
 
     return requestId;
   };
@@ -704,7 +874,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata'
     });
 
-    // 1. Reduce resource quantity and mark as partially/fully allocated
+    // 1. Reduce resource quantity and mark as partially/fully allocated locally
     setResources(prev =>
       prev.map(res => {
         if (res.id !== resourceId) return res;
@@ -721,7 +891,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       })
     );
 
-    // 2. Update demand to ALLOCATED
+    // 2. Update demand to ALLOCATED locally
     let demandIncidentId: string | undefined;
     setRequests(prev =>
       prev.map(req => {
@@ -735,7 +905,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       })
     );
 
-    // 3. Update linked incident to RESOURCE_MATCHED and add timeline event
+    // 3. Update linked incident to RESOURCE_MATCHED and add timeline event locally
     if (demandIncidentId) {
       const resource = resources.find(r => r.id === resourceId);
       const depot = resource ? resource.locationName.split(',')[0] : 'depot';
@@ -756,6 +926,21 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
         })
       );
     }
+
+    // Call SAKSHAM backend API to persist the allocation and approve it
+    (async () => {
+      try {
+        const createRes = await apiClient.createAllocation({ demandId, resourceId, quantity });
+        if (createRes && createRes.data) {
+          const dbAlloc = createRes.data;
+          await apiClient.updateAllocationStatus(dbAlloc.id, 'APPROVED');
+          console.log('[SOS PIPELINE] Persisted and approved allocation successfully:', dbAlloc.id);
+        }
+      } catch (err: any) {
+        console.error('[SOS PIPELINE ERROR] Failed to persist resource allocation:', err);
+        addToast('ERROR', `Failed to persist allocation: ${err.message}`);
+      }
+    })();
 
     return allocationId;
   };

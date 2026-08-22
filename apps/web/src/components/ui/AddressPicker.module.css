@@ -1,0 +1,208 @@
+/* AddressPicker.module.css */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #FAF8F3;
+  border: 1px solid rgba(11, 33, 25, 0.1);
+  border-radius: 4px;
+  padding: 20px;
+  color: #0B2119;
+  width: 100%;
+}
+
+.searchContainer {
+  position: relative;
+  width: 100%;
+}
+
+.inputWrapper {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+  background-color: rgba(11, 33, 25, 0.02);
+  border: 1px solid rgba(11, 33, 25, 0.12);
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 14px;
+  color: #0B2119;
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #E86F16;
+  background-color: #FFF;
+}
+
+.mapPickBtn {
+  background-color: #0B2119;
+  color: #FAF8F3;
+  border: none;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 13px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.mapPickBtnActive {
+  background-color: #E86F16;
+}
+
+.suggestionsList {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #FAF8F3;
+  border: 1px solid rgba(11, 33, 25, 0.15);
+  border-radius: 4px;
+  z-index: 999;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(11, 33, 25, 0.08);
+}
+
+.suggestionItem {
+  padding: 12px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.05);
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.suggestionItem:hover {
+  background-color: rgba(232, 111, 22, 0.06);
+  color: #E86F16;
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.mapArea {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  border: 1px solid rgba(11, 33, 25, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.miniMap {
+  width: 100%;
+  height: 100%;
+}
+
+.mapInstruction {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(11, 33, 25, 0.85);
+  color: #FAF8F3;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--font-mono), monospace;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.confirmSection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid rgba(11, 33, 25, 0.08);
+  padding-top: 16px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13px;
+}
+
+.confirmCheckbox {
+  accent-color: #E86F16;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.coordsBadge {
+  display: inline-flex;
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  background-color: rgba(11, 33, 25, 0.04);
+  padding: 4px 8px;
+  border-radius: 2px;
+  margin-top: 8px;
+  color: rgba(11, 33, 25, 0.7);
+  width: fit-content;
+}
+
+.suggestionTitle {
+  font-weight: 700;
+  display: block;
+  margin-bottom: 2px;
+  color: #0B2119;
+}
+
+.suggestionSubtitle {
+  font-size: 11px;
+  color: rgba(11, 33, 25, 0.6);
+  display: block;
+}
+
+.locationPreviewBox {
+  background: rgba(232, 111, 22, 0.04);
+  border: 1px dashed rgba(232, 111, 22, 0.3);
+  border-radius: 4px;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.previewTitle {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #E86F16;
+  margin-bottom: 6px;
+}
+
+.previewAddress {
+  font-weight: 700;
+  font-size: 14px;
+  color: #0B2119;
+  margin-bottom: 4px;
+}
+
+.previewCoords {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  color: rgba(11, 33, 25, 0.6);
+}
+
+@media (max-width: 480px) {
+  .inputWrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .mapPickBtn {
+    width: 100%;
+    text-align: center;
+  }
+  .wrapper {
+    padding: 12px;
+  }
+}

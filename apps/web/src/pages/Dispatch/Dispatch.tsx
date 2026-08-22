@@ -7,11 +7,11 @@ import type { Vehicle } from '../../types/vehicle';
 import type { IncidentType } from '../../types/incident';
 import {
   CheckCircle,
-  AlertTriangle,
   ArrowRight,
   Check,
   X,
-  Compass
+  Compass,
+  AlertOctagon
 } from 'lucide-react';
 import styles from './Dispatch.module.css';
 
@@ -23,6 +23,8 @@ gsap.registerPlugin(ScrollTrigger);
 import { useTranslation } from 'react-i18next';
 import { DynamicText } from '../../components/ui/DynamicText';
 import { useOperationalState, type DispatchMission } from '../../context/OperationalStateContext';
+import apiClient from '../../services/apiClient';
+import { authService } from '../../services/authService';
 
 const HISTORY_MISSIONS = [
   { id: 'DSP-DEL-038', status: 'DELIVERED', dest: 'Rohini Sector 15 Shelter', resource: '500 blankets', time: '11:02' },
@@ -41,6 +43,10 @@ export const Dispatch: React.FC = () => {
   const [formAllocationId, setFormAllocationId] = useState('');
   const [formVehicleId, setFormVehicleId] = useState('');
   const [formOperator, setFormOperator] = useState('Sgt. Amit Sharma');
+
+  // Map Filter Layers State
+  const [showVehicles, setShowVehicles] = useState(true);
+  const [showIncidents, setShowIncidents] = useState(true);
 
   // Refs for animations
   const pageRef = useRef<HTMLDivElement>(null);
@@ -66,7 +72,6 @@ export const Dispatch: React.FC = () => {
 
   // Sync state back to global operational context for mock integration
   const syncMissionsToGlobalContext = useCallback((updatedMissions: DispatchMission[]) => {
-    // Sync request statuses
     setRequests(prev => prev.map(req => {
       const match = updatedMissions.find(m => m.requestId === req.id);
       if (match) {
@@ -79,7 +84,6 @@ export const Dispatch: React.FC = () => {
       return req;
     }));
 
-    // Sync vehicle locations and destinations
     setVehicles(prev => prev.map(veh => {
       const match = updatedMissions.find(m => m.vehicleId === veh.id);
       if (match) {
@@ -89,7 +93,6 @@ export const Dispatch: React.FC = () => {
         else if (match.status === 'ARRIVED') status = 'ARRIVED';
         else if (match.status === 'DELIVERED') status = 'AVAILABLE';
         
-        // Find destination coordinates from requests
         const reqObj = requests.find(r => r.id === match.requestId);
         return {
           ...veh,
@@ -105,7 +108,7 @@ export const Dispatch: React.FC = () => {
   // Trigger sync once on mount
   useEffect(() => {
     syncMissionsToGlobalContext(missions);
-  }, []); // Run once on mount to avoid infinite rendering loop
+  }, []);
 
   // Pre-fill from URL parameters if available
   const [searchParams] = useSearchParams();
@@ -114,7 +117,6 @@ export const Dispatch: React.FC = () => {
     if (allocId) {
       setFormAllocationId(allocId);
       setShowCreatePanel(true);
-      // Auto-assign first available vehicle
       const availVeh = compatibleVehicles[0];
       if (availVeh) {
         setFormVehicleId(availVeh.id);
@@ -138,7 +140,6 @@ export const Dispatch: React.FC = () => {
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-
       tl.fromTo(heroRef.current, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.6 }, 0)
         .fromTo(`.${styles.summaryTile}`, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 }, 0.25)
         .fromTo(workspaceRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.65 }, 0.45);
@@ -164,7 +165,6 @@ export const Dispatch: React.FC = () => {
         hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata'
       });
       
-      // Update matching timeline item
       if (nextStatus === 'DISPATCHED') {
         newTimeline[2] = { time: timeStr, title: 'DISPATCH AUTHORIZED', done: true };
       } else if (nextStatus === 'EN_ROUTE') {
@@ -187,6 +187,26 @@ export const Dispatch: React.FC = () => {
 
     setMissions(updated);
     syncMissionsToGlobalContext(updated);
+
+    // Call SAKSHAM backend to persist the state transition
+    (async () => {
+      try {
+        const backendStatusMap: Record<string, string> = {
+          'DISPATCHED': 'DISPATCHED',
+          'EN_ROUTE': 'EN_ROUTE',
+          'ARRIVED': 'ARRIVED',
+          'DELIVERED': 'COMPLETED'
+        };
+        const nextBackendStatus = backendStatusMap[nextStatus];
+        if (nextBackendStatus) {
+          const currentUser = authService.getCurrentUser();
+          await apiClient.updateDispatchStatus(activeMission.id, nextBackendStatus, undefined, currentUser?.id);
+          console.log('[DISPATCH PIPELINE] Successfully updated dispatch status in PostgreSQL database.');
+        }
+      } catch (err: any) {
+        console.error('[DISPATCH PIPELINE ERROR] Failed to update dispatch status on SAKSHAM backend:', err);
+      }
+    })();
   };
 
   // Re-route Action Handler (Trigger Alternative Route)
@@ -218,7 +238,6 @@ export const Dispatch: React.FC = () => {
       return;
     }
 
-    // Validate that the vehicle is still available
     if (vehicle.status !== 'AVAILABLE') {
       addToast('ERROR', 'VEHICLE NO LONGER AVAILABLE: This vehicle is currently assigned to another mission.');
       return;
@@ -226,66 +245,96 @@ export const Dispatch: React.FC = () => {
 
     setIsSubmitting(true);
 
-    // Simulate dispatch processing lag (800ms) to prevent double clicks and give a premium responsive feel
-    setTimeout(() => {
-      const newMissionId = `DSP-DEL-0${missions.length + 41}`;
-      const newMission: DispatchMission = {
-        id: newMissionId,
-        requestId: request.id,
-        vehicleId: vehicle.id,
-        status: 'DISPATCHED',
-        destinationName: request.zoneName,
-        resourceType: request.itemNeeded,
-        quantity: request.quantity,
-        unit: request.unit,
-        etaMinutes: 22,
-        operatorName: formOperator,
-        speedKmh: 50,
-        distanceKm: 8.5,
-        signalStrength: 95,
-        fuelPct: 90,
-        trafficLevel: 'LOW',
-        routePath: ['Central Command Depot', 'Ring Road Bypass', request.zoneName.split(',')[0]],
-        timeline: [
-          { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'ALLOCATION APPROVED', done: true },
-          { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'VEHICLE ASSIGNED', done: true },
-          { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'DISPATCH AUTHORIZED', done: true },
-          { time: '--:--', title: 'EN ROUTE TO TARGET', done: false },
-          { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
-          { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
-        ]
-      };
+    // Call SAKSHAM backend API to persist the dispatch record
+    (async () => {
+      try {
+        // Find allocation record corresponding to this demand request
+        const allocsRes = await apiClient.getAllocations({ demandId: request.id });
+        const dbAllocationId = allocsRes.data?.[0]?.id;
+        
+        if (!dbAllocationId) {
+          throw new Error(`No DB allocation found for Demand ID ${request.id}`);
+        }
 
-      const updatedMissions = [newMission, ...missions];
-      setMissions(updatedMissions);
-      syncMissionsToGlobalContext(updatedMissions);
+        const currentUser = authService.getCurrentUser();
+        const plannedDeparture = new Date().toISOString();
+        const eta = new Date(Date.now() + 22 * 60 * 1000).toISOString();
 
-      // Create and append a corresponding ReliefDelivery item
-      const newDeliveryId = `DEL-2026-0${deliveries.length + 81}`;
-      const newDelivery = {
-        id: newDeliveryId,
-        dispatchId: newMissionId,
-        demandId: request.id,
-        incidentId: request.incidentId || '',
-        resourceId: request.allocatedResourceId || '',
-        vehicleId: vehicle.id,
-        requestedQty: request.quantity,
-        allocatedQty: request.quantity,
-        deliveredQty: 0,
-        unit: request.unit,
-        status: 'PENDING' as const,
-        resourceType: request.itemNeeded,
-        destinationName: request.zoneName
-      };
-      setDeliveries(prev => [newDelivery, ...prev]);
+        const dispatchRes = await apiClient.createDispatch({
+          allocationId: dbAllocationId,
+          vehicleId: vehicle.id,
+          assignedOfficerId: currentUser?.id || 'officer-1',
+          plannedDeparture,
+          eta,
+          notes: 'Dispatched via SAKSHAM Optimization recommend recommendation'
+        });
 
-      addToast('SUCCESS', `✓ Vehicle ${vehicle.id} dispatched successfully to coordinate zone.`);
-      setSelectedMissionId(newMissionId);
-      setShowCreatePanel(false);
-      setFormAllocationId('');
-      setFormVehicleId('');
-      setIsSubmitting(false);
-    }, 800);
+        if (dispatchRes && dispatchRes.data) {
+          const dbDispatch = dispatchRes.data;
+          const newMissionId = dbDispatch.dispatchId || dbDispatch.id;
+          
+          const newMission: DispatchMission = {
+            id: newMissionId,
+            requestId: request.id,
+            vehicleId: vehicle.id,
+            status: 'DISPATCHED',
+            destinationName: request.zoneName,
+            resourceType: request.itemNeeded,
+            quantity: request.quantity,
+            unit: request.unit,
+            etaMinutes: 22,
+            operatorName: formOperator,
+            speedKmh: 50,
+            distanceKm: 8.5,
+            signalStrength: 95,
+            fuelPct: 90,
+            trafficLevel: 'LOW',
+            routePath: ['Central Command Depot', 'Ring Road Bypass', request.zoneName.split(',')[0]],
+            timeline: [
+              { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'ALLOCATION APPROVED', done: true },
+              { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'VEHICLE ASSIGNED', done: true },
+              { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'DISPATCH AUTHORIZED', done: true },
+              { time: '--:--', title: 'EN ROUTE TO TARGET', done: false },
+              { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
+              { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
+            ]
+          };
+
+          const updatedMissions = [newMission, ...missions];
+          setMissions(updatedMissions);
+          syncMissionsToGlobalContext(updatedMissions);
+
+          const newDeliveryId = `DEL-2026-0${deliveries.length + 81}`;
+          const newDelivery = {
+            id: newDeliveryId,
+            dispatchId: newMissionId,
+            demandId: request.id,
+            incidentId: request.incidentId || '',
+            resourceId: request.allocatedResourceId || '',
+            vehicleId: vehicle.id,
+            requestedQty: request.quantity,
+            allocatedQty: request.quantity,
+            deliveredQty: 0,
+            unit: request.unit,
+            status: 'PENDING' as const,
+            resourceType: request.itemNeeded,
+            destinationName: request.zoneName
+          };
+          setDeliveries(prev => [newDelivery, ...prev]);
+
+          addToast('SUCCESS', `✓ Vehicle ${vehicle.id} dispatched successfully to coordinate zone.`);
+          setSelectedMissionId(newMissionId);
+          setShowCreatePanel(false);
+          setFormAllocationId('');
+          setFormVehicleId('');
+        }
+      } catch (err: any) {
+        console.error('[DISPATCH PIPELINE ERROR] Failed to create persistent dispatch:', err);
+        addToast('ERROR', `Failed to create dispatch: ${err.message}`);
+      } finally {
+        setIsSubmitting(false);
+      }
+    })();
   };
 
   // Convert selected mission properties to draw lines on map
@@ -295,9 +344,8 @@ export const Dispatch: React.FC = () => {
   }, [activeMission, vehicles]);
 
   const mapVehicles = useMemo<Vehicle[]>(() => {
-    if (!activeVehicle || !activeMission) return [];
+    if (!showVehicles || !activeVehicle || !activeMission) return [];
     
-    // Create temporary coordinates based on the status for routing rendering
     let destCoords: any = undefined;
     const reqObj = requests.find(r => r.id === activeMission.requestId);
     if (reqObj) {
@@ -309,14 +357,13 @@ export const Dispatch: React.FC = () => {
       status: activeMission.status === 'DELIVERED' ? 'AVAILABLE' : (activeMission.status === 'ARRIVED' ? 'ARRIVED' : 'EN_ROUTE'),
       destination: destCoords
     }];
-  }, [activeVehicle, activeMission, requests]);
+  }, [activeVehicle, activeMission, requests, showVehicles]);
 
   const mapIncidents = useMemo(() => {
-    if (!activeMission) return [];
+    if (!showIncidents || !activeMission) return [];
     const reqObj = requests.find(r => r.id === activeMission.requestId);
     if (!reqObj?.incidentId) return [];
-    const incidentObj = requests.find(r => r.id === activeMission.requestId);
-    return incidentObj ? [{
+    return reqObj ? [{
       id: reqObj.incidentId,
       type: 'RESOURCE_SHORTAGE' as IncidentType,
       severity: 'CRITICAL' as const,
@@ -334,17 +381,44 @@ export const Dispatch: React.FC = () => {
       reporterName: 'Control Operator',
       reporterContact: 'Internal Line'
     }] : [];
-  }, [activeMission, requests]);
+  }, [activeMission, requests, showIncidents]);
+
+  // Derived readiness stats for progress indicators
+  const readinessCounts = useMemo(() => {
+    const total = vehicles.length || 1;
+    const available = vehicles.filter(v => v.status === 'AVAILABLE').length;
+    const enroute = vehicles.filter(v => v.status === 'EN_ROUTE' || v.status === 'DISPATCHED').length;
+    const maintenance = vehicles.filter(v => v.status === 'MAINTENANCE').length;
+    
+    return {
+      available,
+      enroute,
+      maintenance,
+      availablePct: Math.round((available / total) * 100),
+      enroutePct: Math.round((enroute / total) * 100),
+      maintenancePct: Math.round((maintenance / total) * 100),
+    };
+  }, [vehicles]);
+
+  // Derived details of selected allocation preview
+  const selectedAllocationObj = useMemo(() => {
+    return requests.find(r => r.id === formAllocationId) || null;
+  }, [formAllocationId, requests]);
+
+  const selectedVehicleObj = useMemo(() => {
+    return vehicles.find(v => v.id === formVehicleId) || null;
+  }, [formVehicleId, vehicles]);
 
   return (
     <div ref={pageRef} className={styles.page}>
       <GradientBackground />
       
+      {/* ── Hero Section ── */}
       <header ref={heroRef} className={`${styles.hero} shaderHeaderWrapper`}>
         <ShaderBackground className="absolute inset-0" />
         <div className={styles.heroLeft}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
-            <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>{t('dispatch.title')}</span>
+            <span className={styles.heroEyebrow}>SAKSHAM FLEET COMMAND</span>
             <PageGuideTrigger />
           </div>
           <h1 className={styles.heroTitle}>{t('dispatch.title')}</h1>
@@ -355,36 +429,53 @@ export const Dispatch: React.FC = () => {
         <div className={styles.heroRight}>
           <div className={styles.statusIndicator}>
             <span className={styles.statusDotPulse} />
-            <span className={styles.statusLabel}>{t('common.active')}</span>
+            <span className={styles.statusLabel}>SYSTEM LIVE</span>
           </div>
           <span className={styles.statusDetails}>
-            {summaryStats.active} {t('dashboard.activeDispatches')}
+            {summaryStats.active} Active Dispatches
           </span>
         </div>
       </header>
 
-      {/* ── Operational Summary Row ── */}
+      {/* ── KPI Strip Section ── */}
       <section ref={summaryRef} className={styles.summarySection}>
         <div className={styles.summaryGrid}>
           <div className={styles.summaryTile}>
+            <span className={styles.summaryLabel}>ACTIVE DISPATCHES</span>
             <span className={styles.summaryNum}>{String(summaryStats.active).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>{t('dashboard.activeDispatches')}</span>
+            <span className={styles.summarySupport}>
+              {summaryStats.active > 0 ? `● ${summaryStats.active} currently moving` : 'No active dispatches'}
+            </span>
           </div>
           <div className={styles.summaryTile}>
+            <span className={styles.summaryLabel}>PENDING DISPATCH</span>
             <span className={styles.summaryNum}>{String(summaryStats.awaiting).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>{t('status.PENDING')}</span>
+            <span className={styles.summarySupport}>
+              {summaryStats.awaiting > 0 ? `● Awaiting fleet codes` : 'All requests dispatched'}
+            </span>
           </div>
           <div className={styles.summaryTile}>
+            <span className={styles.summaryLabel}>EN ROUTE</span>
             <span className={styles.summaryNum}>{String(summaryStats.enroute).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>{t('status.EN_ROUTE')}</span>
+            <span className={styles.summarySupport}>
+              {summaryStats.enroute > 0 ? `● In transit telemetry` : 'No vehicles en route'}
+            </span>
           </div>
           <div className={styles.summaryTile}>
+            <span className={styles.summaryLabel}>ARRIVED TARGETS</span>
             <span className={styles.summaryNum}>{String(summaryStats.arriving).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>{t('status.ARRIVED')}</span>
+            <span className={styles.summarySupport}>
+              {summaryStats.arriving > 0 ? `● Handover verification` : 'No arrivals pending'}
+            </span>
           </div>
           <div className={styles.summaryTile}>
-            <span className={styles.summaryNum}>88%</span>
-            <span className={styles.summaryLabel}>{t('common.status')}</span>
+            <span className={styles.summaryLabel}>FLEET READINESS</span>
+            <span className={styles.summaryNum}>
+              {Math.round(((vehicles.filter(v => v.status === 'AVAILABLE').length) / (vehicles.length || 1)) * 100)}%
+            </span>
+            <span className={styles.summarySupport}>
+              {vehicles.filter(v => v.status === 'AVAILABLE').length} of {vehicles.length} standby
+            </span>
           </div>
         </div>
       </section>
@@ -392,122 +483,211 @@ export const Dispatch: React.FC = () => {
       {/* ── Main Workspace ── */}
       <div ref={workspaceRef} className={styles.workspace}>
         
-        {/* Left Column: Map */}
+        {/* Left Column: Map & Telemetry Details */}
         <div className={styles.leftCol}>
           <div className={styles.mapHeader}>
             <div className={styles.mapTitleBlock}>
-              <span className={styles.mapTitle}>{t('dashboard.liveTelemetry')}</span>
-              <span className={styles.mapSubtitle}>{t('map.legendTitle')}</span>
+              <span className={styles.mapTitle}>Live Operational Map</span>
+              <span className={styles.mapSubtitle}>Real-time tactical fleet positioning</span>
             </div>
             <div className={styles.mapSyncBlock}>
               <span className={styles.mapPulse} />
-              <span className={styles.mapSyncLabel}>{t('dashboard.liveStatus')}</span>
+              <span className={styles.mapSyncLabel}>TELEMETRY ACTIVE</span>
             </div>
           </div>
+          
           <div className={styles.mapContainer}>
+            {/* Map Toolbar Overlay */}
+            <div className={styles.mapToolbar}>
+              <button 
+                className={`${styles.toolbarBtn} ${showVehicles ? styles.toolbarBtnActive : ''}`}
+                onClick={() => setShowVehicles(prev => !prev)}
+              >
+                Fleet Layer
+              </button>
+              <button 
+                className={`${styles.toolbarBtn} ${showIncidents ? styles.toolbarBtnActive : ''}`}
+                onClick={() => setShowIncidents(prev => !prev)}
+              >
+                Incidents
+              </button>
+            </div>
+
+            {/* Map Legend Overlay */}
+            <div className={styles.mapLegend}>
+              <span className={styles.legendTitle}>FLEET CODES</span>
+              <div className={styles.legendItem}>
+                <span className={`${styles.legendDot} ${styles.legendDotAvailable}`} />
+                <span>Available</span>
+              </div>
+              <div className={styles.legendItem}>
+                <span className={`${styles.legendDot} ${styles.legendDotAssigned}`} />
+                <span>Assigned</span>
+              </div>
+              <div className={styles.legendItem}>
+                <span className={`${styles.legendDot} ${styles.legendDotEnRoute}`} />
+                <span>En Route</span>
+              </div>
+              <div className={styles.legendItem}>
+                <span className={`${styles.legendDot} ${styles.legendDotArrived}`} />
+                <span>Arrived</span>
+              </div>
+            </div>
+
             <MapView
               incidents={mapIncidents}
               resources={[]}
               vehicles={mapVehicles}
               shelters={[]}
               layerFilters={{
-                incidents: true,
+                incidents: showIncidents,
                 resources: false,
-                vehicles: true,
+                vehicles: showVehicles,
                 shelters: false,
                 routes: true
               }}
             />
           </div>
+
+          {/* Real Telemetry strip near Map */}
+          <div className={styles.telemetryStrip}>
+            <div className={styles.telemetryMetric}>
+              <span className={styles.telemetryPulse} />
+              <span>SIGNAL STATUS: </span>
+              <span>NOMINAL / SECURE</span>
+            </div>
+            <div className={styles.telemetryMetric}>
+              <span>ACTIVE VEHICLES ONLINE: </span>
+              <span>{vehicles.length} Units</span>
+            </div>
+            <div className={styles.telemetryMetric}>
+              <span>LAST TELEMETRY REFRESH: </span>
+              <span>{new Date().toLocaleTimeString()}</span>
+            </div>
+          </div>
           
-          {/* Action Area below Map */}
-          {activeMission && (
+          {/* Action Control Panel */}
+          {activeMission ? (
             <div className={styles.actionWorkspace}>
               <div className={styles.actionHeader}>
-                <span className={styles.actionEyebrow}>{t('dispatch.title')}</span>
-                <span className={styles.actionStatusLabel}>{t('common.status')}: <strong>{t(`status.${activeMission.status}`) || activeMission.status}</strong></span>
+                <span className={styles.actionEyebrow}>MISSION INTERACTIVE CONTROL</span>
+                <span className={styles.actionStatusLabel}>Current State: <strong>{activeMission.status.replace(/_/g, ' ')}</strong></span>
               </div>
               <div className={styles.actionButtons}>
                 {activeMission.status === 'DISPATCHED' && (
                   <button className={styles.primaryActionBtn} onClick={handleUpdateStatus}>
-                    {t('dispatch.confirmDispatch')} <ArrowRight size={13} />
+                    Depart Logistics Fleet <ArrowRight size={13} />
                   </button>
                 )}
                 {activeMission.status === 'EN_ROUTE' && (
                   <button className={styles.primaryActionBtn} onClick={handleUpdateStatus}>
-                    {t('status.ARRIVED')} <ArrowRight size={13} />
+                    Confirm Arrival at Drop Point <ArrowRight size={13} />
                   </button>
                 )}
                 {activeMission.status === 'ARRIVED' && (
                   <button className={styles.primaryActionBtn} onClick={handleUpdateStatus}>
-                    {t('delivery.verifyDelivery')} <CheckCircle size={13} />
+                    Verify Handover Deliveries <CheckCircle size={13} />
                   </button>
                 )}
                 {activeMission.status === 'DELIVERED' && (
                   <div className={styles.completedBanner}>
-                    <Check size={14} /> {t('status.DELIVERED')}
+                    <Check size={14} /> Mission Completed & Verified
                   </div>
                 )}
                 
                 {activeMission.status !== 'DELIVERED' && activeMission.trafficLevel === 'BLOCKED' && (
                   <button className={styles.alertActionBtn} onClick={handleReroute}>
-                    REROUTE MISSION NOW <Compass size={13} />
+                    Re-route Fleet Unit <Compass size={13} />
                   </button>
                 )}
 
-                <button className={styles.secondaryActionBtn} onClick={() => {
-                  setSelectedMissionId(activeMission.id);
-                  setShowCreatePanel(true);
-                }}>
+                <button className={styles.secondaryActionBtn} onClick={() => setShowCreatePanel(true)}>
                   + NEW DISPATCH
                 </button>
               </div>
             </div>
+          ) : (
+            <div className={styles.emptyState}>
+              <span className={styles.emptyTitle}>FLEET STANDBY</span>
+              <p className={styles.emptyText}>No active routes currently require visualization. Fleet telemetry remains online.</p>
+              <Link to="/operations/vehicles" className={styles.emptyActionBtn} style={{ marginTop: '8.5px', display: 'inline-block' }}>
+                VIEW FLEET
+              </Link>
+            </div>
           )}
         </div>
 
-        {/* Right Column: Mission Details & Queue */}
+        {/* Right Column: Dispatch Panel & Lists */}
         <div className={styles.rightCol}>
           
-          {/* Active Missions Queue list */}
-          <div className={styles.missionQueueSection}>
-            <div className={styles.mqHeader}>
-              <span className={styles.mqEyebrow}>ACTIVE MISSIONS</span>
-              <button className={styles.mqCreateBtn} onClick={() => setShowCreatePanel(true)}>
+          {/* Dispatch operations box */}
+          <div className={styles.opsPanel}>
+            <div className={styles.opsHeader}>
+              <span className={styles.opsTitle}>DISPATCH OPERATIONS</span>
+              <button className={styles.createBtn} onClick={() => setShowCreatePanel(true)}>
                 + CREATE DISPATCH
               </button>
             </div>
-            
-            <div className={styles.missionList}>
-              {missions.map(m => {
-                const isActive = m.id === selectedMissionId;
-                return (
-                  <button
-                    key={m.id}
-                    className={`${styles.missionRow} ${isActive ? styles.missionRowActive : ''}`}
-                    onClick={() => setSelectedMissionId(m.id)}
-                  >
-                    <div className={styles.mrLeft}>
-                      <span className={styles.mrId}>{m.id}</span>
-                      <span className={`${styles.mrStatusBadge} ${styles['status_' + m.status]}`}>
-                        {m.status.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <div className={styles.mrDetails}>
-                      <span className={styles.mrTarget}>{m.destinationName.split(',')[0]}</span>
-                      <span className={styles.mrCargo}>{m.quantity.toLocaleString()} {m.unit} {m.resourceType}</span>
-                    </div>
-                    <div className={styles.mrRight}>
-                      <span className={styles.mrEtaLabel}>ETA</span>
-                      <span className={styles.mrEtaVal}>{m.etaMinutes > 0 ? `${m.etaMinutes}m` : 'ARRIVED'}</span>
-                    </div>
-                  </button>
-                );
-              })}
+
+            {/* Operational Attention Section */}
+            <div className={styles.attentionSection}>
+              {activeMission && activeMission.alertMessage ? (
+                <div className={styles.attentionAlert}>
+                  <AlertOctagon size={14} style={{ marginRight: 8, flexShrink: 0 }} />
+                  <span>{activeMission.alertMessage}</span>
+                </div>
+              ) : (
+                <div className={styles.attentionNormal}>
+                  <span>✓</span> Fleet operations normal. No exceptions detected.
+                </div>
+              )}
+            </div>
+
+            <div className={styles.listSection}>
+              <span className={styles.sectionLabel}>Active Missions</span>
+              <div className={styles.missionList}>
+                {missions.map(m => {
+                  const isActive = m.id === selectedMissionId;
+                  return (
+                    <button
+                      key={m.id}
+                      className={`${styles.missionRow} ${isActive ? styles.missionRowActive : ''}`}
+                      onClick={() => setSelectedMissionId(m.id)}
+                    >
+                      <div className={styles.mrHeader}>
+                        <span className={styles.mrId}>{m.id}</span>
+                        <span className={`${styles.mrStatusBadge} ${styles['status_' + m.status]}`}>
+                          {m.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <div className={styles.mrBody}>
+                        <span><strong>Cargo:</strong> {m.quantity.toLocaleString()} {m.unit} {m.resourceType}</span>
+                        <span><strong>Target:</strong> {m.destinationName.split(',')[0]}</span>
+                      </div>
+                      <div className={styles.mrFooter}>
+                        <span>Vehicle: {m.vehicleId}</span>
+                        <span className={styles.mrEta}>
+                          {m.etaMinutes > 0 ? `ETA ${m.etaMinutes}m` : 'ARRIVED'}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {missions.length === 0 && (
+                  <div className={styles.emptyState}>
+                    <span className={styles.emptyTitle}>NO ACTIVE DISPATCHES</span>
+                    <span className={styles.emptyText}>There are currently no vehicles in transit. Use the button to authorize a mission.</span>
+                    <button className={styles.emptyActionBtn} onClick={() => setShowCreatePanel(true)}>
+                      CREATE DISPATCH
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Detailed Context Panel */}
+          {/* Selected Mission telemetry & progress timeline */}
           {activeMission && (
             <div ref={detailRef} className={styles.detailPanel}>
               <div className={styles.panelHeader}>
@@ -515,48 +695,33 @@ export const Dispatch: React.FC = () => {
                 <span className={styles.panelId}>{activeMission.id}</span>
               </div>
 
-              {activeMission.alertMessage && (
-                <div className={styles.operationalAlert}>
-                  <AlertTriangle size={14} className={styles.alertIcon} />
-                  <div className={styles.alertTextBlock}>
-                    <strong>ALERT RESOLUTION REQUIRED</strong>
-                    <span>{activeMission.alertMessage}</span>
-                  </div>
-                  {activeMission.trafficLevel === 'HEAVY' && (
-                    <button className={styles.alertSolveBtn} onClick={handleReroute}>
-                      REROUTE
-                    </button>
-                  )}
-                </div>
-              )}
-
               <div className={styles.detailGrid}>
                 <div>
                   <span className={styles.detailLabel}>RESOURCE TYPE</span>
                   <span className={styles.detailVal}>{activeMission.resourceType}</span>
                 </div>
                 <div>
-                  <span className={styles.detailLabel}>QUANTITY DISPATCHED</span>
+                  <span className={styles.detailLabel}>QUANTITY</span>
                   <span className={styles.detailVal}>{activeMission.quantity.toLocaleString()} {activeMission.unit}</span>
                 </div>
                 <div>
-                  <span className={styles.detailLabel}>VEHICLE FLEET UNIT</span>
+                  <span className={styles.detailLabel}>VEHICLE UNIT</span>
                   <span className={styles.detailVal}>{activeMission.vehicleId}</span>
                 </div>
                 <div>
-                  <span className={styles.detailLabel}>ASSIGNED OPERATOR</span>
+                  <span className={styles.detailLabel}>OPERATOR</span>
                   <span className={styles.detailVal}>{activeMission.operatorName}</span>
                 </div>
               </div>
 
               {/* Progress Timeline */}
               <div className={styles.timelineSection}>
-                <span className={styles.panelEyebrow}>MISSION TIMELINE</span>
+                <span className={styles.panelEyebrow}>DISPATCH PIPELINE</span>
                 <div className={styles.timeline}>
                   {activeMission.timeline.map((step, idx) => (
                     <div key={idx} className={`${styles.timelineStep} ${step.done ? styles.stepDone : ''}`}>
                       <div className={styles.stepCircle}>
-                        {step.done && <Check size={8} />}
+                        {step.done && <Check size={8} style={{ color: '#FAF8F3' }} />}
                       </div>
                       <div className={styles.stepContent}>
                         <span className={styles.stepTitle}>{step.title}</span>
@@ -567,9 +732,9 @@ export const Dispatch: React.FC = () => {
                 </div>
               </div>
 
-              {/* Route Path list */}
+              {/* Route Path stop summary */}
               <div className={styles.routeSection}>
-                <span className={styles.panelEyebrow}>APPROVED ROUTE PATH</span>
+                <span className={styles.panelEyebrow}>APPROVED ROUTE</span>
                 <div className={styles.routePath}>
                   {activeMission.routePath.map((stop, idx) => (
                     <div key={idx} className={styles.routeStop}>
@@ -579,45 +744,47 @@ export const Dispatch: React.FC = () => {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Vehicle Telemetry stats */}
-              <div className={styles.telemetrySection}>
-                <span className={styles.panelEyebrow}>VEHICLE TELEMETRY</span>
-                <div className={styles.telemetryGrid}>
-                  <div>
-                    <span className={styles.teleLabel}>SPEED</span>
-                    <span className={styles.teleVal}>{activeMission.speedKmh} km/h</span>
-                  </div>
-                  <div>
-                    <span className={styles.teleLabel}>HEADING</span>
-                    <span className={styles.teleVal}><Compass size={10} style={{ display: 'inline', marginRight: 2 }} /> SE 124°</span>
-                  </div>
-                  <div>
-                    <span className={styles.teleLabel}>DISTANCE REMAINING</span>
-                    <span className={styles.teleVal}>{activeMission.distanceKm} km</span>
-                  </div>
-                  <div>
-                    <span className={styles.teleLabel}>SIGNAL STRENGTH</span>
-                    <span className={styles.teleVal}>{activeMission.signalStrength}%</span>
-                  </div>
-                  <div>
-                    <span className={styles.teleLabel}>FUEL / BATTERY</span>
-                    <span className={styles.teleVal} style={{ color: activeMission.fuelPct < 30 ? '#C0392B' : undefined }}>{activeMission.fuelPct}%</span>
-                  </div>
-                  <div>
-                    <span className={styles.teleLabel}>ROUTE STATUS</span>
-                    <span className={styles.teleVal} style={{ color: activeMission.trafficLevel === 'BLOCKED' ? '#C0392B' : undefined }}>
-                      {activeMission.trafficLevel}
-                    </span>
-                  </div>
+          {/* Fleet readiness counts */}
+          <div className={styles.readinessPanel}>
+            <span className={styles.panelEyebrow}>Fleet Readiness Index</span>
+            <div className={styles.readinessGrid}>
+              <div className={styles.readinessRow}>
+                <div className={styles.readinessInfo}>
+                  <span>AVAILABLE STANDBY</span>
+                  <span>{readinessCounts.available} Units</span>
+                </div>
+                <div className={styles.readinessBar}>
+                  <div className={`${styles.readinessFill} ${styles.fillAvailable}`} style={{ width: `${readinessCounts.availablePct}%` }} />
+                </div>
+              </div>
+              <div className={styles.readinessRow}>
+                <div className={styles.readinessInfo}>
+                  <span>ACTIVE / IN TRANSIT</span>
+                  <span>{readinessCounts.enroute} Units</span>
+                </div>
+                <div className={styles.readinessBar}>
+                  <div className={`${styles.readinessFill} ${styles.fillEnRoute}`} style={{ width: `${readinessCounts.enroutePct}%` }} />
+                </div>
+              </div>
+              <div className={styles.readinessRow}>
+                <div className={styles.readinessInfo}>
+                  <span>MAINTENANCE / DEPOT</span>
+                  <span>{readinessCounts.maintenance} Units</span>
+                </div>
+                <div className={styles.readinessBar}>
+                  <div className={`${styles.readinessFill} ${styles.fillMaintenance}`} style={{ width: `${readinessCounts.maintenancePct}%` }} />
                 </div>
               </div>
             </div>
-          )}
+          </div>
+
         </div>
       </div>
 
-      {/* ── Create Dispatch Side Panel ── */}
+      {/* ── Create Dispatch Modal Drawer ── */}
       {showCreatePanel && (
         <div className={styles.panelOverlay}>
           <div className={styles.createPanel}>
@@ -629,8 +796,9 @@ export const Dispatch: React.FC = () => {
             </div>
             
             <form onSubmit={handleCreateDispatch} className={styles.cpForm}>
+              
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>SELECT APPROVED ALLOCATION</label>
+                <label className={styles.formLabel}>MISSION DETAILS — SELECT ALLOCATION</label>
                 <select
                   value={formAllocationId}
                   onChange={e => setFormAllocationId(e.target.value)}
@@ -649,7 +817,7 @@ export const Dispatch: React.FC = () => {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>SELECT COMPATIBLE VEHICLE</label>
+                <label className={styles.formLabel}>FLEET ASSIGNMENT — SELECT VEHICLE</label>
                 <select
                   value={formVehicleId}
                   onChange={e => setFormVehicleId(e.target.value)}
@@ -665,7 +833,7 @@ export const Dispatch: React.FC = () => {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>ASSIGN OPERATOR / TEAM LEAD</label>
+                <label className={styles.formLabel}>ASSIGNED OPERATOR</label>
                 <input
                   type="text"
                   value={formOperator}
@@ -674,19 +842,19 @@ export const Dispatch: React.FC = () => {
                 />
               </div>
 
-              {/* Stock check & Verification Preview */}
-              {formAllocationId && (
+              {/* Summarized dynamic review panel */}
+              {selectedAllocationObj && selectedVehicleObj && (
                 <div className={styles.stockVerification}>
                   <div className={styles.verificationRow}>
-                    <span>✓ STOCK ALLOCATION VERIFIED</span>
+                    <span>✓ PRE-DISPATCH VALIDATION OK</span>
                     <span className={styles.verificationOk}>READY</span>
                   </div>
                   <div className={styles.verificationPreview}>
-                    <p><strong>MISSION SUMMARY</strong></p>
-                    <p>Resource: 12,000 L Clean Drinking Water</p>
-                    <p>Target Zone: Yamuna Bank Floodplain</p>
-                    <p>Fleet Code: VEH-BT-401 (NDRF supply boat)</p>
-                    <p>ETA: ~18 mins (Route via Canal link)</p>
+                    <p style={{ margin: '0 0 6px' }}><strong>DISPATCH SUMMARY PREVIEW</strong></p>
+                    <p style={{ margin: '0 0 4px' }}><strong>Resource:</strong> {selectedAllocationObj.quantity.toLocaleString()} {selectedAllocationObj.unit} {selectedAllocationObj.itemNeeded}</p>
+                    <p style={{ margin: '0 0 4px' }}><strong>Destination:</strong> {selectedAllocationObj.zoneName}</p>
+                    <p style={{ margin: '0 0 4px' }}><strong>Vehicle:</strong> {selectedVehicleObj.name} ({selectedVehicleObj.id})</p>
+                    <p style={{ margin: '0' }}><strong>Driver/Operator:</strong> {formOperator}</p>
                   </div>
                 </div>
               )}
@@ -717,8 +885,8 @@ export const Dispatch: React.FC = () => {
                 <span className={styles.hcStatus}>{h.status}</span>
               </div>
               <div className={styles.hcBody}>
-                <p><strong>Destination:</strong> {h.dest}</p>
-                <p><strong>Cargo payload:</strong> {h.resource}</p>
+                <p style={{ margin: '0 0 4px' }}><strong>Destination:</strong> {h.dest}</p>
+                <p style={{ margin: '0 0 4px' }}><strong>Cargo payload:</strong> {h.resource}</p>
                 <span className={styles.hcTimestamp}>Delivered at {h.time}</span>
               </div>
             </div>
@@ -726,34 +894,7 @@ export const Dispatch: React.FC = () => {
         </div>
       </section>
 
-      {/* ── Mission Lifecycle Section ── */}
-      <section className={styles.lifecycleSection}>
-        <div className={styles.lcTitleBlock}>
-          <span className={styles.lcEyebrow}>MISSION LIFECYCLE</span>
-          <h2 className={styles.lcTitle}>SAKSHAM Dispatch Execution Pipeline</h2>
-        </div>
-        <div className={styles.lcPipeline}>
-          {[
-            { step: 'ALLOCATED', label: 'Match engine commits stock resources.' },
-            { step: 'DISPATCHED', label: 'Operator assigns logistics vehicle and departs.' },
-            { step: 'EN ROUTE', label: 'Field telemetry feeds real-time coordinates.' },
-            { step: 'ARRIVED', label: 'Vehicle registers destination geo-fence arrival.' },
-            { step: 'DELIVERED', label: 'Operator uploads relief handover certificate.' }
-          ].map((l, idx) => (
-            <div key={idx} className={styles.lcStep}>
-              <div className={styles.lcCircle}>{idx + 1}</div>
-              <strong className={styles.lcStepTitle}>{l.step}</strong>
-              <span className={styles.lcStepDesc}>{l.label}</span>
-            </div>
-          ))}
-        </div>
-        <div className={styles.lcTransition}>
-          <span>LIFECYCLE TARGET PIPELINE COMPLETE</span>
-          <Link to="/operations/delivery" className={styles.lcLink}>
-            CONTINUE TO DELIVERY VERIFICATION &rarr;
-          </Link>
-        </div>
-      </section>
+
 
       <PageGuidebook guideKey="dispatch" />
     </div>

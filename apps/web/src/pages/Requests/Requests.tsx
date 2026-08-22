@@ -2,12 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { Search, ChevronRight, FileText, Plus, AlertCircle, ArrowDown } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import styles from './Requests.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 export const Requests: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { requests, resources } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
@@ -63,7 +65,7 @@ export const Requests: React.FC = () => {
             <span className={styles.statusDot} />
             <span className={styles.statusLabel}>LIVE DEMAND FEED</span>
           </div>
-          <button className={styles.addBtn} onClick={() => alert('Feature incoming: Manual SOS ingestion.')}>
+          <button className={styles.addBtn} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
             <Plus size={13} />
             <span>MANUAL REQUEST</span>
           </button>
@@ -284,7 +286,7 @@ export const Requests: React.FC = () => {
               {/* Matching Actions */}
               <div className={styles.ledgerActions}>
                 {selectedRequest.status === 'PENDING' && matchedResource ? (
-                  <button className={styles.primaryActionBtn} onClick={() => alert('Feature coming: Match Demand to Depot.')}>
+                  <button className={styles.primaryActionBtn} onClick={() => navigate(`/operations/matching?requestId=${selectedRequest.id}`)}>
                     MATCH RESOURCE
                   </button>
                 ) : selectedRequest.status === 'PENDING' ? (

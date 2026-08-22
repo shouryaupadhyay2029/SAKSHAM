@@ -13,14 +13,13 @@ import {
 } from 'lucide-react';
 import styles from './OperationsLayout.module.css';
 import { ConnectionIndicator } from '../components/ui/SystemStates';
-import { useOperationalState } from '../context/OperationalStateContext';
+import { useOperationalState, normalizeIncident } from '../context/OperationalStateContext';
 import type { DispatchMission, ReliefDelivery } from '../context/OperationalStateContext';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../components/LanguageSwitcher/LanguageSwitcher';
 import { websocketService } from '../services/websocketService';
 import type { RealtimeEvent } from '../services/websocketService';
-import type { Incident } from '../types/incident';
 import type { DemandRequest } from '../types/request';
 
 export const OperationsLayout: React.FC = () => {
@@ -37,6 +36,7 @@ export const OperationsLayout: React.FC = () => {
   const {
     isOffline,
     addToast,
+    incidents,
     setIncidents,
     setRequests,
     setResources,
@@ -45,6 +45,57 @@ export const OperationsLayout: React.FC = () => {
     setDeliveries,
   } = useOperationalState();
   const { authUser, logout } = useAuth();
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [readNotifIds, setReadNotifIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('saksham_read_notifications');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const markAsRead = (id: string) => {
+    const updated = [...new Set([...readNotifIds, id])];
+    setReadNotifIds(updated);
+    localStorage.setItem('saksham_read_notifications', JSON.stringify(updated));
+  };
+
+  // Sync notifications based on real incidents from DB
+  useEffect(() => {
+    const reportedIncidents = incidents.filter(
+      (inc) => inc.status === 'REPORTED' || inc.status === 'VERIFIED' || inc.status === 'PRIORITIZED'
+    );
+    const incidentNotifs = reportedIncidents.map((inc) => {
+      const notifId = `notif-${inc.id}`;
+      return {
+        id: notifId,
+        title: 'NEW INCIDENT REPORTED',
+        message: `${inc.id} · ${inc.type.replace(/_/g, ' ')}`,
+        location: inc.location,
+        severity: inc.severity,
+        time: 'Active',
+        incidentId: inc.id,
+        read: readNotifIds.includes(notifId) || readNotifIds.includes(inc.id)
+      };
+    });
+
+    const systemNotifs = [
+      {
+        id: 'system-notif-2',
+        title: 'DEMAND NOTICE',
+        message: 'South Depot trauma kit stocks running LOW.',
+        time: 'System Alert',
+        severity: 'HIGH',
+        read: readNotifIds.includes('system-notif-2')
+      }
+    ];
+
+    // Deduplicate notifications by ID
+    const combined = [...incidentNotifs, ...systemNotifs];
+    const unique = Array.from(new Map(combined.map(n => [n.id, n])).values());
+    setNotifications(unique);
+  }, [incidents, readNotifIds]);
 
   // ─── Single Global WebSocket Connection Lifecycle ─────────────────────────────
   const handleEventRef = useRef<(event: RealtimeEvent) => void>(() => {});
@@ -57,45 +108,13 @@ export const OperationsLayout: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['incidents'] });
         const incData = event.data;
         if (incData && incData.id) {
-          const newIncident: Incident = {
-            id: incData.incidentId || String(incData.id),
-            type: incData.type || 'FLOOD',
-            severity: incData.severity || 'HIGH',
-            location: incData.location || 'Unknown Location',
-            coordinates: {
-              lat: incData.latitude ?? 28.6139,
-              lng: incData.longitude ?? 77.2090,
-            },
-            time: incData.reportedAt || new Date().toISOString(),
-            status: incData.status || 'REPORTED',
-            assignedTeam: incData.assignedUnit || 'UNASSIGNED',
-            description: incData.description || incData.title || '',
-            reporterName: incData.reporterName || 'Field Reporter',
-            reporterContact: incData.reporterContact || '',
-            displacedCount: incData.displacedPeople || 0,
-            reportedAt: incData.reportedAt || new Date().toISOString(),
-            updatedAt: incData.updatedAt || new Date().toISOString(),
-            source: incData.source || 'OFFICER DISPATCH',
-            peopleAffected: incData.affectedPeople || 0,
-            requiredResources: [],
-            timeline: [
-              {
-                time: new Date().toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false,
-                  timeZone: 'Asia/Kolkata',
-                }),
-                title: 'INCIDENT CREATED',
-                description: incData.title || incData.description || 'Incident logged into response network.',
-              },
-            ],
-          };
+          const newIncident = normalizeIncident(incData);
           (newIncident as any).uuid = String(incData.id);
           setIncidents((prev) => {
             if (prev.some((item) => item.id === newIncident.id || (item as any).uuid === (newIncident as any).uuid)) return prev;
             return [newIncident, ...prev];
           });
+
         }
         addToast('WARNING', `CRITICAL INCIDENT: ${incData?.title || event.entityId || 'New Incident Reported'}`);
         break;
@@ -485,7 +504,9 @@ export const OperationsLayout: React.FC = () => {
               aria-label={t('navigation.systemAlerts')}
             >
               <Bell size={15} />
-              <span className={styles.notificationBadge}>3</span>
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span className={styles.notificationBadge}>{notifications.filter(n => !n.read).length}</span>
+              )}
             </button>
 
             <div className={`${styles.notificationsDropdown} ${notificationsOpen ? styles.notificationsDropdownOpen : ''}`}>
@@ -493,31 +514,34 @@ export const OperationsLayout: React.FC = () => {
                 <h4>{t('alertsDrawer.title')}</h4>
                 <button onClick={() => setNotificationsOpen(false)}>{t('common.close')}</button>
               </div>
-              <div className={styles.dropdownContent}>
-                <div className={`${styles.alertItem} ${styles.alertCritical}`}>
-                  <span className={styles.alertDot} />
-                  <div className={styles.alertBody}>
-                    <p><strong>{t('alertsDrawer.criticalIncident')}</strong></p>
-                    <p>Evacuation initiated at Yamuna Bank, East Delhi.</p>
-                    <span className={styles.alertTime}>5 mins ago</span>
+              <div className={styles.dropdownContent} style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                {notifications.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`${styles.alertItem} ${
+                      item.severity === 'CRITICAL' ? styles.alertCritical : item.severity === 'HIGH' ? styles.alertWarning : styles.alertInfo
+                    }`}
+                    style={{ cursor: item.incidentId ? 'pointer' : 'default', opacity: item.read ? 0.55 : 1 }}
+                    onClick={() => {
+                      markAsRead(item.id);
+                      if (item.incidentId) {
+                        navigate(`/operations/incidents/${item.incidentId}`);
+                        setNotificationsOpen(false);
+                      }
+                    }}
+                  >
+                    {!item.read && <span className={styles.alertDot} />}
+                    <div className={styles.alertBody}>
+                      <p><strong>{item.title} {item.read && '(Read)'}</strong></p>
+                      <p>{item.message}</p>
+                      {item.location && <p style={{ fontSize: '10px', opacity: 0.7 }}>📍 {item.location}</p>}
+                      <span className={styles.alertTime}>{item.time}</span>
+                    </div>
                   </div>
-                </div>
-                <div className={`${styles.alertItem} ${styles.alertWarning}`}>
-                  <span className={styles.alertDot} />
-                  <div className={styles.alertBody}>
-                    <p><strong>{t('alertsDrawer.demandNotice')}</strong></p>
-                    <p>South Depot trauma kit stocks running LOW.</p>
-                    <span className={styles.alertTime}>12 mins ago</span>
-                  </div>
-                </div>
-                <div className={`${styles.alertItem} ${styles.alertInfo}`}>
-                  <span className={styles.alertDot} />
-                  <div className={styles.alertBody}>
-                    <p><strong>{t('alertsDrawer.dispatchNotice')}</strong></p>
-                    <p>Rescue Boat VEH-BT-401 dispatched to East Delhi.</p>
-                    <span className={styles.alertTime}>18 mins ago</span>
-                  </div>
-                </div>
+                ))}
+                {notifications.length === 0 && (
+                  <div style={{ padding: '16px', textAlign: 'center', opacity: 0.6 }}>No new notifications</div>
+                )}
               </div>
             </div>
           </div>

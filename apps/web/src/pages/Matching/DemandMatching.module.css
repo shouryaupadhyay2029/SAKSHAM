@@ -1619,7 +1619,9 @@
     gap: 8px;
   }
   .matchQualityTag, .matchRowMeta, .matchRowDist { display: none; }
-  .reviewPanel { width: 100%; }
+  .reviewPanel {
+    width: 100vw;
+  }
   .compareHead, .compareRow { grid-template-columns: 2fr 50px 70px; }
   .compareHead span:nth-child(n+4),
   .compareRow span:nth-child(n+4) { display: none; }

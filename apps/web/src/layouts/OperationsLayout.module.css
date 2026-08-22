@@ -468,6 +468,20 @@
   }
 }
 
+@media (max-width: 480px) {
+  .topbar {
+    padding: 0 12px;
+  }
+  .logoText {
+    font-size: 13px;
+  }
+  .notificationsDropdown {
+    width: calc(100vw - 24px);
+    right: -40px;
+    max-width: 320px;
+  }
+}
+
 /* ── Profile trigger button ── */
 .profileTrigger {
   display: flex;

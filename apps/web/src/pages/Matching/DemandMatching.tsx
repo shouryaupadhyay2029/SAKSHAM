@@ -4,11 +4,12 @@ import React, {
 import { Link, useSearchParams } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Search, X, Check, ChevronDown, ChevronUp, ArrowRight, Info } from 'lucide-react';
+import { Search, X, Check, ChevronDown, ChevronUp, ArrowRight, Info, AlertTriangle } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { useTranslation } from 'react-i18next';
 import { EmptyState, NoResultsState } from '../../components/ui/SystemStates';
 import { MapView } from '../../components/map/MapView';
+import apiClient from '../../services/apiClient';
 import {
   matchResources,
   MATCH_WEIGHTS,
@@ -511,7 +512,7 @@ export const DemandMatching: React.FC = () => {
   }, [filteredDemands.length]);
 
   /* ── Run matching engine ── */
-  const runMatching = useCallback((demand: DemandRequest) => {
+  const runMatching = useCallback(async (demand: DemandRequest) => {
     setIsAnalyzing(true);
     setShowResults(false);
     setAnimateScore(false);
@@ -522,35 +523,57 @@ export const DemandMatching: React.FC = () => {
     setAllocationId(null);
     setShowAlternatives(false);
 
-    // Short analysis pulse (600ms max)
-    setTimeout(() => {
-      const output = matchResources(demand, resources, { otherRequests: requests });
-      setMatchOutput(output);
-      if (output.bestMatch) {
-        setReviewTarget(output.bestMatch);
-        setExpandedId(output.bestMatch.resourceId);
+    let backendPlan: any = null;
+    try {
+      const res = await apiClient.getDispatchPlan(demand.id);
+      if (res && res.data) {
+        backendPlan = res.data;
+        console.log('[OPTIMIZATION DISPATCH PLAN] Backend recommendation:', backendPlan);
       }
-      setIsAnalyzing(false);
+    } catch (err) {
+      console.warn('[OPTIMIZATION DISPATCH PLAN ERROR] Failed to fetch backend dispatch plan:', err);
+    }
 
-      // Animate workspace in
-      setTimeout(() => {
-        setShowResults(true);
-        setTimeout(() => setAnimateScore(true), 150);
+    const output = matchResources(demand, resources, { otherRequests: requests });
+    
+    // Merge backend recommendation info into output bestMatch if available
+    if (backendPlan && output.bestMatch) {
+      const dbRes = resources.find(r => r.id === backendPlan.resourceId);
+      if (dbRes) {
+        const bestMatch = output.bestMatch as any;
+        bestMatch.resourceId = dbRes.id;
+        bestMatch.vehicleId = backendPlan.vehicleId;
+        bestMatch.distanceKm = Math.round(backendPlan.distance_meters / 100) / 10;
+        bestMatch.durationMinutes = Math.round(backendPlan.duration_seconds / 60);
+        bestMatch.geometry = backendPlan.geometry;
+      }
+    }
 
-        // Stagger rows
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (!prefersReducedMotion && workspaceRef.current) {
-          gsap.fromTo(workspaceRef.current,
-            { opacity: 0, y: 20 },
-            { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }
-          );
-          gsap.fromTo(`.${styles.matchRow}`,
-            { opacity: 0, y: 10 },
-            { opacity: 1, y: 0, duration: 0.35, stagger: 0.09, delay: 0.1, ease: 'power2.out' }
-          );
-        }
-      }, 40);
-    }, 580);
+    setMatchOutput(output);
+    if (output.bestMatch) {
+      setReviewTarget(output.bestMatch);
+      setExpandedId(output.bestMatch.resourceId);
+    }
+    setIsAnalyzing(false);
+
+    // Animate workspace in
+    setTimeout(() => {
+      setShowResults(true);
+      setTimeout(() => setAnimateScore(true), 150);
+
+      // Stagger rows
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!prefersReducedMotion && workspaceRef.current) {
+        gsap.fromTo(workspaceRef.current,
+          { opacity: 0, y: 20 },
+          { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }
+        );
+        gsap.fromTo(`.${styles.matchRow}`,
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.35, stagger: 0.09, delay: 0.1, ease: 'power2.out' }
+        );
+      }
+    }, 40);
   }, [resources, requests]);
 
   const handleSelectDemand = (demand: DemandRequest) => {
@@ -706,8 +729,8 @@ export const DemandMatching: React.FC = () => {
               </div>
               <div className={styles.dcGrid}>
                 <div className={styles.dcStat}>
-                  <span className={styles.dcStatVal}>{selectedDemand.zoneName.split(',')[0]}</span>
-                  <span className={styles.dcStatLabel}>{selectedDemand.zoneName.includes(',') ? selectedDemand.zoneName.split(',').slice(1).join(',').trim() : 'Demand location'}</span>
+                  <span className={styles.dcStatVal}>{selectedDemand.detailedAddress || selectedDemand.zoneName}</span>
+                  <span className={styles.dcStatLabel}>{selectedDemand.detailedAddress ? `Secondary Zone: ${selectedDemand.zoneName}` : 'Demand location'}</span>
                 </div>
                 <div className={styles.dcStat}>
                   <span className={styles.dcStatVal}>{selectedDemand.affectedCount.toLocaleString()}</span>
@@ -740,6 +763,15 @@ export const DemandMatching: React.FC = () => {
                 <span className={styles.matchingEyebrow}>MATCHING ANALYSIS</span>
                 <span className={styles.matchingCount}>{matchOutput.results.length} candidate{matchOutput.results.length !== 1 ? 's' : ''} evaluated</span>
               </div>
+
+              {resources.length === 0 && (
+                <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid #EF4444', padding: '16px', borderRadius: '4px', color: '#EF4444', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+                  <div>
+                    <strong>Inventory Empty:</strong> There are no depots or resource stocks registered in the SAKSHAM database. Seed or log resources to calculate compatibility.
+                  </div>
+                </div>
+              )}
 
               {matchOutput.results.length === 0 ? (
                 <div className={styles.noMatch}>

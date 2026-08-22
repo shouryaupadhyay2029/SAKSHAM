@@ -129,6 +129,13 @@ export const en = {
     sessionExpired: "Session expired. Please log in again.",
     unauthorized: "Access restricted. Regional authority required.",
     backToHome: "Back to Home",
+    emailPlaceholder: "officer@saksham.demo",
+    passwordPlaceholder: "••••••••••••",
+    forgotPassword: "Forgot password?",
+    signIn: "SIGN IN TO COMMAND",
+    returnToApp: "Return to SAKSHAM",
+    secureAccess: "SECURE ACCESS",
+    secureAccessDesc: "Authenticated sessions are encrypted and monitored.",
   },
   dashboard: {
     title: "National Operations Command Center",
@@ -383,6 +390,7 @@ export const en = {
     feature3Title: "Verification & Audit",
     feature3Desc: "Tamper-proof delivery receipt verification with OTP and QR code confirmation by field officers.",
     footerText: "SAKSHAM Platform - National Disaster Management Systems. All rights reserved.",
+    seekRelief: "Seek Public Relief Portal",
   },
   footer: {
     brandName: "SAKSHAM",

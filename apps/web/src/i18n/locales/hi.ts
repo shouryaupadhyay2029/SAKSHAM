@@ -129,6 +129,13 @@ export const hi = {
     sessionExpired: "सत्र समाप्त हो गया। कृपया पुन: लॉगिन करें।",
     unauthorized: "पहुंच सीमित है। क्षेत्रीय प्राधिकरण अधिकार आवश्यक।",
     backToHome: "मुख्य पृष्ठ पर वापस जाएं",
+    emailPlaceholder: "officer@saksham.demo",
+    passwordPlaceholder: "••••••••••••",
+    forgotPassword: "पासवर्ड भूल गए?",
+    signIn: "कमांड लॉगिन करें",
+    returnToApp: "सक्षम पर वापस जाएं",
+    secureAccess: "सुरक्षित पहुंच",
+    secureAccessDesc: "प्रमाणित सत्र एन्क्रिप्टेड और मॉनिटर किए जाते हैं।",
   },
   dashboard: {
     title: "राष्ट्रीय परिचालन कमांड सेंटर",
@@ -383,6 +390,7 @@ export const hi = {
     feature3Title: "सत्यापन एवं ऑडिट",
     feature3Desc: "ओटीपी और क्यूआर कोड पुष्टि द्वारा फील्ड अधिकारियों द्वारा निष्पक्ष वितरण रसीद सत्यापन।",
     footerText: "सक्षम प्लेटफॉर्म - राष्ट्रीय आपदा प्रबंधन प्रणाली। सर्वाधिकार सुरक्षित।",
+    seekRelief: "सार्वजनिक राहत पोर्टल",
   },
   footer: {
     brandName: "सक्षम",

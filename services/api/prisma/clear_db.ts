@@ -14,8 +14,11 @@ async function main() {
   await prisma.incidentTimeline.deleteMany();
   await prisma.demandRequest.deleteMany();
   await prisma.incident.deleteMany();
+  await prisma.resource.deleteMany();
+  await prisma.vehicle.deleteMany();
+  await prisma.shelter.deleteMany();
 
-  console.log('Database incidents, demands, and linked tables cleared successfully.');
+  console.log('Database incidents, demands, resources, vehicles, shelters, and linked tables cleared successfully.');
 }
 
 main()

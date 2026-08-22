@@ -124,6 +124,13 @@ export const apiClient = {
     return fetchJson<any>(`/resources/${id}`);
   },
 
+  async createResource(data: any) {
+    return fetchJson<any>('/resources', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   // ── Vehicles ──
   async getVehicles(params?: { status?: string; type?: string; limit?: number; offset?: number }) {
     const query = new URLSearchParams();
@@ -140,6 +147,13 @@ export const apiClient = {
 
   async getVehicleById(id: string) {
     return fetchJson<any>(`/vehicles/${id}`);
+  },
+
+  async createVehicle(data: any) {
+    return fetchJson<any>('/vehicles', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   // ── Shelters ──
@@ -201,17 +215,58 @@ export const apiClient = {
     });
   },
 
-  async approveAllocation(id: string) {
-    return fetchJson<any>(`/allocations/${id}/approve`, {
-      method: 'POST',
+  async updateAllocationStatus(id: string, status: string, notes?: string) {
+    return fetchJson<any>(`/allocations/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, notes }),
     });
   },
 
-  async rejectAllocation(id: string, reason: string) {
-    return fetchJson<any>(`/allocations/${id}/reject`, {
+  // ── Optimization & Dispatches ──
+  async getDispatchPlan(demandId: string) {
+    return fetchJson<any>('/optimization/dispatch-plan', {
       method: 'POST',
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify({ demandId }),
     });
   },
+
+  async getDispatches(params?: { status?: string; priority?: string; vehicleId?: string; search?: string }) {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, val]) => {
+        if (val !== undefined && val !== null && val !== '') {
+          query.set(key, String(val));
+        }
+      });
+    }
+    const queryString = query.toString();
+    return fetchJson<any[]>(`/dispatch${queryString ? `?${queryString}` : ''}`);
+  },
+
+  async createDispatch(data: { allocationId: string; vehicleId: string; assignedOfficerId: string; plannedDeparture: string; eta: string; notes?: string }) {
+    return fetchJson<any>('/dispatch', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateDispatchStatus(id: string, nextStatus: string, notes?: string, officerId?: string) {
+    return fetchJson<any>(`/dispatch/${id}/status?nextStatus=${nextStatus}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ notes, officerId }),
+    });
+  },
+
+  // ── Deliveries ──
+  async getDeliveries() {
+    return fetchJson<any[]>('/delivery');
+  },
+
+  async updateDeliveryStatus(id: string, status: string, notes?: string, deliveredQty?: number, verifiedBy?: string) {
+    return fetchJson<any>(`/delivery/${id}/status?status=${status}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ notes, deliveredQty, verifiedBy }),
+    });
+  }
 };
 export default apiClient;

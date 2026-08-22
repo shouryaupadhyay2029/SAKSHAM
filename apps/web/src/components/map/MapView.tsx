@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Incident } from '../../types/incident';
 import type { ResourceItem } from '../../types/resource';
 import type { Vehicle } from '../../types/vehicle';
 import type { Shelter } from '../../types/shelter';
+import { useOperationalState } from '../../context/OperationalStateContext';
 import styles from './MapView.module.css';
 
 interface MapViewProps {
@@ -42,32 +44,73 @@ export const MapView: React.FC<MapViewProps> = ({
   onSelectVehicle,
   layerFilters
 }) => {
+  const navigate = useNavigate();
+  const { requests } = useOperationalState();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const activePopupRef = useRef<maplibregl.Popup | null>(null);
   // Map from incident ID → marker DOM element, for imperative class management
   const incidentMarkerEls = useRef<Map<string, HTMLElement>>(new Map());
+  const [zoomLevel, setZoomLevel] = React.useState<number>(4.8);
+  const [mapMode, setMapMode] = React.useState<'STREETS' | 'TACTICAL'>('STREETS');
+  const [activeSelection, setActiveSelection] = React.useState<{
+    type: 'INCIDENT' | 'VEHICLE' | 'SHELTER' | 'RESOURCE';
+    data: any;
+  } | null>(null);
+
+  useEffect(() => {
+    if (selectedIncident) {
+      setActiveSelection({ type: 'INCIDENT', data: selectedIncident });
+    }
+  }, [selectedIncident]);
+
+  useEffect(() => {
+    if (selectedVehicle) {
+      setActiveSelection({ type: 'VEHICLE', data: selectedVehicle });
+    }
+  }, [selectedVehicle]);
 
   // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
+    const mapStyle = apiKey 
+      ? `https://api.maptiler.com/maps/streets-v4/style.json?key=${apiKey}` 
+      : 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-      center: [77.22, 28.61],
-      zoom: 11,
-      minZoom: 9,
+      style: mapStyle,
+      center: [78.9, 22.5],
+      zoom: 4.8,
+      minZoom: 4,
       maxZoom: 18
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
     mapRef.current = map;
 
+    map.on('zoom', () => {
+      setZoomLevel(map.getZoom());
+    });
+
     return () => { map.remove(); };
   }, []);
 
-  // Update Markers when data or filters change
+  // Update map style when mapMode toggles
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
+    const styleUrl = mapMode === 'STREETS'
+      ? (apiKey ? `https://api.maptiler.com/maps/streets-v4/style.json?key=${apiKey}` : 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
+      : (apiKey ? `https://api.maptiler.com/maps/darkmatter/style.json?key=${apiKey}` : 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json');
+    map.setStyle(styleUrl);
+  }, [mapMode]);
+
+  // Update Markers when data, filters or zoom change
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -76,27 +119,110 @@ export const MapView: React.FC<MapViewProps> = ({
     markersRef.current = [];
     incidentMarkerEls.current.clear();
 
+    const isClustered = zoomLevel < 7;
+
+    if (isClustered) {
+      const METRO_AREAS = [
+        { id: 'delhi', name: 'Delhi NCR', lat: 28.6139, lng: 77.2090 },
+        { id: 'mumbai', name: 'Mumbai Region', lat: 19.0760, lng: 72.8777 },
+        { id: 'bengaluru', name: 'Bengaluru Region', lat: 12.9716, lng: 77.5946 },
+        { id: 'kolkata', name: 'Kolkata Region', lat: 22.5726, lng: 88.3639 },
+        { id: 'jaipur', name: 'Jaipur Region', lat: 26.9124, lng: 75.7873 },
+        { id: 'pune', name: 'Pune Region', lat: 18.5204, lng: 73.8567 },
+        { id: 'mysuru', name: 'Mysuru Region', lat: 12.2958, lng: 76.6394 }
+      ];
+
+      const clusters = METRO_AREAS.map(area => {
+        let count = 0;
+        if (layerFilters.incidents) {
+          count += incidents.filter(item => 
+            Math.abs(item.coordinates.lat - area.lat) < 1.5 && Math.abs(item.coordinates.lng - area.lng) < 1.5
+          ).length;
+        }
+        if (layerFilters.shelters) {
+          count += shelters.filter(item => 
+            Math.abs(item.coordinates.lat - area.lat) < 1.5 && Math.abs(item.coordinates.lng - area.lng) < 1.5
+          ).length;
+        }
+        if (layerFilters.vehicles) {
+          count += vehicles.filter(item => 
+            Math.abs(item.location.lat - area.lat) < 1.5 && Math.abs(item.location.lng - area.lng) < 1.5
+          ).length;
+        }
+        if (layerFilters.resources) {
+          count += resources.filter(item => 
+            item.coordinates && Math.abs(item.coordinates.lat - area.lat) < 1.5 && Math.abs(item.coordinates.lng - area.lng) < 1.5
+          ).length;
+        }
+        return { ...area, count };
+      }).filter(cluster => cluster.count > 0);
+
+      clusters.forEach(cluster => {
+        const el = document.createElement('div');
+        el.className = styles.marker;
+        el.style.width = '42px';
+        el.style.height = '42px';
+        el.style.borderRadius = '50%';
+        el.style.background = 'rgba(232, 111, 22, 0.95)';
+        el.style.border = '2.5px solid #ffffff';
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.justifyContent = 'center';
+        el.style.color = '#ffffff';
+        el.style.fontWeight = 'bold';
+        el.style.fontSize = '13px';
+        el.style.cursor = 'pointer';
+        el.style.boxShadow = '0 0 12px rgba(0,0,0,0.6)';
+        el.innerText = String(cluster.count);
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          map.flyTo({
+            center: [cluster.lng, cluster.lat],
+            zoom: 9.5,
+            essential: true
+          });
+        });
+
+        const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
+          .setHTML(`
+            <div class="${styles.mapPopup}">
+              <h4 class="${styles.popupTitle}">${cluster.name}</h4>
+              <p class="${styles.popupCapText}">${cluster.count} Active Assets</p>
+            </div>
+          `);
+
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([cluster.lng, cluster.lat])
+          .setPopup(popup)
+          .addTo(map);
+
+        markersRef.current.push(marker);
+      });
+
+      return;
+    }
+
     // 1. Draw Incidents
     if (layerFilters.incidents) {
       incidents.forEach(incident => {
         const el = document.createElement('div');
-        el.className = `${styles.marker} ${
+        el.className = styles.markerContainer;
+
+        const visual = document.createElement('div');
+        visual.className = `${styles.markerVisual} ${
           incident.severity === 'CRITICAL'
             ? styles.markerCritical
             : incident.severity === 'HIGH'
               ? styles.markerHigh
               : styles.markerMedium
         }`;
-        el.setAttribute('data-incident-id', incident.id);
+        visual.setAttribute('data-incident-id', incident.id);
+        el.appendChild(visual);
 
         const dot = document.createElement('div');
         dot.className = styles.markerDot;
-        el.appendChild(dot);
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onSelectIncident?.(incident);
-        });
+        visual.appendChild(dot);
 
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
@@ -108,13 +234,21 @@ export const MapView: React.FC<MapViewProps> = ({
             </div>
           `);
 
+        visual.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onSelectIncident?.(incident);
+          setActiveSelection({ type: 'INCIDENT', data: incident });
+          if (activePopupRef.current) activePopupRef.current.remove();
+          popup.setLngLat([incident.coordinates.lng, incident.coordinates.lat]).addTo(map);
+          activePopupRef.current = popup;
+        });
+
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat([incident.coordinates.lng, incident.coordinates.lat])
-          .setPopup(popup)
           .addTo(map);
 
         markersRef.current.push(marker);
-        incidentMarkerEls.current.set(incident.id, el);
+        incidentMarkerEls.current.set(incident.id, visual);
       });
     }
 
@@ -122,18 +256,17 @@ export const MapView: React.FC<MapViewProps> = ({
     if (layerFilters.shelters) {
       shelters.forEach(shelter => {
         const el = document.createElement('div');
-        el.className = `${styles.marker} ${styles.markerShelter} ${
+        el.className = styles.markerContainer;
+
+        const visual = document.createElement('div');
+        visual.className = `${styles.markerVisual} ${styles.markerShelter} ${
           shelter.status === 'FULL' ? styles.markerShelterFull : ''
         }`;
+        el.appendChild(visual);
 
         const label = document.createElement('span');
         label.innerText = 'S';
-        el.appendChild(label);
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onSelectShelter?.(shelter);
-        });
+        visual.appendChild(label);
 
         const pct = Math.round((shelter.capacityOccupied / shelter.capacityTotal) * 100);
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
@@ -149,9 +282,17 @@ export const MapView: React.FC<MapViewProps> = ({
             </div>
           `);
 
+        visual.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onSelectShelter?.(shelter);
+          setActiveSelection({ type: 'SHELTER', data: shelter });
+          if (activePopupRef.current) activePopupRef.current.remove();
+          popup.setLngLat([shelter.coordinates.lng, shelter.coordinates.lat]).addTo(map);
+          activePopupRef.current = popup;
+        });
+
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat([shelter.coordinates.lng, shelter.coordinates.lat])
-          .setPopup(popup)
           .addTo(map);
 
         markersRef.current.push(marker);
@@ -162,18 +303,17 @@ export const MapView: React.FC<MapViewProps> = ({
     if (layerFilters.vehicles) {
       vehicles.forEach(vehicle => {
         const el = document.createElement('div');
-        el.className = `${styles.marker} ${styles.markerVehicle} ${
+        el.className = styles.markerContainer;
+
+        const visual = document.createElement('div');
+        visual.className = `${styles.markerVisual} ${styles.markerVehicle} ${
           styles['markerVehicle' + vehicle.status] || ''
         }`;
+        el.appendChild(visual);
 
         const arrow = document.createElement('div');
         arrow.className = styles.vehicleInner;
-        el.appendChild(arrow);
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onSelectVehicle?.(vehicle);
-        });
+        visual.appendChild(arrow);
 
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
@@ -185,9 +325,17 @@ export const MapView: React.FC<MapViewProps> = ({
             </div>
           `);
 
+        visual.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onSelectVehicle?.(vehicle);
+          setActiveSelection({ type: 'VEHICLE', data: vehicle });
+          if (activePopupRef.current) activePopupRef.current.remove();
+          popup.setLngLat([vehicle.location.lng, vehicle.location.lat]).addTo(map);
+          activePopupRef.current = popup;
+        });
+
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat([vehicle.location.lng, vehicle.location.lat])
-          .setPopup(popup)
           .addTo(map);
 
         markersRef.current.push(marker);
@@ -199,13 +347,17 @@ export const MapView: React.FC<MapViewProps> = ({
       resources.forEach(res => {
         if (!res.coordinates) return;
         const el = document.createElement('div');
-        el.className = `${styles.marker} ${styles.markerResource} ${
+        el.className = styles.markerContainer;
+
+        const visual = document.createElement('div');
+        visual.className = `${styles.markerVisual} ${styles.markerResource} ${
           styles['markerResource' + res.status] || ''
         }`;
+        el.appendChild(visual);
 
         const dot = document.createElement('div');
         dot.className = styles.markerDot;
-        el.appendChild(dot);
+        visual.appendChild(dot);
 
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
@@ -217,16 +369,23 @@ export const MapView: React.FC<MapViewProps> = ({
             </div>
           `);
 
+        visual.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActiveSelection({ type: 'RESOURCE', data: res });
+          if (activePopupRef.current) activePopupRef.current.remove();
+          popup.setLngLat([res.coordinates.lng, res.coordinates.lat]).addTo(map);
+          activePopupRef.current = popup;
+        });
+
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat([res.coordinates.lng, res.coordinates.lat])
-          .setPopup(popup)
           .addTo(map);
 
         markersRef.current.push(marker);
       });
     }
 
-  }, [incidents, resources, vehicles, shelters, layerFilters, onSelectIncident, onSelectShelter, onSelectVehicle]);
+  }, [incidents, resources, vehicles, shelters, layerFilters, onSelectIncident, onSelectShelter, onSelectVehicle, zoomLevel]);
 
   // ── Hover effect: highlight hovered incident marker ─────────────────────────
   useEffect(() => {
@@ -288,7 +447,7 @@ export const MapView: React.FC<MapViewProps> = ({
     const map = mapRef.current;
     if (!map) return;
 
-    const drawRoutes = () => {
+    const drawRoutes = async () => {
       vehicles.forEach(vehicle => {
         const sourceId = `route-source-${vehicle.id}`;
         const layerId = `route-layer-${vehicle.id}`;
@@ -298,44 +457,72 @@ export const MapView: React.FC<MapViewProps> = ({
 
       if (!layerFilters.routes) return;
 
-      vehicles.forEach(vehicle => {
-        if (!vehicle.destination || (vehicle.status !== 'EN_ROUTE' && vehicle.status !== 'DISPATCHED')) return;
+      for (const vehicle of vehicles) {
+        if (!vehicle.destination || (vehicle.status !== 'EN_ROUTE' && vehicle.status !== 'DISPATCHED')) continue;
 
         const sourceId = `route-source-${vehicle.id}`;
         const layerId = `route-layer-${vehicle.id}`;
 
-        map.addSource(sourceId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: [
-                [vehicle.location.lng, vehicle.location.lat],
-                [
-                  (vehicle.location.lng + vehicle.destination.lng) / 2 + 0.015,
-                  (vehicle.location.lat + vehicle.destination.lat) / 2 - 0.005,
-                ],
-                [vehicle.destination.lng, vehicle.destination.lat]
-              ]
+        let coordinates: [number, number][] = [
+          [vehicle.location.lng, vehicle.location.lat],
+          [
+            (vehicle.location.lng + vehicle.destination.lng) / 2 + 0.015,
+            (vehicle.location.lat + vehicle.destination.lat) / 2 - 0.005,
+          ],
+          [vehicle.destination.lng, vehicle.destination.lat]
+        ];
+
+        try {
+          const apiBaseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+          const res = await fetch(`${apiBaseUrl}/routing/route`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              origin: { lat: vehicle.location.lat, lng: vehicle.location.lng },
+              destination: { lat: vehicle.destination.lat, lng: vehicle.destination.lng }
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.geometry?.coordinates) {
+              coordinates = data.geometry.coordinates;
             }
           }
-        });
+        } catch (err) {
+          console.warn('[ROUTING FALLBACK] Failed to load OSRM geometry, using straight line:', err);
+        }
 
-        map.addLayer({
-          id: layerId,
-          type: 'line',
-          source: sourceId,
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': '#E86F16',
-            'line-width': 2.5,
-            'line-dasharray': [4, 3],
-            'line-opacity': 0.65
-          }
-        });
-      });
+        // Verify map is still loaded and active
+        const currentMap = mapRef.current;
+        if (!currentMap) return;
+
+        if (!currentMap.getSource(sourceId)) {
+          currentMap.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates
+              }
+            }
+          });
+
+          currentMap.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+              'line-color': '#E86F16',
+              'line-width': 2.5,
+              'line-dasharray': [4, 3],
+              'line-opacity': 0.65
+            }
+          });
+        }
+      }
     };
 
     if (map.isStyleLoaded()) {
@@ -358,10 +545,104 @@ export const MapView: React.FC<MapViewProps> = ({
     };
   }, [vehicles, layerFilters.routes]);
 
+  const renderDetailPanel = () => {
+    if (!activeSelection) return null;
+
+    const { type, data } = activeSelection;
+
+    return (
+      <div className={styles.detailPanel}>
+        <div className={styles.panelHeader}>
+          <span className={`${styles.panelBadge} ${styles['badge' + type]}`}>{type}</span>
+          <button className={styles.panelClose} onClick={() => setActiveSelection(null)}>×</button>
+        </div>
+        <div className={styles.panelContent}>
+          {type === 'INCIDENT' && (
+            <>
+              <h4 className={styles.panelTitle}>{data.type.replace(/_/g, ' ')}</h4>
+              <p className={styles.panelRow}><strong>ID:</strong> {data.id}</p>
+              <p className={styles.panelRow}><strong>Severity:</strong> {data.severity}</p>
+              <p className={styles.panelRow}><strong>Location:</strong> {data.location}</p>
+              <p className={styles.panelRow}><strong>Status:</strong> {data.status}</p>
+              {data.affectedPeople > 0 && <p className={styles.panelRow}><strong>People Affected:</strong> {data.affectedPeople}</p>}
+              <button 
+                className={styles.panelActionButton}
+                onClick={() => {
+                  const demand = requests.find(r => r.incidentId === data.id);
+                  if (demand) {
+                    navigate(`/matching?demandId=${demand.id}`);
+                  } else {
+                    navigate('/matching');
+                  }
+                }}
+              >
+                Find Resources & Match
+              </button>
+            </>
+          )}
+
+          {type === 'VEHICLE' && (
+            <>
+              <h4 className={styles.panelTitle}>{data.name}</h4>
+              <p className={styles.panelRow}><strong>ID:</strong> {data.id}</p>
+              <p className={styles.panelRow}><strong>Type:</strong> {data.type}</p>
+              <p className={styles.panelRow}><strong>Status:</strong> {data.status}</p>
+              <p className={styles.panelRow}><strong>Capacity:</strong> {data.capacity}</p>
+              {data.cargo && <p className={styles.panelRow}><strong>Cargo:</strong> {data.cargo}</p>}
+              <button 
+                className={styles.panelActionButton}
+                onClick={() => {
+                  navigate(`/dispatch?vehicleId=${data.id}`);
+                }}
+              >
+                Go to Dispatch Console
+              </button>
+            </>
+          )}
+
+          {type === 'SHELTER' && (
+            <>
+              <h4 className={styles.panelTitle}>{data.name}</h4>
+              <p className={styles.panelRow}><strong>ID:</strong> {data.id}</p>
+              <p className={styles.panelRow}><strong>Location:</strong> {data.locationName}</p>
+              <p className={styles.panelRow}><strong>Status:</strong> {data.status}</p>
+              <p className={styles.panelRow}><strong>Capacity:</strong> {data.capacityOccupied} / {data.capacityTotal} occupied</p>
+            </>
+          )}
+
+          {type === 'RESOURCE' && (
+            <>
+              <h4 className={styles.panelTitle}>{data.name}</h4>
+              <p className={styles.panelRow}><strong>ID:</strong> {data.id}</p>
+              <p className={styles.panelRow}><strong>Type:</strong> {data.category}</p>
+              <p className={styles.panelRow}><strong>Location:</strong> {data.locationName}</p>
+              <p className={styles.panelRow}><strong>Available Qty:</strong> {data.quantity} {data.unit}</p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.mapWrapper}>
       <div ref={mapContainerRef} className={styles.mapContainer} />
       <div className={styles.overlayOverlay} />
+      <div className={styles.modeSelector}>
+        <button 
+          className={`${styles.modeButton} ${mapMode === 'STREETS' ? styles.modeButtonActive : ''}`}
+          onClick={() => setMapMode('STREETS')}
+        >
+          Streets
+        </button>
+        <button 
+          className={`${styles.modeButton} ${mapMode === 'TACTICAL' ? styles.modeButtonActive : ''}`}
+          onClick={() => setMapMode('TACTICAL')}
+        >
+          Tactical
+        </button>
+      </div>
+      {renderDetailPanel()}
     </div>
   );
 };

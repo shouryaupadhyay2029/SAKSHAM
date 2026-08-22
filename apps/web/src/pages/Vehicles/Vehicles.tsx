@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useOperationalState } from '../../context/OperationalStateContext';
+import { useOperationalState, normalizeVehicle } from '../../context/OperationalStateContext';
 import styles from './Vehicles.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
+import { Plus, Send, X as CloseIcon, Truck as TruckIcon } from 'lucide-react';
+import { AddressPicker } from '../../components/ui/AddressPicker';
+import apiClient from '../../services/apiClient';
 
 const VEHICLE_TYPE_LABELS: Record<string, string> = {
   TRUCK: 'TRUCK',
@@ -24,12 +27,23 @@ const STATUS_DISPLAY: Record<string, string> = {
 
 export const Vehicles: React.FC = () => {
   const { t } = useTranslation();
-  const { vehicles } = useOperationalState();
+  const { vehicles, setVehicles } = useOperationalState();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  // --- Add Vehicle Modal State ---
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [vehicleName, setVehicleName] = useState('');
+  const [type, setType] = useState('TRUCK');
+  const [capacity, setCapacity] = useState('5000');
+  const [capacityUnit, setCapacityUnit] = useState('L');
+  const [operator, setOperator] = useState('');
+  const [contactRadio, setContactRadio] = useState('');
+  const [locationData, setLocationData] = useState<{ address: string; lat: number; lng: number } | null>(null);
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
@@ -80,6 +94,10 @@ export const Vehicles: React.FC = () => {
             <span className={styles.liveDot} />
             <span className={styles.liveLabel}>FLEET NETWORK LIVE</span>
           </div>
+          <button className={styles.primaryActionBtn} style={{ width: 'auto', display: 'flex', gap: '6px', alignItems: 'center', boxShadow: 'none' }} onClick={() => setIsAddModalOpen(true)}>
+            <Plus size={13} />
+            <span>Register Vehicle</span>
+          </button>
           <div className={styles.unitCount}>
             <span className={styles.unitNum}>{String(vehicles.length).padStart(2, '0')}</span>
             <span className={styles.unitLabel}>UNITS TRACKED</span>
@@ -359,6 +377,155 @@ export const Vehicles: React.FC = () => {
       </div>
 
       <PageGuidebook guideKey="vehicles" />
+
+      {/* --- + REGISTER VEHICLE MODAL --- */}
+      {isAddModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Register Response Vehicle</h3>
+              <button className={styles.closeLedgerBtn} onClick={() => setIsAddModalOpen(false)}>
+                <CloseIcon size={18} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!vehicleName || !type || !capacity || !capacityUnit || !operator || !contactRadio) {
+                  alert('Please fill in all required fields.');
+                  return;
+                }
+                if (!locationData || !locationConfirmed) {
+                  alert('Please select and confirm the vehicle initial location coordinates on the map.');
+                  return;
+                }
+                try {
+                  const payload = {
+                    vehicleId: `VEH-${Date.now().toString().slice(-4)}`,
+                    name: vehicleName,
+                    type: type,
+                    capacity: parseFloat(capacity) || 0,
+                    capacityUnit: capacityUnit,
+                    currentLatitude: locationData.lat,
+                    currentLongitude: locationData.lng,
+                    speed: 0.0,
+                    operatorName: operator,
+                    contactRadio: contactRadio,
+                    status: 'AVAILABLE',
+                  };
+                  const res = await apiClient.createVehicle(payload);
+                  if (res && res.data) {
+                    setVehicles(prev => [normalizeVehicle(res.data), ...prev]);
+                    setIsAddModalOpen(false);
+                    setVehicleName('');
+                    setCapacity('5000');
+                    setCapacityUnit('L');
+                    setOperator('');
+                    setContactRadio('');
+                    setLocationData(null);
+                    setLocationConfirmed(false);
+                  }
+                } catch (err: any) {
+                  alert(`Failed to register vehicle: ${err.message}`);
+                }
+              }}
+              className={styles.modalForm}
+            >
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label>Vehicle Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Relief Truck Alpha"
+                    value={vehicleName}
+                    onChange={(e) => setVehicleName(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Vehicle Type *</label>
+                  <select value={type} onChange={(e) => setType(e.target.value)}>
+                    <option value="TRUCK">Truck</option>
+                    <option value="AMBULANCE">Ambulance</option>
+                    <option value="HELICOPTER">Helicopter</option>
+                    <option value="RESCUE_BOAT">Rescue Boat</option>
+                    <option value="DRONE">Drone</option>
+                  </select>
+                </div>
+
+                <div className={styles.formGroup} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div>
+                    <label>Capacity *</label>
+                    <input
+                      type="number"
+                      required
+                      value={capacity}
+                      onChange={(e) => setCapacity(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label>Capacity Unit *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. L, kg, People"
+                      value={capacityUnit}
+                      onChange={(e) => setCapacityUnit(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Operator / Driver Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Officer Vikram Singh"
+                    value={operator}
+                    onChange={(e) => setOperator(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Contact / Radio Frequency *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Channel 16 / UHF"
+                    value={contactRadio}
+                    onChange={(e) => setContactRadio(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
+                  <label>Initial Location &amp; Map Coordinates *</label>
+                  <AddressPicker
+                    onChange={(data, confirmed) => {
+                      setLocationData(data);
+                      setLocationConfirmed(confirmed);
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formActions}>
+                <button
+                  type="button"
+                  className={styles.cancelFormBtn}
+                  onClick={() => setIsAddModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className={styles.submitFormBtn}>
+                  <Send size={12} /> Register Vehicle
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -376,18 +543,6 @@ const PinIcon = () => (
   </svg>
 );
 
-const CloseIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 6 6 18M6 6l12 12" />
-  </svg>
-);
 
-const TruckIcon = ({ size = 24, className }: { size?: number; className?: string }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" />
-    <rect width="9" height="11" x="11" y="6" rx="2" />
-    <circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" />
-  </svg>
-);
 
 export default Vehicles;

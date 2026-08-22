@@ -358,7 +358,7 @@
 }
 
 .mapContainer {
-  height: 420px;
+  height: 580px;
   border: 1px solid rgba(11, 33, 25, 0.08);
   border-radius: 4px;
   overflow: hidden;
@@ -804,6 +804,9 @@
     margin: 20px 24px 0;
     padding: 20px;
   }
+  .mapContainer {
+    height: 450px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -829,5 +832,8 @@
   }
   .impactGrid {
     grid-template-columns: 1fr;
+  }
+  .mapContainer {
+    height: 320px;
   }
 }

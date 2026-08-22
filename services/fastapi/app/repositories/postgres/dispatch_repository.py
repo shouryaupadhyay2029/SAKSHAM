@@ -79,6 +79,22 @@ class SqlAlchemyDispatchRepository(DispatchRepositoryInterface):
                 first_off = self.db.query(OfficerModel).first()
                 resolved_officer_id = str(first_off.id) if first_off else None
 
+        # Resolve destination coordinates from Incident for the OSRM route pathing
+        lat_coord = None
+        lng_coord = None
+        try:
+            from app.core.models import AllocationModel, DemandRequestModel, IncidentModel
+            alloc_record = self.db.query(AllocationModel).filter(AllocationModel.id == resolved_alloc_id).first()
+            if alloc_record:
+                demand_record = self.db.query(DemandRequestModel).filter(DemandRequestModel.id == alloc_record.demandId).first()
+                if demand_record:
+                    inc_record = self.db.query(IncidentModel).filter(IncidentModel.id == demand_record.incidentId).first()
+                    if inc_record:
+                        lat_coord = inc_record.latitude
+                        lng_coord = inc_record.longitude
+        except Exception as e:
+            print(f"⚠️ Failed to resolve incident coordinates for dispatch: {e}")
+
         db_obj = DispatchModel(
             dispatchId=ref_id,
             allocationId=resolved_alloc_id,
@@ -92,7 +108,9 @@ class SqlAlchemyDispatchRepository(DispatchRepositoryInterface):
             quantity=quantity,
             priority=priority,
             status="PLANNED",
-            notes=dispatch.notes
+            notes=dispatch.notes,
+            latitude=lat_coord,
+            longitude=lng_coord
         )
         self.db.add(db_obj)
         self.db.commit()

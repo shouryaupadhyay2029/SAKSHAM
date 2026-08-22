@@ -1,7 +1,7 @@
 import React from 'react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { MapView } from './MapView';
-import { Truck, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import styles from './SituationalAwarenessMap.module.css';
 
 export const SituationalAwarenessMap: React.FC = () => {
@@ -97,18 +97,6 @@ export const SituationalAwarenessMap: React.FC = () => {
               <span className={styles.unitLabel}>Responders</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Active Team Card (Bottom Left Overlay) */}
-      <div className={`${styles.activeTeamOverlay} map-team-overlay`}>
-        <div className={styles.teamHeader}>
-          <Truck size={12} className={styles.teamIcon} />
-          <span className={styles.teamName}>LOGISTICS TEAM ALPHA</span>
-        </div>
-        <div className={styles.teamStatus}>
-          <span className={styles.statusDot}>●</span> En Route
-          <span className={styles.teamEta}>ETA: 14 min</span>
         </div>
       </div>
     </div>

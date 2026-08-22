@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "../../components/LanguageSwitcher/LanguageSwitcher";
-import { Shield, Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
+import { Shield, Eye, EyeOff, AlertCircle, ArrowLeft, Mail, Lock } from "lucide-react";
 import styles from "./OfficerLogin.module.css";
 
 type LoginError = 'INVALID_CREDENTIALS' | 'ACCOUNT_UNAVAILABLE' | 'CONNECTION_ERROR' | null;
@@ -46,28 +46,24 @@ function OrbitalLinesBackground() {
     window.addEventListener("resize", resize);
     resize();
 
-    // Concentric orbital curves from bottom-right towards top-left
     const arcCount = 16;
     const arcs = Array.from({ length: arcCount }, (_, i) => {
       const baseRadius = 200 + i * 80;
       const speed = 0.05 + (i % 3) * 0.02;
       const isDashed = i % 2 === 0;
-      // dash array with randomized segment lengths
       const dashPattern = isDashed ? [100 + (i % 4) * 50, 300 + (i % 3) * 100] : null;
-      const opacity = 0.02 + (i % 4) * 0.015; // low opacity, very elegant
+      const opacity = 0.02 + (i % 4) * 0.015;
       return { baseRadius, speed, isDashed, dashPattern, opacity };
     });
 
     const draw = () => {
-      // Deep dark space background color matching SAKSHAM premium aesthetics
       ctx.fillStyle = "#060807";
       ctx.fillRect(0, 0, width, height);
 
-      // Radial coordinates originating at bottom-right corner
       const originX = width * 1.05;
       const originY = height * 1.05;
 
-      offset += 0.4; // animation motion step
+      offset += 0.4;
 
       arcs.forEach((arc) => {
         ctx.beginPath();
@@ -180,11 +176,11 @@ export default function OfficerLogin() {
             {/* Back link */}
             <Link to="/" className={styles.backLink}>
               <ArrowLeft size={13} />
-              <span>Return to SAKSHAM</span>
+              <span>{t('auth.returnToApp')}</span>
             </Link>
 
-            {/* Brand */}
-            <div className="flex items-center justify-between w-full mb-6">
+            {/* Brand Header */}
+            <div className="flex items-center justify-between w-full mb-8">
               <div className={styles.brand}>
                 <div className={styles.brandMark}>
                   <Shield size={18} />
@@ -196,7 +192,10 @@ export default function OfficerLogin() {
 
             {/* Heading block */}
             <div className={styles.headingBlock}>
-              <p className={styles.accessLabel}>AUTHORIZED RESPONSE ACCESS</p>
+              <div className={styles.accessBadge}>
+                <span className={styles.badgePulse}>●</span>
+                <span className={styles.badgeText}>AUTHORIZED RESPONSE ACCESS</span>
+              </div>
               <h1 className={styles.heading}>{t('auth.loginTitle')}</h1>
               <p className={styles.subtext}>{t('auth.loginSubtitle')}</p>
             </div>
@@ -215,17 +214,21 @@ export default function OfficerLogin() {
               </div>
             )}
 
-            {/* Form */}
+            {/* Login Form */}
             <form className={styles.form} onSubmit={handleSubmit} noValidate aria-describedby={loginError ? errorId : undefined}>
 
               {/* Email */}
               <div className={styles.fieldGroup}>
-                <div className={`${styles.fieldPill} ${fieldErrors.email ? styles.fieldPillError : ''}`}>
+                <label htmlFor={emailId} className={styles.fieldLabelAbove}>
+                  {t('auth.emailLabel')}
+                </label>
+                <div className={`${styles.inputContainer} ${fieldErrors.email ? styles.inputContainerError : ''}`}>
+                  <Mail size={16} className={styles.fieldIcon} />
                   <input
                     id={emailId}
                     type="email"
                     value={email}
-                    placeholder="officer@saksham.demo"
+                    placeholder={t('auth.emailPlaceholder')}
                     disabled={isSubmitting}
                     autoComplete="username email"
                     onChange={(e) => {
@@ -235,19 +238,27 @@ export default function OfficerLogin() {
                     }}
                     className={styles.fieldInput}
                   />
-                  <span className={styles.fieldLabel}>{t('auth.emailPlaceholder')}</span>
                 </div>
                 {fieldErrors.email && <span className={styles.fieldError}>{fieldErrors.email}</span>}
               </div>
 
               {/* Password */}
               <div className={styles.fieldGroup}>
-                <div className={`${styles.fieldPill} ${fieldErrors.password ? styles.fieldPillError : ''}`}>
+                <div className="flex justify-between items-center mb-1">
+                  <label htmlFor={passwordId} className={styles.fieldLabelAbove}>
+                    {t('auth.passwordLabel')}
+                  </label>
+                  <Link to="/officer/forgot-password" className={styles.forgotLink}>
+                    {t('auth.forgotPassword')}
+                  </Link>
+                </div>
+                <div className={`${styles.inputContainer} ${fieldErrors.password ? styles.inputContainerError : ''}`}>
+                  <Lock size={16} className={styles.fieldIcon} />
                   <input
                     id={passwordId}
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    placeholder="••••••••••••"
+                    placeholder={t('auth.passwordPlaceholder')}
                     disabled={isSubmitting}
                     autoComplete="current-password"
                     onChange={(e) => {
@@ -257,7 +268,6 @@ export default function OfficerLogin() {
                     }}
                     className={styles.fieldInput}
                   />
-                  <span className={styles.fieldLabel}>{t('auth.passwordPlaceholder')}</span>
                   <button
                     type="button"
                     className={styles.togglePw}
@@ -265,15 +275,10 @@ export default function OfficerLogin() {
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                     disabled={isSubmitting}
                   >
-                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
                 {fieldErrors.password && <span className={styles.fieldError}>{fieldErrors.password}</span>}
-              </div>
-
-              {/* Forgot */}
-              <div className={styles.forgotRow}>
-                <Link to="/officer/forgot-password" className={styles.forgotLink}>{t('auth.forgotPassword')}</Link>
               </div>
 
               {/* Submit */}
@@ -284,42 +289,58 @@ export default function OfficerLogin() {
                 aria-busy={isSubmitting}
               >
                 {isSubmitting ? (
-                  <><span className={styles.spinner} aria-hidden="true" /> {t('auth.signIn')}…</>
-                ) : t('auth.signIn')}
+                  <><span className={styles.spinner} aria-hidden="true" /> {t('auth.loggingIn')}</>
+                ) : (
+                  <>{t('auth.signIn')} &rarr;</>
+                )}
               </button>
             </form>
 
-            {/* Civilian */}
-            <div className={styles.civilianRow}>
-              <p>{t('auth.loginSubtitle')}</p>
-              <Link to="/report" className={styles.civilianLink}>{t('landing.seekRelief')} &rarr;</Link>
+            {/* Security Indicator */}
+            <div className={styles.securityIndicator}>
+              <span className={styles.securityPulse}>●</span>
+              <span>{t('auth.secureAccess')} — {t('auth.secureAccessDesc')}</span>
             </div>
 
-            {/* Demo panel */}
+            {/* Civilian portal link */}
+            <div className={styles.civilianRow}>
+              <Link to="/report" className={styles.civilianLink}>
+                {t('landing.seekRelief')} &rarr;
+              </Link>
+            </div>
+
+            {/* Demo access section */}
             {demoHints && (
-              <div className={styles.demoPanel}>
-                <span className={styles.demoPanelLabel}>DEMO ACCESS</span>
-                {demoHints.map((h) => (
-                  <button
-                    key={h.email}
-                    type="button"
-                    className={styles.demoBtn}
-                    onClick={() => {
-                      setEmail(h.email);
-                      const pwMap: Record<string, string> = {
-                        OPERATOR: 'demo-op-2026',
-                        REGIONAL_AUTHORITY: 'demo-auth-2026',
-                        ADMIN: 'demo-admin-2026',
-                      };
-                      setPassword(pwMap[h.role] ?? '');
-                      setLoginError(null);
-                      setFieldErrors({});
-                    }}
-                  >
-                    <span className={styles.demoRole}>{h.role.replace('_', ' ')}</span>
-                    <span className={styles.demoEmail}>{h.email}</span>
-                  </button>
-                ))}
+              <div className={styles.demoSection}>
+                <div className={styles.demoDivider}>
+                  <span>DEMO ACCESS</span>
+                </div>
+                <p className={styles.demoDesc}>
+                  Explore the SAKSHAM command interface using demonstration credentials.
+                </p>
+                <div className={styles.demoGrid}>
+                  {demoHints.map((h) => (
+                    <button
+                      key={h.email}
+                      type="button"
+                      className={styles.demoBtn}
+                      onClick={() => {
+                        setEmail(h.email);
+                        const pwMap: Record<string, string> = {
+                          OPERATOR: 'demo-op-2026',
+                          REGIONAL_AUTHORITY: 'demo-auth-2026',
+                          ADMIN: 'demo-admin-2026',
+                        };
+                        setPassword(pwMap[h.role] ?? '');
+                        setLoginError(null);
+                        setFieldErrors({});
+                      }}
+                    >
+                      <span className={styles.demoRole}>{h.role.replace('_', ' ')}</span>
+                      <span className={styles.demoEmail}>{h.email}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -338,14 +359,21 @@ export default function OfficerLogin() {
             noise={0.22}
             shape="corners"
             frame={2854.5}
-            colors={["#FAF8F3", "#F47C20", "#1A2F23", "#F7F4EF"]}
+            colors={["#101512", "#E06A1B", "#0D2118", "#F7F4EF"]}
             colorBack="#000000"
             style={{ position: 'absolute', inset: 0 }}
           />
+          <div className={styles.visualGridOverlay} />
           <div className={styles.visualContent}>
+            <div className={styles.visualMetadata}>
+              <span className={styles.metaLine}>SAKSHAM RESPONSE NETWORK</span>
+              <span className={styles.metaLine}>NATIONAL OPERATIONS INTERFACE // LIVE</span>
+            </div>
+            
             <h2 className={styles.visualHeading}>
               Think fast,<br />Respond faster.
             </h2>
+            
             <div className={styles.statsRow}>
               <div className={styles.stat}>
                 <strong>1,240+</strong>
