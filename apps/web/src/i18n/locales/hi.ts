@@ -58,6 +58,7 @@ export const hi = {
     incidents: "आपदा घटनाएं",
     demands: "अनुरोध एवं मांगें",
     matching: "संसाधन मिलान (AI)",
+    routeOptimizer: "मार्ग अनुकूलक (OR-Tools)",
     dispatch: "प्रेषण कंसोल",
     delivery: "सत्यापन एवं वितरण",
     resources: "संसाधन एवं स्टॉक",

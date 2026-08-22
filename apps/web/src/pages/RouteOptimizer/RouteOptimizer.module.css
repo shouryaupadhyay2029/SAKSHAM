@@ -1,0 +1,719 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   SAKSHAM — ROUTE OPTIMIZATION CONSOLE (OR-TOOLS + OPENSTREETMAP)
+   Palette: Ivory #FAF8F3 · Forest Green #0B2119 · Burnt Orange #E86F16 · Dark Slate #0D1218
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.page {
+  background: #FAF8F3;
+  color: #0B2119;
+  min-height: 100vh;
+  padding: 24px 32px 80px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ── 1. Panoramic Top Map Container ────────────────────────────────────────── */
+.topMapSection {
+  width: 100%;
+  height: 480px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(11, 33, 25, 0.12);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  position: relative;
+}
+
+/* ── 2. Screen Header Section (Matching User Reference) ────────────────────── */
+.screenHeaderSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.mainTitle {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0B2119;
+  letter-spacing: -0.01em;
+  margin: 0 0 4px 0;
+}
+
+.mainSubtitle {
+  font-size: 13px;
+  color: rgba(11, 33, 25, 0.65);
+  margin: 0 0 14px 0;
+}
+
+.primaryOptimizeBtn {
+  background: #0B2119;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(11, 33, 25, 0.2);
+  transition: all 0.2s ease;
+}
+
+.primaryOptimizeBtn:hover {
+  background: #143D2F;
+  transform: translateY(-1px);
+}
+
+.primaryOptimizeBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── 3. Four Metric Cards Row (Matching User Reference) ─────────────────────── */
+.metricCardsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 900px) {
+  .metricCardsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.whiteMetricCard {
+  background: #FFFFFF;
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.whiteMetricLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(11, 33, 25, 0.55);
+}
+
+.whiteMetricValue {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0B2119;
+  font-family: 'Inter', monospace;
+}
+
+.heroRight {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.engineStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFFFF;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(11, 33, 25, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.engineDot {
+  width: 8px;
+  height: 8px;
+  background: #2E7D32;
+  border-radius: 50%;
+  animation: enginePulse 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.engineDotOffline {
+  background: #D97706;
+}
+
+@keyframes enginePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(46, 125, 50, 0); }
+}
+
+.engineLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #2E7D32;
+}
+
+.engineLabelOffline {
+  color: #D97706;
+}
+
+.engineSub {
+  font-size: 11px;
+  color: rgba(11, 33, 25, 0.5);
+  margin: 0;
+  text-align: right;
+}
+
+/* ── KPI Stats Ribbon ──────────────────────────────────────────────────────── */
+.statsRibbon {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 20px 40px;
+  background: #FFFFFF;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.06);
+}
+
+.statCard {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #FAF8F3;
+  border: 1px solid rgba(11, 33, 25, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(11, 33, 25, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0B2119;
+  font-family: 'Inter', monospace;
+}
+
+.statSub {
+  font-size: 11px;
+  color: #E86F16;
+  font-weight: 600;
+}
+
+/* ── Main Workspace ────────────────────────────────────────────────────────── */
+.workspace {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+  padding: 28px 40px;
+}
+
+@media (max-width: 1100px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Left Config Sidebar ───────────────────────────────────────────────────── */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0B2119;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.itemCountBadge {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(232, 111, 22, 0.12);
+  color: #E86F16;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.selectionList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.selectionItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #FAF8F3;
+  border: 1px solid rgba(11, 33, 25, 0.06);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.selectionItem:hover {
+  background: #F3EFE6;
+  border-color: rgba(232, 111, 22, 0.3);
+}
+
+.selectionItemActive {
+  background: rgba(232, 111, 22, 0.08);
+  border-color: #E86F16;
+}
+
+.selectionLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  accent-color: #E86F16;
+  cursor: pointer;
+}
+
+.selectionName {
+  font-weight: 600;
+  color: #0B2119;
+}
+
+.selectionMeta {
+  font-size: 11px;
+  color: rgba(11, 33, 25, 0.5);
+}
+
+.priorityChip {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.prioCRITICAL { background: #FEE2E2; color: #DC2626; }
+.prioHIGH { background: #FFEDD5; color: #EA580C; }
+.prioMEDIUM { background: #FEF3C7; color: #D97706; }
+.prioLOW { background: #DCFCE7; color: #16A34A; }
+
+/* ── Parameters Form ───────────────────────────────────────────────────────── */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.formLabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgba(11, 33, 25, 0.7);
+  display: flex;
+  justify-content: space-between;
+}
+
+.selectInput, .textInput {
+  background: #FAF8F3;
+  border: 1px solid rgba(11, 33, 25, 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  color: #0B2119;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.selectInput:focus, .textInput:focus {
+  border-color: #E86F16;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 16px;
+}
+
+.toggleLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0B2119;
+}
+
+.toggleDesc {
+  font-size: 10.5px;
+  color: rgba(11, 33, 25, 0.5);
+}
+
+.runBtn {
+  width: 100%;
+  padding: 14px;
+  background: #E86F16;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(232, 111, 22, 0.35);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.runBtn:hover:not(:disabled) {
+  background: #D45F0D;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(232, 111, 22, 0.45);
+}
+
+.runBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Right Content Area ────────────────────────────────────────────────────── */
+.mainView {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mapSection {
+  height: 480px;
+  width: 100%;
+}
+
+/* ── Route Results List ────────────────────────────────────────────────────── */
+.routesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.routeCard {
+  background: #FFFFFF;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.routeCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border-color: rgba(232, 111, 22, 0.4);
+}
+
+.routeCardActive {
+  border-color: var(--card-color, #E86F16);
+  box-shadow: 0 0 0 2px var(--card-color, #E86F16);
+}
+
+.routeCardAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--card-color, #E86F16);
+}
+
+.routeCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.routeVehicleTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0B2119;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.routeDepotSubtitle {
+  font-size: 11px;
+  color: rgba(11, 33, 25, 0.5);
+  margin-top: 2px;
+}
+
+.utilBadge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #F1F5F9;
+  color: #334155;
+  font-family: monospace;
+}
+
+.routeMetricsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #FAF8F3;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.metricBlock {
+  display: flex;
+  flex-direction: column;
+}
+
+.metricKey {
+  font-size: 10px;
+  color: rgba(11, 33, 25, 0.45);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.metricVal {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0B2119;
+}
+
+/* ── Stop Timeline ─────────────────────────────────────────────────────────── */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 12px;
+  border-left: 2px dashed rgba(11, 33, 25, 0.12);
+  margin-left: 6px;
+}
+
+.timelineItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  position: relative;
+}
+
+.timelineItem::before {
+  content: '';
+  position: absolute;
+  left: -17px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--card-color, #E86F16);
+}
+
+.timelineStopName {
+  font-weight: 600;
+  color: #0B2119;
+}
+
+.timelineStopDemand {
+  font-size: 10.5px;
+  color: #64748B;
+  font-family: monospace;
+}
+
+/* ── Dropped Nodes Notice ─────────────────────────────────────────────────── */
+.droppedNotice {
+  background: #FFF1F2;
+  border: 1px solid #FECDD3;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.droppedNoticeTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #9F1239;
+  margin: 0 0 4px 0;
+}
+
+.droppedNoticeText {
+  font-size: 12px;
+  color: #BE123C;
+  margin: 0;
+}
+
+/* ── Dispatch Actions ─────────────────────────────────────────────────────── */
+.dispatchBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.dispatchBtn {
+  background: #0B2119;
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dispatchBtn:hover {
+  background: #183F31;
+}
+
+/* ── Waypoint Itinerary Drawer / Modal ────────────────────────────────────── */
+.itineraryModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 33, 25, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.itineraryModal {
+  background: #FFFFFF;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(11, 33, 25, 0.1);
+}
+
+.itineraryModalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(11, 33, 25, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.itineraryModalTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0B2119;
+  margin: 0;
+}
+
+.itineraryModalClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748B;
+  padding: 4px;
+}
+
+.itineraryModalBody {
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.itineraryStep {
+  display: flex;
+  gap: 14px;
+  position: relative;
+}
+
+.itineraryStepBullet {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #FAF8F3;
+  border: 2px solid #E86F16;
+  color: #E86F16;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.itineraryStepContent {
+  flex: 1;
+}
+
+.itineraryStepName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0B2119;
+}
+
+.itineraryStepDetail {
+  font-size: 11.5px;
+  color: #64748B;
+  margin-top: 2px;
+}

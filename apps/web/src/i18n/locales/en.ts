@@ -58,6 +58,7 @@ export const en = {
     incidents: "Incidents",
     demands: "Requests & Demands",
     matching: "Demand Matching",
+    routeOptimizer: "Route Optimizer",
     dispatch: "Dispatch Console",
     delivery: "Delivery Verification",
     resources: "Resources & Stock",

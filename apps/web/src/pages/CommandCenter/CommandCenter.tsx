@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { MapView } from '../../components/map/MapView';
+import { RoutingPanel } from '../../components/routing/RoutingPanel';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import {
   Layers,
@@ -431,6 +432,11 @@ export const CommandCenter: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Fleet Routing & Optimization Panel */}
+          <div className={styles.gridCol}>
+            <RoutingPanel />
           </div>
 
         </div>

@@ -902,11 +902,50 @@ export const DemandMatching: React.FC = () => {
                 <h3>RESOURCE ALLOCATED</h3>
                 <p>Ref: {allocationId}</p>
                 <div className={styles.allocStateGrid}>
-                  {[['DEMAND','ALLOCATED'],['RESOURCE','COMMITTED'],['INCIDENT','RESOURCE MATCHED'],['NEXT','VEHICLE DISPATCH →']].map(([k,v]) => (
+                  {[['DEMAND','ALLOCATED'],['RESOURCE','COMMITTED'],['INCIDENT','RESOURCE MATCHED'],['NEXT','VEHICLE ROUTING →']].map(([k,v]) => (
                     <div key={k}><span>{k}</span><strong>{v}</strong></div>
                   ))}
                 </div>
-                <p className={styles.allocNote}>Ready for Dispatch &amp; Logistics phase. No vehicle has been assigned yet.</p>
+                <p className={styles.allocNote}>Ready for logistics planning. Choose single dispatch or optimize multi-stop vehicle circuit.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
+                  <Link
+                    to="/operations/route-optimizer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      background: '#E86F16',
+                      color: '#FFF',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <span>⚡ OPTIMIZE FLEET ROUTES (OR-TOOLS)</span>
+                    <ArrowRight size={13} />
+                  </Link>
+                  <Link
+                    to={`/operations/dispatch?allocationId=${allocationId}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      background: '#0B2119',
+                      color: '#FFF',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <span>DIRECT DISPATCH CONSOLE →</span>
+                  </Link>
+                </div>
               </div>
             ) : matchOutput?.bestMatch ? (
               <RecommendationPanel
