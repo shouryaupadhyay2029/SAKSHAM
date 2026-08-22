@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Play, Pause, RotateCcw, AlertOctagon, Truck } from 'lucide-react';
+import { Play, Pause, RotateCcw, AlertOctagon, Truck, Sun, Moon, Globe } from 'lucide-react';
 import type { Depot, DemandPoint, OptimizedRoute, DroppedDemand } from '../../services/optimizerService';
 import styles from './RouteMapView.module.css';
 
@@ -13,6 +13,12 @@ export interface HazardZone {
   type: 'FLOOD' | 'COLLAPSE' | 'DEBRIS' | 'FIRE';
   description: string;
 }
+
+const MAP_THEMES = {
+  dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  voyager: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+};
 
 interface RouteMapViewProps {
   depots: Depot[];
@@ -42,6 +48,9 @@ export const RouteMapView: React.FC<RouteMapViewProps> = ({
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const convoyMarkerRef = useRef<maplibregl.Marker | null>(null);
 
+  // Map Theme State
+  const [theme, setTheme] = useState<'dark' | 'light' | 'voyager'>('dark');
+
   // Convoy Simulation Playback State
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [simProgress, setSimProgress] = useState<number>(0);
@@ -54,7 +63,7 @@ export const RouteMapView: React.FC<RouteMapViewProps> = ({
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      style: MAP_THEMES[theme],
       center: center,
       zoom: zoom,
       minZoom: 1,
@@ -374,11 +383,87 @@ export const RouteMapView: React.FC<RouteMapViewProps> = ({
     <div className={styles.mapWrapper}>
       <div ref={mapContainerRef} className={styles.mapContainer} />
 
-      {/* Top Map Status Badge */}
+      {/* Top Map Status Badge & Theme Switcher */}
       <div className={styles.mapOverlayControls}>
         <div className={styles.controlBadge}>
           <span className={styles.pulseDot} />
           <span>OpenStreetMap Road Network Layer</span>
+        </div>
+
+        {/* Theme Toggle Buttons */}
+        <div style={{ display: 'flex', gap: '4px', pointerEvents: 'auto' }}>
+          <button
+            style={{
+              background: theme === 'dark' ? '#E86F16' : 'rgba(13, 18, 24, 0.85)',
+              color: '#FFF',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '6px',
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              backdropFilter: 'blur(8px)',
+            }}
+            onClick={() => {
+              setTheme('dark');
+              mapRef.current?.setStyle(MAP_THEMES.dark);
+            }}
+            title="Dark Tactical Mode"
+          >
+            <Moon size={11} />
+            <span>Dark</span>
+          </button>
+          <button
+            style={{
+              background: theme === 'light' ? '#E86F16' : 'rgba(13, 18, 24, 0.85)',
+              color: '#FFF',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '6px',
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              backdropFilter: 'blur(8px)',
+            }}
+            onClick={() => {
+              setTheme('light');
+              mapRef.current?.setStyle(MAP_THEMES.light);
+            }}
+            title="Light Editorial Mode"
+          >
+            <Sun size={11} />
+            <span>Light</span>
+          </button>
+          <button
+            style={{
+              background: theme === 'voyager' ? '#E86F16' : 'rgba(13, 18, 24, 0.85)',
+              color: '#FFF',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '6px',
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              backdropFilter: 'blur(8px)',
+            }}
+            onClick={() => {
+              setTheme('voyager');
+              mapRef.current?.setStyle(MAP_THEMES.voyager);
+            }}
+            title="OpenStreetMap Standard Mode"
+          >
+            <Globe size={11} />
+            <span>OSM</span>
+          </button>
         </div>
       </div>
 
