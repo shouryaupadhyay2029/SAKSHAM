@@ -457,16 +457,85 @@ export const RouteOptimizer: React.FC = () => {
 
   return (
     <div className={styles.page}>
-      {/* ── Operational Hero ────────────────────────────────────────────── */}
-      <section className={styles.hero}>
-        <div className={styles.heroLeft}>
-          <span className={styles.heroEyebrow}>Logistics AI & Operational Graph Engine</span>
-          <h1 className={styles.heroTitle}>Multi-Depot Vehicle Routing & OSM Optimization</h1>
-          <p className={styles.heroLead}>
-            Solve the Capacitated Multi-Depot Vehicle Routing Problem (MDVRP) using Google OR-Tools.
-            Routes are computed over actual OpenStreetMap road network geometries with capacity constraints,
-            priority penalties, and multi-depot fleet allocation.
-          </p>
+      {/* ── 1. Top Panoramic Map (Matching Reference) ─────────────────── */}
+      <div className={styles.topMapSection}>
+        <RouteMapView
+          depots={depots.filter((d) => selectedDepotIds.includes(d.id))}
+          demandPoints={demandPoints.filter((dp) => selectedDemandIds.includes(dp.id))}
+          routes={optimizeResult?.routes || []}
+          droppedDemands={optimizeResult?.droppedDemands || []}
+          hazards={activeHazards}
+          selectedVehicleId={selectedVehicleId}
+          onSelectRoute={(r) => setSelectedVehicleId(r.vehicleId === selectedVehicleId ? null : r.vehicleId)}
+        />
+      </div>
+
+      {/* ── 2. Screen Header & Actions (Matching Reference) ───────────── */}
+      <div className={styles.screenHeaderSection}>
+        <div>
+          <h1 className={styles.mainTitle}>Route Optimization</h1>
+          <p className={styles.mainSubtitle}>Capacity-aware disaster relief vehicle routing</p>
+
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              className={styles.primaryOptimizeBtn}
+              onClick={handleRunOptimizer}
+              disabled={isOptimizing}
+            >
+              {isOptimizing ? (
+                <>
+                  <span className={styles.btnSpinner} />
+                  <span>Optimizing...</span>
+                </>
+              ) : (
+                <span>Optimize Routes</span>
+              )}
+            </button>
+
+            {/* Scope Grid Presets */}
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                style={{
+                  background: gridScope === 'NATIONAL' ? '#0B2119' : '#FFFFFF',
+                  color: gridScope === 'NATIONAL' ? '#FFFFFF' : '#0B2119',
+                  border: '1px solid rgba(11, 33, 25, 0.15)',
+                  padding: '7px 12px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  setGridScope('NATIONAL');
+                  setSelectedDepotIds(NATIONAL_INDIA_DEPOTS.map((d) => d.id));
+                  setSelectedDemandIds(NATIONAL_INDIA_DEMANDS.map((dp) => dp.id));
+                  setOptimizeResult(null);
+                }}
+              >
+                🇮🇳 National Grid
+              </button>
+              <button
+                style={{
+                  background: gridScope === 'REGIONAL' ? '#0B2119' : '#FFFFFF',
+                  color: gridScope === 'REGIONAL' ? '#FFFFFF' : '#0B2119',
+                  border: '1px solid rgba(11, 33, 25, 0.15)',
+                  padding: '7px 12px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  setGridScope('REGIONAL');
+                  setSelectedDepotIds(DELHI_NCR_DEPOTS.map((d) => d.id));
+                  setSelectedDemandIds(DELHI_NCR_DEMANDS.map((dp) => dp.id));
+                  setOptimizeResult(null);
+                }}
+              >
+                📍 Delhi Regional
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className={styles.heroRight}>
@@ -477,87 +546,38 @@ export const RouteOptimizer: React.FC = () => {
             <span
               className={`${styles.engineLabel} ${!backendHealthy ? styles.engineLabelOffline : ''}`}
             >
-              {backendHealthy ? 'GOOGLE OR-TOOLS ENGINE: LIVE' : 'OPTIMIZER SERVICE: STANDBY / SIMULATOR'}
+              {backendHealthy ? 'OR-TOOLS ENGINE: LIVE' : 'OPTIMIZER SERVICE: STANDBY'}
             </span>
           </div>
-          <p className={styles.engineSub}>OSRM OpenStreetMap Routing Matrix · VRP v9.9</p>
+          <p className={styles.engineSub}>OSRM OpenStreetMap Road Matrix</p>
+        </div>
+      </div>
 
-          {/* Scope Selector Controls */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-            <button
-              style={{
-                background: gridScope === 'NATIONAL' ? '#0B2119' : '#FFFFFF',
-                color: gridScope === 'NATIONAL' ? '#FFFFFF' : '#0B2119',
-                border: '1px solid rgba(11, 33, 25, 0.15)',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '11.5px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-              onClick={() => {
-                setGridScope('NATIONAL');
-                setSelectedDepotIds(NATIONAL_INDIA_DEPOTS.map((d) => d.id));
-                setSelectedDemandIds(NATIONAL_INDIA_DEMANDS.map((dp) => dp.id));
-                setOptimizeResult(null);
-              }}
-            >
-              🇮🇳 All-India National Grid
-            </button>
-            <button
-              style={{
-                background: gridScope === 'REGIONAL' ? '#0B2119' : '#FFFFFF',
-                color: gridScope === 'REGIONAL' ? '#FFFFFF' : '#0B2119',
-                border: '1px solid rgba(11, 33, 25, 0.15)',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '11.5px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-              onClick={() => {
-                setGridScope('REGIONAL');
-                setSelectedDepotIds(DELHI_NCR_DEPOTS.map((d) => d.id));
-                setSelectedDemandIds(DELHI_NCR_DEMANDS.map((dp) => dp.id));
-                setOptimizeResult(null);
-              }}
-            >
-              📍 Delhi NCR Regional
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── KPI Stats Ribbon ────────────────────────────────────────────── */}
-      <div className={styles.statsRibbon}>
-        <div className={styles.statCard}>
-          <span className={styles.statLabel}>Active Routes</span>
-          <span className={styles.statValue}>{summaryMetrics.totalRoutes}</span>
-          <span className={styles.statSub}>Vehicles Deployed</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statLabel}>Total Distance</span>
-          <span className={styles.statValue}>{summaryMetrics.totalDistance}</span>
-          <span className={styles.statSub}>Road Mileage</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statLabel}>Est. Transit Duration</span>
-          <span className={styles.statValue}>{summaryMetrics.totalDuration}</span>
-          <span className={styles.statSub}>Including Unloading</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statLabel}>Fleet Utilization</span>
-          <span className={styles.statValue}>{summaryMetrics.fleetUtilization}</span>
-          <span className={styles.statSub}>Capacity Efficiency</span>
-        </div>
-        <div className={styles.statCard}>
-          <span className={styles.statLabel}>Unserved Shortfall</span>
-          <span className={styles.statValue} style={{ color: summaryMetrics.unservedCount > 0 ? '#DC2626' : '#2E7D32' }}>
-            {summaryMetrics.unservedCount}
+      {/* ── 3. Four Metric Cards Row (Matching Reference) ─────────────── */}
+      <div className={styles.metricCardsRow}>
+        <div className={styles.whiteMetricCard}>
+          <span className={styles.whiteMetricLabel}>STATUS</span>
+          <span className={styles.whiteMetricValue} style={{ color: '#2E7D32' }}>
+            {optimizeResult ? 'ROUTES_FOUND' : 'READY'}
           </span>
-          <span className={styles.statSub}>Drop Penalties</span>
+        </div>
+        <div className={styles.whiteMetricCard}>
+          <span className={styles.whiteMetricLabel}>VEHICLES USED</span>
+          <span className={styles.whiteMetricValue}>
+            {summaryMetrics.totalRoutes || depots.reduce((acc, d) => acc + d.vehicles.length, 0)}
+          </span>
+        </div>
+        <div className={styles.whiteMetricCard}>
+          <span className={styles.whiteMetricLabel}>TOTAL STOPS</span>
+          <span className={styles.whiteMetricValue}>
+            {selectedDemandIds.length}
+          </span>
+        </div>
+        <div className={styles.whiteMetricCard}>
+          <span className={styles.whiteMetricLabel}>TOTAL DISTANCE</span>
+          <span className={styles.whiteMetricValue}>
+            {optimizeResult ? summaryMetrics.totalDistance : '--'}
+          </span>
         </div>
       </div>
 

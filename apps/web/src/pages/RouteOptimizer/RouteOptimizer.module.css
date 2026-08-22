@@ -7,51 +7,111 @@
   background: #FAF8F3;
   color: #0B2119;
   min-height: 100vh;
-  padding: 0 0 80px;
+  padding: 24px 32px 80px;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* ── Hero Section ──────────────────────────────────────────────────────────── */
-.hero {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 36px 40px 24px;
-  border-bottom: 1px solid rgba(11, 33, 25, 0.07);
-  gap: 32px;
-  flex-wrap: wrap;
+/* ── 1. Panoramic Top Map Container ────────────────────────────────────────── */
+.topMapSection {
+  width: 100%;
+  height: 480px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(11, 33, 25, 0.12);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
   position: relative;
 }
 
-.heroLeft {
-  max-width: 580px;
+/* ── 2. Screen Header Section (Matching User Reference) ────────────────────── */
+.screenHeaderSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.heroEyebrow {
-  display: block;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #E86F16;
-  margin-bottom: 10px;
-}
-
-.heroTitle {
+.mainTitle {
   font-family: 'Georgia', 'Times New Roman', serif;
-  font-size: 34px;
+  font-size: 28px;
   font-weight: 700;
   color: #0B2119;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+  margin: 0 0 4px 0;
 }
 
-.heroLead {
-  font-size: 13.5px;
-  line-height: 1.6;
+.mainSubtitle {
+  font-size: 13px;
   color: rgba(11, 33, 25, 0.65);
-  margin: 0;
+  margin: 0 0 14px 0;
+}
+
+.primaryOptimizeBtn {
+  background: #0B2119;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(11, 33, 25, 0.2);
+  transition: all 0.2s ease;
+}
+
+.primaryOptimizeBtn:hover {
+  background: #143D2F;
+  transform: translateY(-1px);
+}
+
+.primaryOptimizeBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── 3. Four Metric Cards Row (Matching User Reference) ─────────────────────── */
+.metricCardsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 900px) {
+  .metricCardsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.whiteMetricCard {
+  background: #FFFFFF;
+  border: 1px solid rgba(11, 33, 25, 0.08);
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.whiteMetricLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(11, 33, 25, 0.55);
+}
+
+.whiteMetricValue {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0B2119;
+  font-family: 'Inter', monospace;
 }
 
 .heroRight {

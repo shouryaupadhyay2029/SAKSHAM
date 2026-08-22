@@ -107,6 +107,7 @@ const AppRoutes: React.FC = () => {
                 <Route path="command-center" element={<CommandCenter />} />
                 <Route path="matching" element={<DemandMatching />} />
                 <Route path="route-optimizer" element={<RouteOptimizer />} />
+                <Route path="route-optimization" element={<RouteOptimizer />} />
                 <Route path="dispatch" element={<Dispatch />} />
                 <Route path="delivery" element={<Delivery />} />
                 <Route path="incidents" element={<Incidents />} />
