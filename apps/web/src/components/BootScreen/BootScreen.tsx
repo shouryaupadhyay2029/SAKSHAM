@@ -9,29 +9,29 @@ interface BootScreenProps {
 }
 
 const features = [
-  { 
-    num: '01', 
-    line1: 'REAL-TIME', 
-    line2: 'INCIDENT MONITORING', 
-    desc: 'Continuous monitoring of threats and emergencies across regions with live updates.' 
+  {
+    num: '01',
+    line1: 'REAL-TIME',
+    line2: 'INCIDENT MONITORING',
+    desc: 'Continuous monitoring of threats and emergencies across regions with live updates.'
   },
-  { 
-    num: '02', 
-    line1: 'RESOURCE-DEMAND', 
-    line2: 'MATCHING', 
-    desc: 'Algorithmic matching of disaster requests with nearest available supply inventories.' 
+  {
+    num: '02',
+    line1: 'RESOURCE-DEMAND',
+    line2: 'MATCHING',
+    desc: 'Algorithmic matching of disaster requests with nearest available supply inventories.'
   },
-  { 
-    num: '03', 
-    line1: 'SMART', 
-    line2: 'LOGISTICS ROUTING', 
-    desc: 'Optimized dispatch routes for relief vehicles avoiding waterlogged or high-hazard zones.' 
+  {
+    num: '03',
+    line1: 'SMART',
+    line2: 'LOGISTICS ROUTING',
+    desc: 'Optimized dispatch routes for relief vehicles avoiding waterlogged or high-hazard zones.'
   },
-  { 
-    num: '04', 
-    line1: 'CONNECTED', 
-    line2: 'RESPONSE NETWORK', 
-    desc: 'Unified dashboard connecting NDRF, civil defence, state authorities, and civilian requests.' 
+  {
+    num: '04',
+    line1: 'CONNECTED',
+    line2: 'RESPONSE NETWORK',
+    desc: 'Unified dashboard connecting NDRF, civil defence, state authorities, and civilian requests.'
   }
 ];
 
@@ -171,7 +171,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
   const activeIndexVal = Math.max(0, Math.min(featureIndex, 3));
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={`${styles.bootOverlay} ${isExiting ? styles.exiting : ''}`}
       style={{ '--active-index': activeIndexVal } as React.CSSProperties}
@@ -181,27 +181,27 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
       <div className={styles.leftPanel}>
         {/* Curved seam SVGs */}
         <svg className={styles.seamSvg} viewBox="0 0 100 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <path 
-            d="M 40,0 C 40,120 38,180 42,250 C 46,330 45,380 50,450 C 55,520 56,580 58,650 C 60,720 54,780 50,850 C 47,910 50,950 50,1000" 
-            stroke="rgba(12, 29, 23, 0.15)" 
-            strokeWidth="1.2" 
-            fill="none" 
+          <path
+            d="M 40,0 C 40,120 38,180 42,250 C 46,330 45,380 50,450 C 55,520 56,580 58,650 C 60,720 54,780 50,850 C 47,910 50,950 50,1000"
+            stroke="rgba(12, 29, 23, 0.15)"
+            strokeWidth="1.2"
+            fill="none"
           />
-          
+
           {seamNodes.map((node, i) => (
-            <circle 
-              key={i} 
-              cx={node.x} 
-              cy={node.y} 
-              r="4" 
-              fill={i === activeIndexVal ? "#F47C20" : "#FAF8F3"} 
-              stroke={i === activeIndexVal ? "#F47C20" : "rgba(12, 29, 23, 0.25)"} 
-              strokeWidth="1.5" 
+            <circle
+              key={i}
+              cx={node.x}
+              cy={node.y}
+              r="4"
+              fill={i === activeIndexVal ? "#F47C20" : "#FAF8F3"}
+              stroke={i === activeIndexVal ? "#F47C20" : "rgba(12, 29, 23, 0.25)"}
+              strokeWidth="1.5"
             />
           ))}
 
           {featureIndex >= 0 && (
-            <g 
+            <g
               transform={`translate(${seamNodes[activeIndexVal].x}, ${seamNodes[activeIndexVal].y})`}
               style={{ transition: 'transform 900ms cubic-bezier(0.22, 1, 0.36, 1)' }}
               className={featureIndex >= 3 ? styles.readyPulse : ''}
@@ -215,7 +215,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
         {/* Brand SAKSHAM Centered Logo & Typography */}
         <div className={styles.leftBrandContainer}>
           <div ref={logoMarkRef} className={styles.logoMark}>
-            <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+            <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '140px', height: '140px', objectFit: 'contain' }} />
           </div>
           <h1 ref={brandWordmarkRef} className={styles.brandWordmark}>
             SAKSHAM
@@ -246,7 +246,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
 
         {/* Accordion Feature Viewport & Track */}
         <div className={styles.featureViewport}>
-          <div 
+          <div
             ref={featureTrackRef}
             className={styles.featureTrack}
             style={{ transform: `translate3d(0, -${activeIndexVal * 44}px, 0)` }}
@@ -255,8 +255,8 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
               const isActive = idx === activeIndexVal;
 
               return (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className={`${styles.featureItem} ${isActive ? styles.expanded : styles.collapsed}`}
                 >
                   {/* Expanded Content Viewport */}

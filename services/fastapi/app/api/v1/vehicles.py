@@ -3,8 +3,12 @@ from typing import List
 from app.schemas.vehicle import VehicleResponse, VehicleCreate, VehicleUpdate
 from app.domain.vehicles.service import VehicleService
 from app.api.dependencies import get_vehicle_service
+from app.realtime.connection_manager import connection_manager
+from app.realtime.publisher import EventPublisher
+from app.realtime.events import EventType, RealtimeEvent
 
 router = APIRouter()
+publisher = EventPublisher(connection_manager)
 
 @router.get("", response_model=List[VehicleResponse], summary="List all fleet vehicles")
 async def list_vehicles(service: VehicleService = Depends(get_vehicle_service)):
@@ -20,4 +24,16 @@ async def get_vehicle(vehicle_id: str, service: VehicleService = Depends(get_veh
 
 @router.patch("/{vehicle_id}", response_model=VehicleResponse, summary="Update vehicle coordinates, speed or status")
 async def update_vehicle(vehicle_id: str, update_data: VehicleUpdate, service: VehicleService = Depends(get_vehicle_service)):
-    return service.update_vehicle(vehicle_id, update_data)
+    updated = service.update_vehicle(vehicle_id, update_data)
+    try:
+        await publisher.publish(
+            RealtimeEvent(
+                event=EventType.VEHICLE_STATUS_CHANGED,
+                entityType="vehicle",
+                entityId=str(updated.id),
+                data=VehicleResponse.model_validate(updated).model_dump(mode="json"),
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ WebSocket publish failed: {e}")
+    return updated

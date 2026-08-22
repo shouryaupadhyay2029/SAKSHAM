@@ -92,7 +92,8 @@
   color: #0C1D17;
   margin: 0 0 16px 0;
   line-height: 1;
-  padding-left: 0.4em; /* offset for last letter spacing */
+  padding-left: 0.4em;
+  /* offset for last letter spacing */
   text-transform: uppercase;
   opacity: 0;
   transform: translateY(10px);
@@ -347,8 +348,17 @@
 }
 
 @keyframes breathe {
-  0%, 100% { opacity: 0.4; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.1); }
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
 }
 
 .coordinatesText {
@@ -411,7 +421,8 @@
   }
 
   .seamSvg {
-    display: none; /* seam rotated horizontal below */
+    display: none;
+    /* seam rotated horizontal below */
   }
 
   .leftBrandContainer {
@@ -491,6 +502,7 @@
 
 /* Reduced Motion overrides */
 @media (prefers-reduced-motion: reduce) {
+
   .leftPanel,
   .rightPanel,
   .logoMark,
@@ -500,11 +512,13 @@
     transition: opacity 300ms ease !important;
     transform: none !important;
   }
+
   .exiting .leftPanel,
   .exiting .rightPanel {
     opacity: 0;
     transform: none !important;
   }
+
   .topographySvg,
   .seamSvg {
     display: none !important;

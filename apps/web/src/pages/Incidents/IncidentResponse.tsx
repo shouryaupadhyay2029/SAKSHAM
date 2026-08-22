@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { MapView } from '../../components/map/MapView';
 import styles from './IncidentResponse.module.css';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 interface TimelineStep {
   time: string;
@@ -141,8 +142,8 @@ export const IncidentResponse: React.FC = () => {
 
   return (
     <div className={`${styles.container} ${mounted ? styles.mounted : ''}`}>
-      {/* ── 1. Page Header ── */}
-      <header className={styles.pageHeader}>
+      <header className={`${styles.pageHeader} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.headerLeft}>
           <span className={styles.eyebrow}>INCIDENT RESPONSE</span>
           <h1 className={styles.title}>Operational Response Workspace</h1>

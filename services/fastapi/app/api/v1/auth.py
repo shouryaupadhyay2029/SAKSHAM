@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from typing import Optional
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.models import OfficerModel
@@ -61,7 +62,13 @@ async def login(req: LoginRequest, db: Session = Depends(get_db)):
         accountStatus=officer.accountStatus
     )
 
-    return LoginResponse(accessToken=token, officer=profile)
+    return LoginResponse(
+        accessToken=token,
+        access_token=token,
+        tokenType="bearer",
+        token_type="bearer",
+        officer=profile
+    )
 
 
 @router.get("/me", response_model=OfficerProfile, summary="Get details of current logged-in officer")

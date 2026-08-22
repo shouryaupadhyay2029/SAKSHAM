@@ -3,6 +3,7 @@ import { useOperationalState } from '../../context/OperationalStateContext';
 import { Send, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import styles from './Report.module.css';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 export const Report: React.FC = () => {
   const { addIncidentFromSOS } = useOperationalState();
@@ -36,7 +37,8 @@ export const Report: React.FC = () => {
         </Link>
       </div>
 
-      <div className={styles.header}>
+      <div className={`${styles.header} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <h2>Emergency SOS Incident Registry</h2>
         <p className={styles.subtext}>
           Submit a localized request for immediate rescue, medical assistance, or relief materials.

@@ -11,16 +11,20 @@ import {
   Clock,
   Info
 } from 'lucide-react';
-import { useOperationalState } from '../../context/OperationalStateContext';
+import { useTranslation } from 'react-i18next';
 import type { DemandRequest } from '../../types/request';
 import styles from './Delivery.module.css';
 
-import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
+import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
+
+import { useOperationalState } from '../../context/OperationalStateContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export const Delivery: React.FC = () => {
+  const { t } = useTranslation();
   const {
     requests,
     vehicles,
@@ -348,24 +352,25 @@ export const Delivery: React.FC = () => {
       <GradientBackground />
       
       {/* ── Page Hero ── */}
-      <header ref={heroRef} className={styles.hero}>
+      <header ref={heroRef} className={`${styles.hero} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.heroLeft}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
-            <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>LOGISTICS EXECUTION</span>
+            <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>{t('delivery.title')}</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={styles.heroTitle}>Relief Delivery &amp; Closure</h1>
+          <h1 className={styles.heroTitle}>{t('delivery.title')}</h1>
           <p className={styles.heroLead}>
-            Verify field delivery, reconcile fulfilled demand, and close the operational response loop.
+            {t('delivery.subtitle')}
           </p>
         </div>
         <div className={styles.heroRight}>
           <div className={styles.statusIndicator}>
             <span className={styles.statusDotPulse} />
-            <span className={styles.statusLabel}>DELIVERY NETWORK LIVE</span>
+            <span className={styles.statusLabel}>{t('common.active')}</span>
           </div>
           <span className={styles.statusDetails}>
-            {summaryStats.active} active deliveries · {summaryStats.awaiting} awaiting verification
+            {summaryStats.active} {t('common.active')} · {summaryStats.awaiting} {t('status.PENDING')}
           </span>
         </div>
       </header>
@@ -375,23 +380,23 @@ export const Delivery: React.FC = () => {
         <div className={styles.summaryGrid}>
           <div className={styles.summaryTile}>
             <span className={styles.summaryNum}>{String(summaryStats.active).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>Active Deliveries</span>
+            <span className={styles.summaryLabel}>{t('common.active')}</span>
           </div>
           <div className={styles.summaryTile}>
             <span className={styles.summaryNum}>{String(summaryStats.awaiting).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>Awaiting Verification</span>
+            <span className={styles.summaryLabel}>{t('status.PENDING')}</span>
           </div>
           <div className={styles.summaryTile}>
             <span className={styles.summaryNum}>{String(summaryStats.fulfilledCount).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>Fulfilled</span>
+            <span className={styles.summaryLabel}>{t('status.FULFILLED')}</span>
           </div>
           <div className={styles.summaryTile}>
             <span className={styles.summaryNum}>{String(summaryStats.partialCount).padStart(2, '0')}</span>
-            <span className={styles.summaryLabel}>Partially Fulfilled</span>
+            <span className={styles.summaryLabel}>{t('common.pending')}</span>
           </div>
           <div className={styles.summaryTile}>
             <span className={styles.summaryNum}>92%</span>
-            <span className={styles.summaryLabel}>Fulfillment Rate</span>
+            <span className={styles.summaryLabel}>{t('common.status')}</span>
           </div>
         </div>
       </section>
@@ -402,8 +407,8 @@ export const Delivery: React.FC = () => {
         {/* Left Column: Delivery Queue */}
         <div className={styles.leftCol}>
           <div className={styles.queueHeader}>
-            <span className={styles.queueTitle}>ACTIVE DELIVERY OPERATIONS</span>
-            <span className={styles.queueSubtitle}>{deliveries.length} total monitored dispatches</span>
+            <span className={styles.queueTitle}>{t('delivery.title')}</span>
+            <span className={styles.queueSubtitle}>{deliveries.length} total</span>
           </div>
           
           <div className={styles.deliveryList}>
@@ -419,7 +424,7 @@ export const Delivery: React.FC = () => {
                   <div className={styles.drLeft}>
                     <span className={styles.drId}>{d.id}</span>
                     <span className={`${styles.drBadge} ${styles['status_' + d.status]}`}>
-                      {d.status.replace(/_/g, ' ')}
+                      {t(`status.${d.status}`) || d.status.replace(/_/g, ' ')}
                     </span>
                   </div>
                   <div className={styles.drMiddle}>
@@ -428,7 +433,7 @@ export const Delivery: React.FC = () => {
                   </div>
                   <div className={styles.drRight}>
                     <span className={styles.drActionText}>
-                      {d.status === 'VERIFIED' ? 'VERIFIED' : 'AWAITING OPERATOR ACTION'}
+                      {d.status === 'VERIFIED' ? t('status.DELIVERED') : t('status.PENDING')}
                     </span>
                     <ArrowRight size={12} className={styles.drArrow} />
                   </div>

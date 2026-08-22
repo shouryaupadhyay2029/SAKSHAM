@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { gsap } from 'gsap';
 
+import { initScrollReveals } from '../../motion/scroll/scrollReveal';
+
 interface PageTransitionProps {
   children: (displayLocation: any) => React.ReactNode;
 }
@@ -20,9 +22,9 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
     if (location.pathname === displayLocation.pathname) return;
 
     // Operational context page list (Command Centre workflow pages)
-    const isOpPath = (path: string) => 
+    const isOpPath = (path: string) =>
       ['/operations/command-center', '/operations/matching', '/operations/dispatch', '/operations/delivery'].some(p => path.startsWith(p));
-    
+
     const wasOp = isOpPath(displayLocation.pathname);
     const isOp = isOpPath(location.pathname);
     const isContextChange = wasOp !== isOp;
@@ -61,11 +63,11 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
           duration: 0.38,
           ease: 'power3.out'
         }, 0)
-        .fromTo(progressBarRef.current, { width: '0%' }, {
-          width: '100%',
-          duration: 0.45,
-          ease: 'power2.inOut'
-        }, 0.15);
+          .fromTo(progressBarRef.current, { width: '0%' }, {
+            width: '100%',
+            duration: 0.45,
+            ease: 'power2.inOut'
+          }, 0.15);
       }
     });
 
@@ -77,6 +79,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
     const ctx = gsap.context(() => {
       if (prefersReducedMotion) {
         gsap.fromTo(contentRef.current, { opacity: 0 }, { opacity: 1, duration: 0.15 });
+        initScrollReveals();
         return;
       }
 
@@ -90,11 +93,15 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
         opacity: 1,
         y: 0,
         duration: 0.58,
-        ease: 'power3.out'
+        ease: 'power3.out',
+        onStart: () => {
+          // Trigger the text block reveals once the new DOM elements are fully mounted
+          initScrollReveals();
+        }
       }, 0);
 
-      // Find major headings (H1 or custom hero headers) and stagger them
-      const headings = contentRef.current?.querySelectorAll('h1, h2');
+      // Find major headings (H1 or custom hero headers) and stagger them, excluding block reveal ones
+      const headings = contentRef.current?.querySelectorAll('h1:not(.reveal-block), h2:not(.reveal-block)');
       if (headings && headings.length > 0) {
         gsap.fromTo(headings, {
           opacity: 0,

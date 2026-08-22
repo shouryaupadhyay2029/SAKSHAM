@@ -6,6 +6,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Search, X, Check, ChevronDown, ChevronUp, ArrowRight, Info } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
+import { useTranslation } from 'react-i18next';
 import { EmptyState, NoResultsState } from '../../components/ui/SystemStates';
 import { MapView } from '../../components/map/MapView';
 import {
@@ -18,6 +19,7 @@ import type { DemandRequest } from '../../types/request';
 import type { ResourceItem } from '../../types/resource';
 import styles from './DemandMatching.module.css';
 import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
 
@@ -27,12 +29,6 @@ gsap.registerPlugin(ScrollTrigger);
 
 const PRIORITY_COLOR: Record<string, string> = {
   CRITICAL: '#C0392B', HIGH: '#E86F16', MEDIUM: '#D4A017', LOW: '#2E7D32',
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'AWAITING MATCH', MATCHED: 'MATCH FOUND', ALLOCATED: 'ALLOCATED',
-  DISPATCHED: 'DISPATCHED', FULFILLING: 'FULFILLING', FULFILLED: 'FULFILLED',
-  CANCELLED: 'CANCELLED',
 };
 
 const QUALITY_CFG: Record<string, { label: string; color: string }> = {
@@ -416,6 +412,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 ════════════════════════════════════════════════════════════════════════════ */
 
 export const DemandMatching: React.FC = () => {
+  const { t } = useTranslation();
   const { requests, resources, incidents, allocateResourceToRequest } = useOperationalState();
 
   /* — State — */
@@ -601,24 +598,24 @@ export const DemandMatching: React.FC = () => {
       <GradientBackground />
 
       {/* ── Operational Header ── */}
-      <header ref={heroRef} className={styles.hero}>
+      <header ref={heroRef} className={`${styles.hero} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.heroLeft}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
-            <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>DEMAND → RESOURCE ALLOCATION</span>
+            <span className={styles.heroEyebrow} style={{ marginBottom: 0 }}>{t('matching.title')}</span>
             <PageGuideTrigger />
           </div>
-          <h1 className={styles.heroTitle}>Resource Matching Engine</h1>
+          <h1 className={styles.heroTitle}>{t('matching.title')}</h1>
           <p className={styles.heroLead}>
-            Match operational demand with the most suitable available resources across the response network.
+            {t('matching.subtitle')}
           </p>
         </div>
         <div className={styles.heroRight}>
           <div className={styles.engineStatus}>
             <span className={styles.engineDot} />
-            <span className={styles.engineLabel}>ENGINE ONLINE</span>
+            <span className={styles.engineLabel}>{t('common.active')}</span>
           </div>
-          <p className={styles.engineSub}>Deterministic scoring</p>
-          <p className={styles.engineSub}>Operator-authorized allocation</p>
+          <p className={styles.engineSub}>{t('matching.aiMatchConfidence')}</p>
           <NetworkStatus resources={resources} requests={requests} />
         </div>
       </header>
@@ -626,12 +623,12 @@ export const DemandMatching: React.FC = () => {
       {/* ── Demand Selection Workspace ── */}
       <div ref={selectorRef} className={styles.selectorWorkspace}>
         <div className={styles.selectorTop}>
-          <span className={styles.selectorEyebrow}>SELECT ACTIVE DEMAND</span>
+          <span className={styles.selectorEyebrow}>{t('demands.title')}</span>
           <div className={styles.searchBox}>
             <Search size={13} className={styles.searchIcon} />
             <input
               type="text"
-              placeholder="Search by request ID, location, resource type, priority…"
+              placeholder={t('demands.searchPlaceholder')}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
@@ -647,8 +644,8 @@ export const DemandMatching: React.FC = () => {
         <div className={styles.demandQueue}>
           {matchableDemands.length === 0 ? (
             <EmptyState
-              title="No Outstanding Demands"
-              description="All current requests are either allocated, fully resolved, or cancelled."
+              title={t('matching.noMatches')}
+              description={t('matching.noMatches')}
               iconType="check"
             />
           ) : filteredDemands.length === 0 ? (
@@ -666,12 +663,12 @@ export const DemandMatching: React.FC = () => {
                   onClick={() => handleSelectDemand(d)}
                 >
                   <span className={styles.dqId}>{d.id}</span>
-                  <span className={styles.dqPriority} style={{ color: PRIORITY_COLOR[d.priority] }}>{d.priority}</span>
+                  <span className={styles.dqPriority} style={{ color: PRIORITY_COLOR[d.priority] }}>{t(`severity.${d.priority}`) || d.priority}</span>
                   <span className={styles.dqQty}>{d.quantity.toLocaleString()} {d.unit}</span>
                   <span className={styles.dqItem}>{d.itemNeeded}</span>
                   <span className={styles.dqZone}>{d.zoneName.split(',')[0]}</span>
-                  <span className={styles.dqAffected}>{d.affectedCount.toLocaleString()} affected</span>
-                  <span className={styles.dqStatus}>{STATUS_LABEL[d.status] ?? d.status}</span>
+                  <span className={styles.dqAffected}>{d.affectedCount.toLocaleString()}</span>
+                  <span className={styles.dqStatus}>{t(`status.${d.status}`) || d.status}</span>
                   <ArrowRight size={12} className={styles.dqArrow} />
                 </button>
               );

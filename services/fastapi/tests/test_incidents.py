@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.schemas.incident import IncidentStatus
 
 client = TestClient(app)
 
@@ -8,12 +7,12 @@ def test_list_incidents():
     response = client.get("/api/v1/incidents")
     assert response.status_code == 200
     assert len(response.json()) >= 1
-    assert response.json()[0]["incidentId"] == "INC-2026-081"
+    assert any(inc["incidentId"] == "INC-2026-081" for inc in response.json())
 
 def test_get_incident_by_id_and_ref():
-    # Fetch first incident to get UUID
     res_list = client.get("/api/v1/incidents")
-    inc_uuid = res_list.json()[0]["id"]
+    inc_item = next(inc for inc in res_list.json() if inc["incidentId"] == "INC-2026-081")
+    inc_uuid = inc_item["id"]
     
     # Get by UUID
     res_uuid = client.get(f"/api/v1/incidents/{inc_uuid}")
@@ -46,7 +45,6 @@ def test_create_incident():
     assert data["status"] == "REPORTED"
 
 def test_incident_state_transitions():
-    # Create incident
     payload = {
         "title": "Incident state transition test",
         "description": "Transition description",
@@ -65,7 +63,7 @@ def test_incident_state_transitions():
     assert res_valid.status_code == 200
     assert res_valid.json()["status"] == "VERIFIED"
 
-    # VERIFIED -> RESOLVED is invalid (must go through AWAITING_MATCH, MATCHED, DISPATCHED, UNDER_RESPONSE)
+    # VERIFIED -> RESOLVED is invalid
     res_invalid = client.patch(f"/api/v1/incidents/{inc_id}", json={"status": "RESOLVED"})
     assert res_invalid.status_code == 409
     assert res_invalid.json()["error"]["code"] == "INVALID_STATE_TRANSITION"

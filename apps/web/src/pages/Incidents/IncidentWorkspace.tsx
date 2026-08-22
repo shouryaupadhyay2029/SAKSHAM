@@ -7,6 +7,7 @@ import { PageGuideTrigger, PageGuidebook } from '../../components/ui/PageGuide';
 import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
 import { ArrowRight } from 'lucide-react';
 import styles from './IncidentWorkspace.module.css';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 interface LocalNote {
   text: string;
@@ -224,8 +225,8 @@ export const IncidentWorkspace: React.FC = () => {
     <div ref={pageRef} className={styles.container}>
       <GradientBackground />
 
-      {/* ── 1. Page Header ── */}
-      <header ref={heroRef} className={styles.hero}>
+      <header ref={heroRef} className={`${styles.hero} shaderHeaderWrapper`}>
+        <ShaderBackground className="absolute inset-0" />
         <div className={styles.heroLeft}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <span className={styles.heroEyebrow}>INCIDENT RESPONSE CASE WORKSPACE</span>

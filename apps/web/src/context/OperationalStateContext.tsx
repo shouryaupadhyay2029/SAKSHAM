@@ -1,15 +1,11 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Incident, IncidentStatus } from '../types/incident';
 import type { Vehicle, VehicleStatus } from '../types/vehicle';
 import type { Shelter } from '../types/shelter';
 import type { DemandRequest, RequestStatus } from '../types/request';
-import { mockIncidents } from '../data/mockIncidents';
-import { mockVehicles } from '../data/mockVehicles';
-import { mockRequests } from '../data/mockRequests';
-import { mockShelters } from '../data/mockShelters';
 import type { ResourceItem, ResourceStatus } from '../types/resource';
-import { mockResources } from '../data/mockResources';
 import type { Coordinates, Severity } from '../types/common';
+import apiClient from '../services/apiClient';
 
 export interface DispatchMission {
   id: string;
@@ -52,138 +48,6 @@ export interface ReliefDelivery {
   exceptionReason?: string;
 }
 
-const INITIAL_MISSIONS: DispatchMission[] = [
-  {
-    id: 'DSP-DEL-041',
-    requestId: 'REQ-DEL-101',
-    vehicleId: 'VEH-BT-401',
-    status: 'EN_ROUTE',
-    destinationName: 'Yamuna Bank Inundation Area, East Delhi',
-    resourceType: 'Clean Drinking Water',
-    quantity: 12000,
-    unit: 'Liters',
-    etaMinutes: 18,
-    operatorName: 'Sgt. Harish Negi',
-    speedKmh: 45,
-    distanceKm: 6.2,
-    signalStrength: 98,
-    fuelPct: 72,
-    trafficLevel: 'MODERATE',
-    routePath: ['East Delhi Relief Depot', 'NH-24 Bypass', 'Yamuna Bank Crossing', 'Flood Relief Zone'],
-    timeline: [
-      { time: '10:42', title: 'ALLOCATION APPROVED', done: true },
-      { time: '10:47', title: 'VEHICLE ASSIGNED', done: true },
-      { time: '10:51', title: 'DISPATCH AUTHORIZED', done: true },
-      { time: '10:53', title: 'EN ROUTE TO TARGET', done: true },
-      { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
-      { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
-    ]
-  },
-  {
-    id: 'DSP-DEL-042',
-    requestId: 'REQ-DEL-103',
-    vehicleId: 'VEH-TR-102',
-    status: 'DISPATCHED',
-    destinationName: 'Okhla Structural Collapse, South-East Delhi',
-    resourceType: 'Heavy Resuscitation & Rescue Tools',
-    quantity: 4,
-    unit: 'Sets',
-    etaMinutes: 25,
-    operatorName: 'Constable Baldev Singh',
-    speedKmh: 55,
-    distanceKm: 9.4,
-    signalStrength: 94,
-    fuelPct: 88,
-    trafficLevel: 'HEAVY',
-    routePath: ['South Depot Central', 'Outer Ring Road', 'Okhla Phase III', 'Collapse Site'],
-    alertMessage: 'TRAFFIC DELAY: Construction alert near Govindpuri.',
-    timeline: [
-      { time: '11:15', title: 'ALLOCATION APPROVED', done: true },
-      { time: '11:19', title: 'VEHICLE ASSIGNED', done: true },
-      { time: '11:22', title: 'DISPATCH AUTHORIZED', done: true },
-      { time: '--:--', title: 'EN ROUTE TO TARGET', done: false },
-      { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
-      { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
-    ]
-  },
-  {
-    id: 'DSP-DEL-043',
-    requestId: 'REQ-DEL-102',
-    vehicleId: 'VEH-AM-201',
-    status: 'ARRIVED',
-    destinationName: 'Karol Bagh Fire Zone, Central-West Delhi',
-    resourceType: 'Emergency Medical Kits',
-    quantity: 50,
-    unit: 'Kits',
-    etaMinutes: 0,
-    operatorName: 'Naresh Kumar',
-    speedKmh: 0,
-    distanceKm: 0,
-    signalStrength: 92,
-    fuelPct: 65,
-    trafficLevel: 'LOW',
-    routePath: ['Dr. RML Hospital Depot', 'Pusa Road', 'Karol Bagh Metro Loop', 'Fire Zone Depot'],
-    timeline: [
-      { time: '11:02', title: 'ALLOCATION APPROVED', done: true },
-      { time: '11:05', title: 'VEHICLE ASSIGNED', done: true },
-      { time: '11:09', title: 'DISPATCH AUTHORIZED', done: true },
-      { time: '11:12', title: 'EN ROUTE TO TARGET', done: true },
-      { time: '11:25', title: 'DESTINATION ARRIVAL', done: true },
-      { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
-    ]
-  }
-];
-
-const INITIAL_DELIVERIES: ReliefDelivery[] = [
-  {
-    id: 'DEL-2026-081',
-    dispatchId: 'DSP-DEL-041',
-    demandId: 'REQ-DEL-101',
-    incidentId: 'INC-2026-101',
-    resourceId: 'RES-WT-001',
-    vehicleId: 'VEH-BT-401',
-    requestedQty: 12000,
-    allocatedQty: 12000,
-    deliveredQty: 0,
-    unit: 'Liters',
-    status: 'ARRIVED',
-    resourceType: 'Clean Drinking Water',
-    destinationName: 'Yamuna Bank Inundation Area, East Delhi'
-  },
-  {
-    id: 'DEL-2026-082',
-    dispatchId: 'DSP-DEL-042',
-    demandId: 'REQ-DEL-103',
-    incidentId: 'INC-2026-103',
-    resourceId: 'RES-EQ-005',
-    vehicleId: 'VEH-TR-102',
-    requestedQty: 4,
-    allocatedQty: 4,
-    deliveredQty: 0,
-    unit: 'Sets',
-    status: 'IN_DELIVERY',
-    resourceType: 'Heavy Resuscitation & Rescue Tools',
-    destinationName: 'Okhla Structural Collapse, South-East Delhi'
-  },
-  {
-    id: 'DEL-2026-083',
-    dispatchId: 'DSP-DEL-043',
-    demandId: 'REQ-DEL-102',
-    incidentId: 'INC-2026-102',
-    resourceId: 'RES-MD-003',
-    vehicleId: 'VEH-AM-201',
-    requestedQty: 50,
-    allocatedQty: 50,
-    deliveredQty: 50,
-    unit: 'Kits',
-    status: 'VERIFIED',
-    resourceType: 'Emergency Medical Kits',
-    destinationName: 'Karol Bagh Fire Zone, Central-West Delhi',
-    verifiedBy: 'Seema Gupta',
-    verifiedAt: '10:58',
-    notes: 'Kits distributed successfully at relief center.'
-  }
-];
 
 export interface ToastMessage {
   id: string;
@@ -215,7 +79,6 @@ interface OperationalStateContextType {
     details: string;
   }) => string; // Returns request ID
 
-  // --- Manual Incident intake ---
   addManualIncident: (manualData: {
     type: any;
     severity: Severity;
@@ -227,7 +90,7 @@ interface OperationalStateContextType {
     source: string;
     peopleAffected: number;
     requiredResources?: any[];
-  }) => string; // Returns incident ID
+  }) => Promise<string>; // Returns incident ID
 
   // --- Dispatch ---
   dispatchVehicleToIncident: (vehicleId: string, incidentId: string) => void;
@@ -251,21 +114,206 @@ interface OperationalStateContextType {
   setVehicles: React.Dispatch<React.SetStateAction<Vehicle[]>>;
   setRequests: React.Dispatch<React.SetStateAction<DemandRequest[]>>;
   setResources: React.Dispatch<React.SetStateAction<ResourceItem[]>>;
+  setShelters: React.Dispatch<React.SetStateAction<Shelter[]>>;
+}
+
+export function normalizeIncident(backendInc: any): Incident {
+  return {
+    id: backendInc.incidentId || backendInc.id,
+    type: backendInc.type,
+    severity: backendInc.severity,
+    location: backendInc.location,
+    coordinates: {
+      lat: backendInc.latitude,
+      lng: backendInc.longitude
+    },
+    time: backendInc.reportedAt || backendInc.createdAt || new Date().toISOString(),
+    status: backendInc.status,
+    assignedTeam: backendInc.assignedUnit || 'UNASSIGNED',
+    description: backendInc.description,
+    reporterName: backendInc.reporterName || 'Field Reporter',
+    reporterContact: backendInc.reporterContact || '',
+    casualtiesCount: 0,
+    displacedCount: backendInc.displacedPeople || 0,
+    reportedAt: backendInc.reportedAt,
+    updatedAt: backendInc.updatedAt,
+    source: backendInc.region || 'HEADQUARTERS',
+    peopleAffected: backendInc.affectedPeople || 0,
+    requiredResources: backendInc.requiredResources || [],
+    timeline: backendInc.timeline || [
+      {
+        time: new Date(backendInc.reportedAt || backendInc.createdAt || Date.now()).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        title: 'INCIDENT REPORTED',
+        description: 'Incident registered in the command network database.'
+      }
+    ]
+  };
+}
+
+export function normalizeResource(backendRes: any): ResourceItem {
+  return {
+    id: backendRes.resourceId || backendRes.id,
+    name: backendRes.materialName,
+    category: backendRes.category,
+    quantity: backendRes.availableQuantity,
+    allocatedQuantity: backendRes.reservedQuantity,
+    unit: backendRes.unit,
+    locationName: backendRes.location,
+    coordinates: {
+      lat: backendRes.latitude,
+      lng: backendRes.longitude
+    },
+    status: backendRes.status,
+    lastUpdated: backendRes.lastUpdated || backendRes.updatedAt || new Date().toISOString(),
+    contactPerson: backendRes.pointOfContact || 'Depot Manager',
+    contactNumber: '+91-99999-88888'
+  };
+}
+
+export function normalizeVehicle(backendVeh: any): Vehicle {
+  let vehType = (backendVeh.type || 'TRUCK').toUpperCase();
+  if (vehType === 'RESCUE BOAT') vehType = 'RESCUE_BOAT';
+  return {
+    id: backendVeh.vehicleId || backendVeh.id,
+    name: backendVeh.name,
+    type: vehType as any,
+    capacity: `${backendVeh.capacity} ${backendVeh.capacityUnit}`,
+    status: backendVeh.status,
+    location: {
+      lat: backendVeh.currentLatitude,
+      lng: backendVeh.currentLongitude
+    },
+    driverName: backendVeh.operatorName,
+    driverContact: backendVeh.contactRadio,
+    speedKmh: backendVeh.speed || 0,
+    incidentId: backendVeh.currentMission || undefined
+  };
+}
+
+export function normalizeDemand(backendDem: any): DemandRequest {
+  return {
+    id: backendDem.requestId || backendDem.id,
+    incidentId: backendDem.incidentId,
+    zoneName: backendDem.affectedZone,
+    coordinates: { lat: 28.6139, lng: 77.2090 },
+    itemNeeded: backendDem.requestedType,
+    category: backendDem.requestedType,
+    quantity: backendDem.quantity,
+    unit: backendDem.unit,
+    priority: backendDem.priority,
+    affectedCount: backendDem.affectedPeople || 0,
+    status: backendDem.status,
+    requestedAt: backendDem.createdAt || new Date().toISOString()
+  };
+}
+
+export function normalizeShelter(backendShelter: any): Shelter {
+  return {
+    id: backendShelter.shelterId || backendShelter.id,
+    name: backendShelter.name,
+    locationName: backendShelter.location,
+    coordinates: {
+      lat: backendShelter.latitude,
+      lng: backendShelter.longitude
+    },
+    capacityTotal: backendShelter.totalCapacity,
+    capacityOccupied: backendShelter.currentOccupancy,
+    status: backendShelter.status,
+    contactPerson: backendShelter.contactPerson,
+    contactNumber: backendShelter.contactInfo,
+    resourcesAvailable: backendShelter.facilities || []
+  };
 }
 
 const OperationalStateContext = createContext<OperationalStateContextType | undefined>(undefined);
 
 export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [incidents, setIncidents] = useState<Incident[]>(mockIncidents);
-  const [vehicles, setVehicles] = useState<Vehicle[]>(mockVehicles);
-  const [requests, setRequests] = useState<DemandRequest[]>(mockRequests);
-  const [shelters] = useState<Shelter[]>(mockShelters);
-  const [resources, setResources] = useState<ResourceItem[]>(mockResources);
-  const [missions, setMissions] = useState<DispatchMission[]>(INITIAL_MISSIONS);
-  const [deliveries, setDeliveries] = useState<ReliefDelivery[]>(INITIAL_DELIVERIES);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [requests, setRequests] = useState<DemandRequest[]>([]);
+  const [shelters, setShelters] = useState<Shelter[]>([]);
+  const [resources, setResources] = useState<ResourceItem[]>([]);
+  const [missions, setMissions] = useState<DispatchMission[]>([]);
+  const [deliveries, setDeliveries] = useState<ReliefDelivery[]>([]);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadRealData = async () => {
+      try {
+        const [incRes, reqRes, resRes, vehRes, shlRes] = await Promise.allSettled([
+          apiClient.getIncidents(),
+          apiClient.getDemands(),
+          apiClient.getResources(),
+          apiClient.getVehicles(),
+          apiClient.getShelters(),
+        ]);
+        if (!isMounted) return;
+        if (incRes.status === 'fulfilled') {
+          const raw = incRes.value;
+          const parsedArray = (raw as any)?.data || [];
+          console.log('[INCIDENT DEBUG] API response:', raw);
+          console.log('[INCIDENT DEBUG] parsed incidents:', parsedArray);
+          console.log('[INCIDENT DEBUG] count:', parsedArray.length);
+          if (parsedArray.length > 0) {
+            console.log('[INCIDENT DEBUG] first incident:', parsedArray[0]);
+            const firstNorm = normalizeIncident(parsedArray[0]);
+            console.log('[INCIDENT DEBUG] normalized first incident:', firstNorm);
+          }
+          const normalized = parsedArray.map((inc: any) => {
+            const norm = normalizeIncident(inc);
+            (norm as any).uuid = inc.id;
+            return norm;
+          });
+          console.log('[INCIDENT DEBUG] normalized incidents:', normalized);
+          console.log('[INCIDENT DEBUG] setting incidents state:', normalized);
+          setIncidents(normalized);
+        }
+        if (reqRes.status === 'fulfilled') {
+          const raw = (reqRes.value as any)?.data || [];
+          const normalized = raw.map((item: any) => {
+            const norm = normalizeDemand(item);
+            (norm as any).uuid = item.id;
+            return norm;
+          });
+          setRequests(normalized);
+        }
+        if (resRes.status === 'fulfilled') {
+          const raw = (resRes.value as any)?.data || [];
+          const normalized = raw.map((item: any) => {
+            const norm = normalizeResource(item);
+            (norm as any).uuid = item.id;
+            return norm;
+          });
+          setResources(normalized);
+        }
+        if (vehRes.status === 'fulfilled') {
+          const raw = (vehRes.value as any)?.data || [];
+          const normalized = raw.map((item: any) => {
+            const norm = normalizeVehicle(item);
+            (norm as any).uuid = item.id;
+            return norm;
+          });
+          setVehicles(normalized);
+        }
+        if (shlRes.status === 'fulfilled') {
+          const raw = (shlRes.value as any)?.data || [];
+          const normalized = raw.map((item: any) => {
+            const norm = normalizeShelter(item);
+            (norm as any).uuid = item.id;
+            return norm;
+          });
+          setShelters(normalized);
+        }
+      } catch (err) {
+        console.warn('Backend API connection notice:', err);
+      }
+    };
+    loadRealData();
+    return () => { isMounted = false; };
+  }, []);
 
   React.useEffect(() => {
     const handleOnline = () => {
@@ -377,7 +425,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
   };
 
   /** Manual Incident Intake */
-  const addManualIncident = (manualData: {
+  const addManualIncident = async (manualData: {
     type: any;
     severity: Severity;
     location: string;
@@ -389,6 +437,34 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     peopleAffected: number;
     requiredResources?: any[];
   }) => {
+    try {
+      const payload = {
+        title: `${manualData.type} at ${manualData.location}`,
+        description: manualData.description,
+        type: manualData.type,
+        location: manualData.location,
+        latitude: manualData.coordinates.lat,
+        longitude: manualData.coordinates.lng,
+        region: manualData.source || 'HEADQUARTERS',
+        severity: manualData.severity,
+        affectedPeople: manualData.peopleAffected || 0,
+        displacedPeople: Math.floor((manualData.peopleAffected || 0) * 0.2),
+        assignedUnit: null
+      };
+
+      const res = await apiClient.createIncident(payload);
+      if (res && res.data) {
+        const normalized = normalizeIncident(res.data);
+        (normalized as any).uuid = res.data.id;
+        setIncidents(prev => [normalized, ...prev]);
+        addToast('SUCCESS', `Incident ${normalized.id} successfully created and persisted.`);
+        return normalized.id;
+      }
+    } catch (err: any) {
+      console.error('Failed to create incident in DB:', err);
+      addToast('ERROR', `Failed to persist incident: ${err.message}`);
+    }
+
     const incidentId = `INC-2026-${Math.floor(Math.random() * 800) + 200}`;
     const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
 
@@ -413,7 +489,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
         {
           time: timeStr,
           title: 'INCIDENT REPORTED',
-          description: `Manual incident logged at Headquarters by operator ${manualData.reporterName}.`
+          description: `Manual incident logged locally (fallback) by operator ${manualData.reporterName}.`
         }
       ]
     };
@@ -713,6 +789,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
         setVehicles,
         setRequests,
         setResources,
+        setShelters,
       }}
     >
       {children}

@@ -7,6 +7,8 @@ class DeliveryStatus(str, Enum):
     PENDING = "PENDING"
     IN_TRANSIT = "IN_TRANSIT"
     ARRIVED = "ARRIVED"
+    DELIVERED = "DELIVERED"
+    PARTIAL = "PARTIAL"
     VERIFIED = "VERIFIED"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
@@ -23,6 +25,17 @@ class DeliveryBase(BaseModel):
 
 class DeliveryCreate(DeliveryBase):
     pass
+
+class DeliveryStatusUpdate(BaseModel):
+    status: DeliveryStatus
+    receivedBy: Optional[str] = None
+    confirmation: Optional[str] = None
+    notes: Optional[str] = None
+
+class DeliveryVerifyRequest(BaseModel):
+    verifiedQuantity: float
+    notes: Optional[str] = None
+    recipientName: Optional[str] = None
 
 class DeliveryResponse(DeliveryBase):
     id: str

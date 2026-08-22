@@ -6,10 +6,13 @@
 /* ── Page wrapper ── */
 .page {
   min-height: 100vh;
-  background-color: #F7F4EF;
+  background-color: #080A09; /* Fallback before canvas renders */
   padding: 12px;
+  padding-top: 84px; /* Space for the sticky transparent header */
   box-sizing: border-box;
   font-family: 'Inter', sans-serif;
+  position: relative;
+  overflow: hidden;
 }
 
 /* ── Two-column grid ── */
@@ -33,13 +36,17 @@
 .formCol {
   display: flex;
   align-items: flex-start;
-  background: #ffffff;
-  border: 1px solid rgba(11, 33, 25, 0.12);
+  background: rgba(10, 18, 14, 0.75);
+  border: 1px solid rgba(250, 248, 243, 0.08);
   border-radius: 8px;
   padding: 56px 48px;
   box-sizing: border-box;
   overflow-y: auto;
   min-height: 720px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 2;
 }
 
 @media (max-width: 768px) {
@@ -58,7 +65,6 @@
   gap: 0;
 }
 
-/* ── Back link ── */
 .backLink {
   display: inline-flex;
   align-items: center;
@@ -67,14 +73,14 @@
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(11, 33, 25, 0.45);
+  color: rgba(250, 248, 243, 0.45);
   text-decoration: none;
   margin-bottom: 40px;
   width: fit-content;
   transition: color 0.2s;
 }
 .backLink:hover {
-  color: #0B2119;
+  color: #F47C20;
 }
 
 /* ── Brand ── */
@@ -87,20 +93,20 @@
 .brandMark {
   width: 40px;
   height: 40px;
-  border: 1.5px solid rgba(11, 33, 25, 0.18);
+  border: 1.5px solid rgba(250, 248, 243, 0.15);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0B2119;
-  background: #FAF8F3;
+  color: #FAF8F3;
+  background: rgba(250, 248, 243, 0.04);
 }
 .brandName {
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 0.18em;
-  color: #0B2119;
+  color: #FAF8F3;
 }
 
 /* ── Heading ── */
@@ -120,14 +126,14 @@
   font-family: 'Playfair Display', Georgia, serif;
   font-size: clamp(32px, 4vw, 48px);
   font-weight: 700;
-  color: #0B2119;
+  color: #FAF8F3;
   line-height: 1.1;
   letter-spacing: -0.02em;
   margin: 0 0 10px;
 }
 .subtext {
   font-size: 15px;
-  color: rgba(11, 33, 25, 0.55);
+  color: rgba(250, 248, 243, 0.55);
   line-height: 1.6;
   margin: 0;
 }
@@ -137,18 +143,18 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: rgba(11, 33, 25, 0.04);
-  border: 1px solid rgba(11, 33, 25, 0.1);
-  border-left: 3px solid rgba(11, 33, 25, 0.22);
+  background: rgba(250, 248, 243, 0.03);
+  border: 1px solid rgba(250, 248, 243, 0.08);
+  border-left: 3px solid rgba(244, 124, 32, 0.55);
   border-radius: 8px;
   padding: 11px 14px;
   margin-bottom: 28px;
   font-size: 12px;
-  color: rgba(11, 33, 25, 0.65);
+  color: rgba(250, 248, 243, 0.65);
   line-height: 1.5;
 }
 .noticeIcon {
-  color: rgba(11, 33, 25, 0.35);
+  color: #F47C20;
   flex-shrink: 0;
   margin-top: 1px;
 }
@@ -194,8 +200,8 @@
   display: flex;
   align-items: center;
   height: 58px;
-  background: #ffffff;
-  border: 1px solid rgba(11, 33, 25, 0.18);
+  background: rgba(250, 248, 243, 0.03);
+  border: 1px solid rgba(250, 248, 243, 0.12);
   border-radius: 10px;
   padding: 0 18px;
   gap: 10px;
@@ -203,8 +209,8 @@
   cursor: text;
 }
 .fieldPill:focus-within {
-  border-color: #0B2119;
-  box-shadow: 0 0 0 3px rgba(11, 33, 25, 0.07);
+  border-color: #F47C20;
+  box-shadow: 0 0 0 3px rgba(244, 124, 32, 0.15);
 }
 .fieldPillError {
   border-color: #c82828;
@@ -221,11 +227,11 @@
   outline: none;
   font-family: 'Inter', sans-serif;
   font-size: 15px;
-  color: #0B2119;
+  color: #FAF8F3;
   padding: 0;
 }
 .fieldInput::placeholder {
-  color: rgba(11, 33, 25, 0.3);
+  color: rgba(250, 248, 243, 0.25);
 }
 .fieldInput:disabled {
   opacity: 0.6;
@@ -239,7 +245,7 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
-  color: rgba(11, 33, 25, 0.45);
+  color: rgba(250, 248, 243, 0.45);
   white-space: nowrap;
   transition: opacity 0.2s;
   pointer-events: none;
@@ -256,19 +262,18 @@
   padding-left: 4px;
 }
 
-/* Toggle password button */
 .togglePw {
   flex-shrink: 0;
   background: none;
   border: none;
   padding: 4px;
-  color: rgba(11, 33, 25, 0.35);
+  color: rgba(250, 248, 243, 0.35);
   cursor: pointer;
   display: flex;
   align-items: center;
   transition: color 0.2s;
 }
-.togglePw:hover { color: #0B2119; }
+.togglePw:hover { color: #F47C20; }
 .togglePw:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Forgot row ── */
@@ -279,11 +284,11 @@
 }
 .forgotLink {
   font-size: 12px;
-  color: rgba(11, 33, 25, 0.45);
+  color: rgba(250, 248, 243, 0.45);
   text-decoration: none;
   transition: color 0.2s;
 }
-.forgotLink:hover { color: #0B2119; }
+.forgotLink:hover { color: #F47C20; }
 
 /* ── Submit button ── */
 .submitBtn {
@@ -293,9 +298,9 @@
   gap: 8px;
   width: 100%;
   height: 52px;
-  background: #0B2119;
+  background: #F47C20;
   color: #FAF8F3;
-  border: 1px solid rgba(11, 33, 25, 0.6);
+  border: 1px solid rgba(244, 124, 32, 0.6);
   border-radius: 10px;
   font-family: 'Inter', sans-serif;
   font-size: 13px;
@@ -305,7 +310,7 @@
   transition: background 0.2s, opacity 0.2s, transform 0.15s;
 }
 .submitBtn:hover:not(:disabled) {
-  background: #1A3D2B;
+  background: #D76510;
 }
 .submitBtn:active:not(:disabled) {
   transform: scale(0.99);
@@ -333,9 +338,9 @@
 .civilianRow {
   text-align: center;
   padding-top: 24px;
-  border-top: 1px solid rgba(11, 33, 25, 0.08);
+  border-top: 1px solid rgba(250, 248, 243, 0.08);
   font-size: 13px;
-  color: rgba(11, 33, 25, 0.5);
+  color: rgba(250, 248, 243, 0.45);
   line-height: 1.6;
   margin-bottom: 24px;
 }
@@ -374,7 +379,7 @@
   justify-content: space-between;
   background: none;
   border: none;
-  border-bottom: 1px solid rgba(11, 33, 25, 0.06);
+  border-bottom: 1px solid rgba(250, 248, 243, 0.06);
   padding: 8px 2px;
   cursor: pointer;
   gap: 12px;
@@ -382,7 +387,7 @@
   transition: background 0.15s;
 }
 .demoBtn:last-child { border-bottom: none; }
-.demoBtn:hover { background: rgba(244, 124, 32, 0.06); }
+.demoBtn:hover { background: rgba(244, 124, 32, 0.08); }
 .demoRole {
   font-size: 9px;
   font-weight: 700;
@@ -393,7 +398,7 @@
 .demoEmail {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
-  color: rgba(11, 33, 25, 0.5);
+  color: rgba(250, 248, 243, 0.45);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -463,4 +468,83 @@
   height: 36px;
   background: rgba(250, 248, 243, 0.12);
   flex-shrink: 0;
+}
+
+/* ── Footer ── */
+.footer {
+  margin-top: 48px;
+  border-top: 1px solid rgba(250, 248, 243, 0.08);
+  padding: 24px 16px 12px;
+  position: relative;
+  z-index: 10;
+}
+
+.footerInner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 11px;
+  color: rgba(250, 248, 243, 0.35);
+  font-family: 'Inter', sans-serif;
+}
+
+.footerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footerSystemName {
+  font-weight: 700;
+  color: rgba(250, 248, 243, 0.50);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.footerDivider {
+  color: rgba(250, 248, 243, 0.15);
+}
+
+.footerSecurity {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+}
+
+.footerCenter {
+  text-align: center;
+  max-width: 500px;
+}
+
+.footerCopyright {
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+}
+
+.footerRight {
+  display: flex;
+  align-items: center;
+}
+
+.footerNode {
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  background: rgba(250, 248, 243, 0.04);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(250, 248, 243, 0.08);
+  color: rgba(250, 248, 243, 0.45);
+}
+
+@media (max-width: 768px) {
+  .footerInner {
+    flex-direction: column;
+    text-align: center;
+  }
+  .footerLeft, .footerRight {
+    justify-content: center;
+  }
 }

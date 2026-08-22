@@ -4,23 +4,18 @@ import { useAuth } from '../context/AuthContext';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
-  Menu, X, Search, ChevronDown, LayoutGrid,
+  Menu, X, Search, ChevronDown,
   AlertTriangle, Package, Truck, Home, AlertCircle,
   FileText, Phone, Info, Zap, Activity, BookOpen,
 } from 'lucide-react';
 import styles from './PublicLayout.module.css';
+import { GradientBackground } from '../components/ui/noisy-gradient-backgrounds';
+import Footer from '../components/Footer/Footer';
 
 gsap.registerPlugin(ScrollTrigger);
 
 // ─── Dropdown data ─────────────────────────────────────────────────────────
 const GET_HELP_ITEMS = [
-  {
-    icon: AlertCircle,
-    to: '/report',
-    title: 'Civilian SOS',
-    desc: 'Report an emergency or request assistance',
-    highlight: true,
-  },
   {
     icon: Home,
     to: '/operations/shelters',
@@ -38,12 +33,6 @@ const GET_HELP_ITEMS = [
 ];
 
 const RESPONSE_ITEMS = [
-  {
-    icon: LayoutGrid,
-    to: '/operations/command-center',
-    title: 'Command Centre',
-    desc: 'Live operational situational overview',
-  },
   {
     icon: AlertTriangle,
     to: '/operations/incidents',
@@ -148,14 +137,14 @@ const NavItem: React.FC<NavItemProps> = ({ label, children, isActive }) => {
       onMouseLeave={close}
     >
       <button
-        className={`${styles.navLink} ${isActive || isOpen ? styles.navLinkActive : ''}`}
+        className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
         onClick={() => (isOpen ? close() : open())}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
         {label}
         <ChevronDown size={12} className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} />
-        <span className={styles.activeIndicator} />
+        {isActive && <span className={styles.activeIndicator} />}
       </button>
 
       <div
@@ -193,10 +182,15 @@ const DropItem: React.FC<DropItemProps> = ({ icon: Icon, to, anchor, title, desc
     </div>
   );
 
+  const handleClick = () => {
+    window.scrollTo(0, 0);
+    if (onClick) onClick();
+  };
+
   if (anchor) {
-    return <a href={anchor} className={styles.dropItemLink} onClick={onClick}>{inner}</a>;
+    return <a href={anchor} className={styles.dropItemLink} onClick={handleClick}>{inner}</a>;
   }
-  return <Link to={to!} className={styles.dropItemLink} onClick={onClick}>{inner}</Link>;
+  return <Link to={to!} className={styles.dropItemLink} onClick={handleClick}>{inner}</Link>;
 };
 
 // ─── Main Layout ─────────────────────────────────────────────────────────────
@@ -286,9 +280,15 @@ export const PublicLayout: React.FC = () => {
   const toggleMobile = (key: string) =>
     setMobileExpanded(prev => (prev === key ? null : key));
 
-  return (
-    <div className={styles.container}>
 
+
+  // Show dark/transparent header on home top and officer login/forgot-password pages
+  const isOfficerRoute = location.pathname.startsWith('/officer');
+  const isDarkHeader = (isHome && !isScrolled) || isOfficerRoute;
+  const isStickyHeader = isHome || isOfficerRoute;
+
+  return (
+    <div className={`${styles.container} ${isOfficerRoute ? styles.containerDark : ''}`}>
       {/* ── ANNOUNCEMENT BAR ── */}
       {isAlertVisible && (
         <div className={styles.announcementBar}>
@@ -306,12 +306,43 @@ export const PublicLayout: React.FC = () => {
       )}
 
       {/* ── MAIN NAV HEADER ── */}
-      <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''} ${isCompressed ? styles.headerCompressed : ''}`}>
+      <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''} ${isCompressed ? styles.headerCompressed : ''} ${isStickyHeader ? styles.headerSticky : ''} ${isDarkHeader ? styles.headerHomeDark : ''}`}>
+        {/* Animated gradient background — orange-dominant, mirrors hero palette */}
+        {isHome && !isScrolled && (
+          <GradientBackground
+            gradientType="radial-gradient"
+            gradientSize="220% 600%"
+            gradientOrigin="bottom-right"
+            colors={[
+              { color: 'rgba(244, 124, 32, 1)', stop: '0%' },
+              { color: 'rgba(215, 101, 16, 1)', stop: '18%' },
+              { color: 'rgba(180, 80,  15, 1)', stop: '36%' },
+              { color: 'rgba(120, 55,  10, 1)', stop: '55%' },
+              { color: 'rgba(18,  50,  36, 1)', stop: '75%' },
+              { color: 'rgba(14,  35,  26, 1)', stop: '88%' },
+              { color: 'rgba(10,  24,  18, 1)', stop: '100%' },
+            ]}
+            noisePatternAlpha={18}
+            noiseIntensity={0.45}
+            noisePatternRefreshInterval={2}
+            noisePatternSize={90}
+          />
+        )}
         <div className={styles.headerWrapper}>
 
           {/* Brand */}
           <div className={styles.brandArea}>
-            <img src="/logo.png" alt="SAKSHAM Logo" style={{ width: '60px', height: '60px', objectFit: 'contain', marginRight: '14px' }} />
+            <img
+              src="/logo.png"
+              alt="SAKSHAM Logo"
+              style={{
+                width: isScrolled ? '60px' : '85px',
+                height: isScrolled ? '60px' : '85px',
+                objectFit: 'contain',
+                marginRight: '14px',
+                transition: 'width 400ms cubic-bezier(0.22, 1, 0.36, 1), height 400ms cubic-bezier(0.22, 1, 0.36, 1)'
+              }}
+            />
             <Link to="/" className={styles.logoText}>SAKSHAM</Link>
           </div>
 
@@ -436,22 +467,22 @@ export const PublicLayout: React.FC = () => {
                     fontSize: '10px',
                     fontWeight: 700,
                     letterSpacing: '0.1em',
-                    color: 'rgba(26,47,35,0.55)',
+                    color: isHome && !isScrolled ? 'rgba(250,248,243,0.55)' : 'rgba(26,47,35,0.55)',
                     textDecoration: 'none',
                     textTransform: 'uppercase',
                     fontFamily: 'Inter, sans-serif',
-                    border: '1px solid rgba(26,47,35,0.18)',
+                    border: `1px solid ${isHome && !isScrolled ? 'rgba(250,248,243,0.22)' : 'rgba(26,47,35,0.18)'}`,
                     borderRadius: '3px',
                     padding: '6px 12px',
                     transition: 'all 0.2s',
                     whiteSpace: 'nowrap',
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLAnchorElement).style.color = '#1A2F23';
-                    (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(26,47,35,0.04)';
+                    (e.currentTarget as HTMLAnchorElement).style.color = isHome && !isScrolled ? '#FAF8F3' : '#1A2F23';
+                    (e.currentTarget as HTMLAnchorElement).style.background = isHome && !isScrolled ? 'rgba(250,248,243,0.08)' : 'rgba(26,47,35,0.04)';
                   }}
                   onMouseLeave={e => {
-                    (e.currentTarget as HTMLAnchorElement).style.color = 'rgba(26,47,35,0.55)';
+                    (e.currentTarget as HTMLAnchorElement).style.color = isHome && !isScrolled ? 'rgba(250,248,243,0.55)' : 'rgba(26,47,35,0.55)';
                     (e.currentTarget as HTMLAnchorElement).style.background = 'none';
                   }}
                 >
@@ -598,60 +629,8 @@ export const PublicLayout: React.FC = () => {
         <Outlet />
       </main>
 
-      {/* ── FOOTER (unchanged) ── */}
-      <footer ref={footerRef} className={`${styles.footer} textureForest`}>
-        <div className={`${styles.footerTopDivider} footer-animate`}>
-          <div className={styles.footerTopDividerSignal} />
-        </div>
-
-        <div className={styles.footerContent}>
-          <div className={`${styles.footerBrand} footer-animate`}>
-            <h3>SAKSHAM</h3>
-            <p>Resilient Disaster Relief &amp; Logistics Systems</p>
-          </div>
-          <div className={styles.footerLinks}>
-            <div className="footer-animate">
-              <h4>OPERATIONS</h4>
-              <Link to="/operations/command-center" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> Command Center
-              </Link>
-              <Link to="/operations/incidents" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> Live Incidents
-              </Link>
-              <Link to="/operations/resources" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> Resource Registry
-              </Link>
-            </div>
-            <div className="footer-animate">
-              <h4>RESOURCES</h4>
-              <Link to="/help" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> Helplines
-              </Link>
-              <Link to="/report" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> File SOS Report
-              </Link>
-              <a href="#" className={styles.footerLink}>
-                <span className={styles.footerLinkBullet}>→</span> System Status
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className={`${styles.footerStatus} footer-animate`}>
-          <span className={styles.statusDot} />
-          <span>RESPONSE NETWORK ONLINE</span>
-        </div>
-
-        <div className={`${styles.footerBottom} footer-animate`}>
-          <p>&copy; {new Date().getFullYear()} SAKSHAM. Designed for SIH 2026. All rights reserved.</p>
-          <div className={styles.footerSystemLabel}>
-            <span>SAKSHAM RESPONSE NETWORK</span>
-            <span>SYSTEM STATUS / ONLINE</span>
-          </div>
-        </div>
-
-        <div className={styles.hugeWordmark} aria-hidden="true">SAKSHAM</div>
-      </footer>
+      {/* ── GLOBAL FOOTER ── */}
+      <Footer />
     </div>
   );
 };

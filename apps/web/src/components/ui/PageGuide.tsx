@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { HelpCircle, ArrowUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import styles from './PageGuide.module.css';
@@ -305,6 +306,7 @@ interface PageGuideTriggerProps {
 }
 
 export const PageGuideTrigger: React.FC<PageGuideTriggerProps> = ({ onClick }) => {
+  const { t } = useTranslation();
   const handleScrollToGuide = (e: React.MouseEvent) => {
     e.preventDefault();
     if (onClick) {
@@ -335,14 +337,18 @@ export const PageGuideTrigger: React.FC<PageGuideTriggerProps> = ({ onClick }) =
     }
   };
 
+  if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+    return null;
+  }
+
   return (
     <button
       className={styles.triggerBtn}
       onClick={handleScrollToGuide}
-      aria-label="Operational Guidebook: How this works"
+      aria-label={t('pageGuide.title')}
     >
       <HelpCircle size={13} />
-      <span>How this works</span>
+      <span>{t('pageGuide.title')}</span>
     </button>
   );
 };
@@ -407,7 +413,7 @@ export const PageGuidebook: React.FC<PageGuidebookProps> = ({ guideKey }) => {
     };
   }, [guideKey]);
 
-  if (!guide) return null;
+  if (!guide || guideKey !== 'home') return null;
 
   return (
     <section

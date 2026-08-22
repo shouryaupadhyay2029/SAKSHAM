@@ -1,8 +1,10 @@
 import { GrainGradient } from "@paper-design/shaders-react";
-import { useState, useEffect, useId } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { authService } from "../../services/authService";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "../../components/LanguageSwitcher/LanguageSwitcher";
 import { Shield, Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
 import styles from "./OfficerLogin.module.css";
 
@@ -23,7 +25,95 @@ const ERROR_MESSAGES: Record<NonNullable<LoginError>, { heading: string; body: s
   },
 };
 
+function OrbitalLinesBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let width = 0;
+    let height = 0;
+    let offset = 0;
+
+    const resize = () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", resize);
+    resize();
+
+    // Concentric orbital curves from bottom-right towards top-left
+    const arcCount = 16;
+    const arcs = Array.from({ length: arcCount }, (_, i) => {
+      const baseRadius = 200 + i * 80;
+      const speed = 0.05 + (i % 3) * 0.02;
+      const isDashed = i % 2 === 0;
+      // dash array with randomized segment lengths
+      const dashPattern = isDashed ? [100 + (i % 4) * 50, 300 + (i % 3) * 100] : null;
+      const opacity = 0.02 + (i % 4) * 0.015; // low opacity, very elegant
+      return { baseRadius, speed, isDashed, dashPattern, opacity };
+    });
+
+    const draw = () => {
+      // Deep dark space background color matching SAKSHAM premium aesthetics
+      ctx.fillStyle = "#060807";
+      ctx.fillRect(0, 0, width, height);
+
+      // Radial coordinates originating at bottom-right corner
+      const originX = width * 1.05;
+      const originY = height * 1.05;
+
+      offset += 0.4; // animation motion step
+
+      arcs.forEach((arc) => {
+        ctx.beginPath();
+        ctx.arc(originX, originY, arc.baseRadius, Math.PI, 1.5 * Math.PI);
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = `rgba(250, 248, 243, ${arc.opacity})`;
+
+        if (arc.isDashed && arc.dashPattern) {
+          ctx.setLineDash(arc.dashPattern);
+          ctx.lineDashOffset = offset * arc.speed;
+        } else {
+          ctx.setLineDash([]);
+        }
+
+        ctx.stroke();
+      });
+
+      animationFrameId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        zIndex: 0,
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+
 export default function OfficerLogin() {
+  const { t } = useTranslation();
   const { isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -63,7 +153,7 @@ export default function OfficerLogin() {
     setIsSubmitting(true);
     try {
       const result = await login(email, password);
-      if (result.success) {
+      if (result.success === true) {
         const redirect = searchParams.get('redirect');
         navigate(redirect ? decodeURIComponent(redirect) : '/operations', { replace: true });
       } else {
@@ -80,6 +170,7 @@ export default function OfficerLogin() {
 
   return (
     <div className={styles.page}>
+      <OrbitalLinesBackground />
       <div className={styles.grid}>
 
         {/* ── LEFT: FORM COLUMN ── */}
@@ -93,24 +184,27 @@ export default function OfficerLogin() {
             </Link>
 
             {/* Brand */}
-            <div className={styles.brand}>
-              <div className={styles.brandMark}>
-                <Shield size={18} />
+            <div className="flex items-center justify-between w-full mb-6">
+              <div className={styles.brand}>
+                <div className={styles.brandMark}>
+                  <Shield size={18} />
+                </div>
+                <span className={styles.brandName}>{t('common.appName')}</span>
               </div>
-              <span className={styles.brandName}>SAKSHAM</span>
+              <LanguageSwitcher variant="compact" />
             </div>
 
             {/* Heading block */}
             <div className={styles.headingBlock}>
               <p className={styles.accessLabel}>AUTHORIZED RESPONSE ACCESS</p>
-              <h1 className={styles.heading}>Officer Sign In</h1>
-              <p className={styles.subtext}>Sign in to access the SAKSHAM operational network.</p>
+              <h1 className={styles.heading}>{t('auth.loginTitle')}</h1>
+              <p className={styles.subtext}>{t('auth.loginSubtitle')}</p>
             </div>
 
             {/* Official notice */}
             <div className={styles.notice}>
               <AlertCircle size={14} className={styles.noticeIcon} />
-              <span><strong>OFFICIAL ACCESS ONLY</strong> — This portal is intended for authorized emergency-response personnel.</span>
+              <span><strong>{t('auth.loginTitle')}</strong> — {t('auth.loginSubtitle')}</span>
             </div>
 
             {/* Error banner */}
@@ -141,7 +235,7 @@ export default function OfficerLogin() {
                     }}
                     className={styles.fieldInput}
                   />
-                  <span className={styles.fieldLabel}>Official ID / Email</span>
+                  <span className={styles.fieldLabel}>{t('auth.emailPlaceholder')}</span>
                 </div>
                 {fieldErrors.email && <span className={styles.fieldError}>{fieldErrors.email}</span>}
               </div>
@@ -163,7 +257,7 @@ export default function OfficerLogin() {
                     }}
                     className={styles.fieldInput}
                   />
-                  <span className={styles.fieldLabel}>Password</span>
+                  <span className={styles.fieldLabel}>{t('auth.passwordPlaceholder')}</span>
                   <button
                     type="button"
                     className={styles.togglePw}
@@ -179,7 +273,7 @@ export default function OfficerLogin() {
 
               {/* Forgot */}
               <div className={styles.forgotRow}>
-                <Link to="/officer/forgot-password" className={styles.forgotLink}>Forgot password?</Link>
+                <Link to="/officer/forgot-password" className={styles.forgotLink}>{t('auth.forgotPassword')}</Link>
               </div>
 
               {/* Submit */}
@@ -190,15 +284,15 @@ export default function OfficerLogin() {
                 aria-busy={isSubmitting}
               >
                 {isSubmitting ? (
-                  <><span className={styles.spinner} aria-hidden="true" /> SIGNING IN…</>
-                ) : 'SIGN IN'}
+                  <><span className={styles.spinner} aria-hidden="true" /> {t('auth.signIn')}…</>
+                ) : t('auth.signIn')}
               </button>
             </form>
 
             {/* Civilian */}
             <div className={styles.civilianRow}>
-              <p>Civilian? You do not need an account to request emergency assistance.</p>
-              <Link to="/report" className={styles.civilianLink}>Get Emergency Help &rarr;</Link>
+              <p>{t('auth.loginSubtitle')}</p>
+              <Link to="/report" className={styles.civilianLink}>{t('landing.seekRelief')} &rarr;</Link>
             </div>
 
             {/* Demo panel */}
@@ -272,6 +366,23 @@ export default function OfficerLogin() {
         </div>
 
       </div>
+      
+      {/* ── FOOTER ── */}
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <div className={styles.footerLeft}>
+            <span className={styles.footerSystemName}>SAKSHAM SECURE PORTAL</span>
+            <span className={styles.footerDivider}>·</span>
+            <span className={styles.footerSecurity}>SSL/TLS 256-BIT ENCRYPTION</span>
+          </div>
+          <div className={styles.footerCenter}>
+            <span className={styles.footerCopyright}>&copy; 2026 SAKSHAM. All rights reserved. Unauthorized access is strictly prohibited and subject to monitoring.</span>
+          </div>
+          <div className={styles.footerRight}>
+            <span className={styles.footerNode}>SYSTEM NODE: DEL_HQ_01</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
