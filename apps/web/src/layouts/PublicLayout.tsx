@@ -512,7 +512,7 @@ export const PublicLayout: React.FC = () => {
 
       {/* ── MOBILE DRAWER ── */}
       <div className={`${styles.mobileDrawer} ${isMobileOpen ? styles.mobileDrawerOpen : ''}`} role="dialog" aria-modal="true" aria-label="Navigation menu">
-        <ShaderBackground className="absolute inset-0" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, opacity: 0.85 }} />
+        {isMobileOpen && <ShaderBackground className="absolute inset-0" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, opacity: 0.85 }} />}
 
         <div className={styles.mobileNavLinks}>
 
