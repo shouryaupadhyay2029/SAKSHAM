@@ -806,6 +806,28 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
         )
       );
     }
+
+    // Call backend API to persist status update in PostgreSQL
+    (async () => {
+      try {
+        const statusMapFrontendToBackend: Record<string, string> = {
+          'REPORTED': 'REPORTED',
+          'VERIFIED': 'VERIFIED',
+          'PRIORITIZED': 'AWAITING_MATCH',
+          'RESOURCE_MATCHED': 'MATCHED',
+          'DISPATCHED': 'DISPATCHED',
+          'UNDER_RESPONSE': 'UNDER_RESPONSE',
+          'RESOLVED': 'RESOLVED',
+          'CANCELLED': 'CANCELLED'
+        };
+        const backendStatus = statusMapFrontendToBackend[status] || status;
+        
+        await apiClient.updateIncident(incidentId, { status: backendStatus });
+        console.log(`[INCIDENT STATUS PERSISTENCE] Successfully updated status of incident ${incidentId} to ${backendStatus} in PostgreSQL.`);
+      } catch (err: any) {
+        console.error('[INCIDENT STATUS PERSISTENCE ERROR] Failed to save status update to backend:', err);
+      }
+    })();
   };
 
   const setIncidentPriority = (incidentId: string, severity: Severity) => {

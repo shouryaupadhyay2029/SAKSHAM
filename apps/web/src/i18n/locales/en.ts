@@ -77,6 +77,8 @@ export const en = {
     ACTIVE: "Active",
     UNDER_RESPONSE: "Under Response",
     VERIFIED: "Verified",
+    PRIORITIZED: "Prioritized",
+    RESOURCE_MATCHED: "Resource Matched",
     RESOLVED: "Resolved",
     CLOSED: "Closed",
     PENDING: "Pending",

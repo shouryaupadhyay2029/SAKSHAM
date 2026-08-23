@@ -77,6 +77,8 @@ export const hi = {
     ACTIVE: "सक्रिय",
     UNDER_RESPONSE: "प्रतिक्रिया जारी",
     VERIFIED: "सत्यापित",
+    PRIORITIZED: "प्राथमिकता दी गई",
+    RESOURCE_MATCHED: "संसाधन मिलान पूर्ण",
     RESOLVED: "समाधानित",
     CLOSED: "बंद किया गया",
     PENDING: "लंबित",
