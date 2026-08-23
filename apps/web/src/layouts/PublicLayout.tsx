@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import styles from './PublicLayout.module.css';
 import { GradientBackground } from '../components/ui/noisy-gradient-backgrounds';
-import { ShaderBackground } from '../components/ui/ShaderBackground';
+import { ShaderBackground } from '../components/ui/blue-shader';
 import Footer from '../components/Footer/Footer';
 
 gsap.registerPlugin(ScrollTrigger);
