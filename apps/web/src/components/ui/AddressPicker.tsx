@@ -21,6 +21,12 @@ export const AddressPicker: React.FC<AddressPickerProps> = ({
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // GPS state
+  const [gpsStatus, setGpsStatus] = useState<'DEFAULT' | 'LOADING' | 'SUCCESS'>('DEFAULT');
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [locationSource, setLocationSource] = useState<string>('Search / Map Pick');
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -95,6 +101,9 @@ export const AddressPicker: React.FC<AddressPickerProps> = ({
       marker.setLngLat([lng, lat]);
       setCoords({ lat, lng });
       setIsConfirmed(false); // require re-confirmation on coordinate change
+      setLocationSource('Map selection');
+      setGpsAccuracy(null);
+      setGpsError(null);
 
       // Reverse geocode to get formatted address
       if (apiKey) {
@@ -139,6 +148,9 @@ export const AddressPicker: React.FC<AddressPickerProps> = ({
     setCoords({ lat, lng });
     setShowSuggestions(false);
     setIsConfirmed(false); // require confirmation when suggestion changes
+    setLocationSource('Search suggestion');
+    setGpsAccuracy(null);
+    setGpsError(null);
 
     if (mapRef.current && markerRef.current) {
       mapRef.current.flyTo({ center: [lng, lat], zoom: 15 });
@@ -153,22 +165,111 @@ export const AddressPicker: React.FC<AddressPickerProps> = ({
     onChange({ address: query, lat: coords.lat, lng: coords.lng }, checked);
   };
 
+  // GPS Geolocation Handler
+  const handleGeolocate = () => {
+    if (!navigator.geolocation) {
+      setGpsError('Browser geolocation unsupported.');
+      return;
+    }
+
+    setGpsStatus('LOADING');
+    setGpsError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        setCoords({ lat: latitude, lng: longitude });
+        setGpsAccuracy(accuracy);
+        setLocationSource('Current device location');
+        setGpsStatus('SUCCESS');
+        setIsConfirmed(false);
+
+        if (mapRef.current && markerRef.current) {
+          mapRef.current.flyTo({ center: [longitude, latitude], zoom: 15 });
+          markerRef.current.setLngLat([longitude, latitude]);
+        }
+
+        if (apiKey) {
+          try {
+            const url = `https://api.maptiler.com/geocoding/${longitude},${latitude}.json?key=${apiKey}&types=poi,address,neighbourhood,locality,place`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Reverse geocoding failed');
+            const data = await res.json();
+            if (data && data.features && data.features.length > 0) {
+              const placeName = data.features[0].place_name;
+              setQuery(placeName);
+              onChange({ address: placeName, lat: latitude, lng: longitude }, false);
+            } else {
+              const rawAddress = `Point Location (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`;
+              setQuery(rawAddress);
+              onChange({ address: rawAddress, lat: latitude, lng: longitude }, false);
+            }
+          } catch (err) {
+            console.error('Error reverse geocoding GPS coordinates:', err);
+            const rawAddress = `Point Location (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`;
+            setQuery(rawAddress);
+            onChange({ address: rawAddress, lat: latitude, lng: longitude }, false);
+          }
+        } else {
+          const rawAddress = `Point Location (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`;
+          setQuery(rawAddress);
+          onChange({ address: rawAddress, lat: latitude, lng: longitude }, false);
+        }
+      },
+      (error) => {
+        console.error('Geolocation API error:', error);
+        setGpsStatus('DEFAULT');
+        if (error.code === error.PERMISSION_DENIED) {
+          setGpsError('Unable to access your location. Please allow location permission or use Pick on Map.');
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          setGpsError('Location information is unavailable.');
+        } else if (error.code === error.TIMEOUT) {
+          setGpsError('Location request timed out.');
+        } else {
+          setGpsError('An unknown error occurred while retrieving location.');
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
   return (
     <div className={styles.wrapper} ref={wrapperRef}>
       <div className={styles.searchContainer}>
-        <div className={styles.inputWrapper}>
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder={isPickingOnMap ? "Click on map to select..." : "Search for address, POI, hospital..."}
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setIsConfirmed(false); // require re-confirmation on change
-              onChange({ address: e.target.value, lat: coords.lat, lng: coords.lng }, false);
-            }}
-            onFocus={() => setShowSuggestions(suggestions.length > 0)}
-          />
+        {/* Search input is alone in its row */}
+        <input
+          type="text"
+          className={styles.searchInput}
+          placeholder={isPickingOnMap ? "Click on map to select..." : "Search for address, POI, hospital..."}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setIsConfirmed(false); // require re-confirmation on change
+            setLocationSource('Manual input');
+            setGpsAccuracy(null);
+            onChange({ address: e.target.value, lat: coords.lat, lng: coords.lng }, false);
+          }}
+          onFocus={() => setShowSuggestions(suggestions.length > 0)}
+        />
+
+        {/* Button Row below Search bar */}
+        <div className={styles.buttonRow}>
+          <button
+            type="button"
+            className={`${styles.gpsBtn} ${gpsStatus === 'LOADING' ? styles.gpsLoading : ''}`}
+            onClick={handleGeolocate}
+            disabled={gpsStatus === 'LOADING'}
+          >
+            <GpsIcon />
+            <span>
+              {gpsStatus === 'LOADING' ? 'LOCATING...' : 'USE MY CURRENT LOCATION'}
+            </span>
+          </button>
+
           <button
             type="button"
             className={`${styles.mapPickBtn} ${isPickingOnMap ? styles.mapPickBtnActive : ''}`}
@@ -181,6 +282,12 @@ export const AddressPicker: React.FC<AddressPickerProps> = ({
             {isPickingOnMap ? "Use Search" : "Pick on Map"}
           </button>
         </div>
+
+        {gpsError && (
+          <div className={styles.gpsErrorInline}>
+            ⚠️ {gpsError}
+          </div>
+        )}
 
         {showSuggestions && suggestions.length > 0 && (
           <div className={styles.suggestionsList}>
@@ -220,6 +327,12 @@ export const AddressPicker: React.FC<AddressPickerProps> = ({
           <div className={styles.previewCoords}>
             Coordinates: {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
           </div>
+          <div className={styles.previewMeta}>
+            Location source: {locationSource}
+            {gpsAccuracy !== null && locationSource === 'Current device location' && (
+              <span> · GPS accuracy: ±{Math.round(gpsAccuracy)} m</span>
+            )}
+          </div>
         </div>
       )}
 
@@ -247,5 +360,13 @@ export const AddressPicker: React.FC<AddressPickerProps> = ({
     </div>
   );
 };
+
+/* SVG Icons */
+const GpsIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+    <circle cx="12" cy="12" r="7" />
+    <path d="M12 2v2M12 20v2M4 12H2M22 12h-2" />
+  </svg>
+);
 
 export default AddressPicker;

@@ -7,7 +7,7 @@ import { SituationalAwarenessMap } from '../../components/map/SituationalAwarene
 import { PageGuidebook } from '../../components/ui/PageGuide';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher/LanguageSwitcher';
 import { GradientBackground } from '../../components/ui/noisy-gradient-backgrounds';
-import { ShaderBackground } from '../../components/ui/blue-shader';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
 gsap.registerPlugin(ScrollTrigger);
 import {

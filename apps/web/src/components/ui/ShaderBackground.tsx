@@ -12,12 +12,12 @@ precision mediump float;
 #endif
 
 uniform vec3 u_colors[8];
-uniform vec4 u_scene;
-uniform vec4 u_shape;
-uniform vec4 u_surface;
-uniform vec4 u_finish;
-uniform vec4 u_transform;
-uniform vec4 u_space;
+uniform vec4 u_scene;      // resolution.xy, time, colour count
+uniform vec4 u_shape;      // scale, intensity, paramA, warp
+uniform vec4 u_surface;    // detail, contrast, brightness, saturation
+uniform vec4 u_finish;     // hue, vignette, blur, grain
+uniform vec4 u_transform;  // seed, rotation, drift, OKLab toggle
+uniform vec4 u_space;      // offset.xy, pointer.xy
 uniform vec4 u_cursor;
 
 #define u_resolution u_scene.xy
@@ -94,26 +94,40 @@ float fbm(vec2 p) {
   return v;
 }
 
-vec3 srgbToLinear(vec3 c) {
-  return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c));
-}
-vec3 linearToSrgb(vec3 c) {
-  return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
-}
-vec3 linToOklab(vec3 c) {
-  float l = 0.4122214708*c.r + 0.5363325363*c.g + 0.0514459929*c.b;
-  float m = 0.2119034982*c.r + 0.6806995451*c.g + 0.1073969566*c.b;
-  float s = 0.0883024619*c.r + 0.2817188376*c.g + 0.6299787005*c.b;
-  l = pow(max(l,0.0),1.0/3.0); m = pow(max(m,0.0),1.0/3.0); s = pow(max(s,0.0),1.0/3.0);
-  return vec3(0.2104542553*l+0.7936177850*m-0.0040720468*s, 1.9779984951*l-2.4285922050*m+0.4505937099*s, 0.0259040371*l+0.7827717662*m-0.8086757660*s);
-}
 vec3 oklabToLin(vec3 c) {
-  float l=c.x+0.3963377774*c.y+0.2158037573*c.z;
-  float m=c.x-0.1055613458*c.y-0.0638541728*c.z;
-  float s=c.x-0.0894841775*c.y-1.2914855480*c.z;
-  l=l*l*l; m=m*m*m; s=s*s*s;
-  return vec3(4.0767416621*l-3.3077115913*m+0.2309699292*s, -1.2684380046*l+2.6097574011*m-0.3413193965*s, -0.0041960863*l-0.7034186147*m+1.7076147010*s);
+  float l = c.x + 0.3963377774 * c.y + 0.2158037573 * c.z;
+  float m = c.x - 0.1055613458 * c.y - 0.0638541728 * c.z;
+  float s = c.x - 0.0894841775 * c.y - 1.2914855480 * c.z;
+  l = l * l * l; m = m * m * m; s = s * s * s;
+  return vec3(
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s);
 }
+
+vec3 srgbToLinear(vec3 c) {
+  return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)),
+    step(0.04045, c));
+}
+
+vec3 linearToSrgb(vec3 c) {
+  return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055,
+    step(0.0031308, c));
+}
+
+vec3 linToOklab(vec3 c) {
+  float l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
+  float m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
+  float s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
+  l = pow(max(l, 0.0), 1.0 / 3.0);
+  m = pow(max(m, 0.0), 1.0 / 3.0);
+  s = pow(max(s, 0.0), 1.0 / 3.0);
+  return vec3(
+    0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s);
+}
+
 vec3 mixColour(vec3 a, vec3 b, float t) {
   if (u_oklab > 0.5) {
     vec3 la = linToOklab(srgbToLinear(a));
@@ -129,17 +143,22 @@ vec3 palette(float x) {
   vec3 col = u_colors[0];
   for (int i = 0; i < 7; i++) {
     if (float(i) < n)
-      col = mixColour(col, u_colors[i + 1], smoothstep(0.0, 1.0, clamp(f - float(i), 0.0, 1.0)));
+      col = mixColour(col, u_colors[i + 1],
+        smoothstep(0.0, 1.0, clamp(f - float(i), 0.0, 1.0)));
   }
   return col;
 }
 
 vec3 hueRotate(vec3 col, float a) {
-  const mat3 toYIQ = mat3(0.299,0.596,0.211,0.587,-0.274,-0.523,0.114,-0.322,0.312);
-  const mat3 toRGB = mat3(1.0,1.0,1.0,0.956,-0.272,-1.106,0.621,-0.647,1.703);
+  const mat3 toYIQ = mat3(0.299, 0.596, 0.211,
+                          0.587, -0.274, -0.523,
+                          0.114, -0.322, 0.312);
+  const mat3 toRGB = mat3(1.0, 1.0, 1.0,
+                          0.956, -0.272, -1.106,
+                          0.621, -0.647, 1.703);
   vec3 yiq = toYIQ * col;
   float ca = cos(a), sa = sin(a);
-  yiq = vec3(yiq.x, yiq.y*ca - yiq.z*sa, yiq.y*sa + yiq.z*ca);
+  yiq = vec3(yiq.x, yiq.y * ca - yiq.z * sa, yiq.y * sa + yiq.z * ca);
   return toRGB * yiq;
 }
 
@@ -153,7 +172,34 @@ vec3 shade(vec2 uv, vec2 p, float t) {
 void main() {
   vec2 uv = gl_FragCoord.xy / u_resolution.xy;
   vec2 screenUv = uv;
-  vec2 p = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+  vec2 p = (gl_FragCoord.xy - 0.5 * u_resolution.xy)
+    / min(u_resolution.x, u_resolution.y);
+  float cursorMask = 0.0;
+
+  if (u_cursorPresence > 0.001) {
+    vec2 cursor = (0.5 * u_mouse * u_resolution.xy)
+      / min(u_resolution.x, u_resolution.y);
+    vec2 cursorDelta = p - cursor;
+    if (u_cursorEffect < 0.5) {
+      p += cursor * u_cursorPresence * u_cursorStrength * 0.55;
+    } else {
+      float cursorDistance = length(cursorDelta);
+      vec2 cursorDirection = cursorDelta / max(cursorDistance, 0.0001);
+      cursorMask = u_cursorPresence
+        * (1.0 - smoothstep(0.0, u_cursorRadius, cursorDistance));
+      if (u_cursorEffect < 1.5) {
+        p -= cursorDirection * cursorMask * u_cursorStrength * 0.24;
+      } else if (u_cursorEffect < 2.5) {
+        float cursorAngle = cursorMask * u_cursorStrength * 2.2;
+        float cc = cos(cursorAngle), cs = sin(cursorAngle);
+        p = cursor + mat2(cc, -cs, cs, cc) * cursorDelta;
+      } else if (u_cursorEffect < 3.5) {
+        float ripple = sin(
+          cursorDistance / max(u_cursorRadius, 0.001) * 18.0 - u_time * 5.0);
+        p -= cursorDirection * ripple * cursorMask * u_cursorStrength * 0.07;
+      }
+    }
+  }
 
   uv = p * min(u_resolution.x, u_resolution.y) / u_resolution.xy + 0.5;
   p *= u_scale;
@@ -165,9 +211,10 @@ void main() {
   if (u_drift > 0.0001)
     p += u_drift * vec2(sin(u_time * 0.31), cos(u_time * 0.23));
   if (u_warp > 0.0) {
-    p += u_warp * (vec2(fbm(p * u_detail + u_seed), fbm(p * u_detail + vec2(5.2, 1.3))) - 0.5);
+    p += u_warp * (vec2(
+      fbm(p * u_detail + u_seed),
+      fbm(p * u_detail + vec2(5.2, 1.3))) - 0.5);
   }
-
   vec3 col;
   if (u_blur > 0.0) {
     float e = u_blur;
@@ -181,60 +228,64 @@ void main() {
   } else {
     col = shade(uv, p, u_time);
   }
-
   if (abs(u_contrast - 1.0) > 0.0001)
     col = (col - 0.5) * u_contrast + 0.5;
   if (abs(u_saturation - 1.0) > 0.0001) {
     float luma = dot(col, vec3(0.299, 0.587, 0.114));
     col = mix(vec3(luma), col, u_saturation);
   }
-  if (abs(u_hue) > 0.0001) col = hueRotate(col, u_hue);
-  if (abs(u_brightness) > 0.0001) col += u_brightness;
+  if (abs(u_hue) > 0.0001)
+    col = hueRotate(col, u_hue);
+  if (abs(u_brightness) > 0.0001)
+    col += u_brightness;
   if (u_vignette > 0.0001) {
     float vd = length(screenUv - 0.5) * 1.41421356;
     col *= 1.0 - u_vignette * smoothstep(0.35, 1.0, vd);
   }
+  if (u_cursorPresence > 0.001 && u_cursorEffect > 3.5)
+    col += (vec3(0.18) + col * 0.12) * cursorMask * u_cursorStrength;
   if (u_grain > 0.0001)
-    col += (grainHash(gl_FragCoord.xy + vec2(u_seed * 17.0, u_seed * 31.0)) - 0.5) * u_grain;
+    col += (grainHash(
+      gl_FragCoord.xy + vec2(u_seed * 17.0, u_seed * 31.0)) - 0.5) * u_grain;
   gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 `;
 
 const UNIFORMS = {
   colors: [
-    [0.957, 0.945, 0.918],   // #F4F1EA — warm ivory base
-    [0.976, 0.961, 0.937],   // #F9F5EF — slightly brighter cream
-    [0.988, 0.976, 0.957],   // #FCF9F4 — near-white cream
-    [0.980, 0.961, 0.929],   // #FAF5ED — warm highlight
-    [0.980, 0.961, 0.929],
-    [0.980, 0.961, 0.929],
-    [0.980, 0.961, 0.929],
-    [0.980, 0.961, 0.929],
+    [0.011764705882352941, 0.10980392156862745, 0.14901960784313725],
+    [0.10588235294117647, 0.4235294117647059, 0.6588235294117647],
+    [0.35294117647058826, 0.8235294117647058, 0.9568627450980393],
+    [0.9176470588235294, 0.9764705882352941, 1],
+    [0.9176470588235294, 0.9764705882352941, 1],
+    [0.9176470588235294, 0.9764705882352941, 1],
+    [0.9176470588235294, 0.9764705882352941, 1],
+    [0.9176470588235294, 0.9764705882352941, 1]
   ] as [number, number, number][],
   colorCount: 4,
-  scale: 1.800,
-  intensity: 0.180,    // very subtle wave
+  scale: 2.000,
+  intensity: 0.540,
   paramA: 0.470,
-  warp: 0.028,
-  detail: 1.200,
-  contrast: 1.060,
+  warp: 0.042,
+  detail: 1.536,
+  contrast: 1.158,
   brightness: 0.000,
-  saturation: 1.100,
+  saturation: 1.000,
   hue: 0.0000,
-  vignette: 0.080,
-  blur: 0.0030,
-  grain: 0.032,        // very light grain
+  vignette: 0.210,
+  blur: 0.0020,
+  grain: 0.101,
   seed: 4012.0,
   rotate: 5.6549,
   offsetX: 0.110,
   offsetY: -0.190,
-  drift: 0.080,        // slow, calm motion
+  drift: 0.116,
   cursorEnabled: false,
   cursorEffect: 2.0,
   cursorStrength: 0.650,
   cursorRadius: 0.460,
   oklab: 0.0,
-  timeScale: -0.320,   // very slow animation
+  timeScale: -0.727,
 };
 
 const pendingContextReleases = new WeakMap<HTMLCanvasElement, number>();
@@ -251,102 +302,198 @@ export function ShaderBackground({ className, style }: { className?: string; sty
     const gl = canvas.getContext("webgl", { antialias: false });
     if (!gl) return;
 
-    const activeCanvas = canvas as HTMLCanvasElement;
-    const activeGl = gl as WebGLRenderingContext;
-
     const compile = (type: number, src: string) => {
-      const s = activeGl.createShader(type)!;
-      activeGl.shaderSource(s, src);
-      activeGl.compileShader(s);
+      const s = gl.createShader(type)!;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
       return s;
     };
-    const program = activeGl.createProgram()!;
-    const vertexShader = compile(activeGl.VERTEX_SHADER, VERT);
-    const fragmentShader = compile(activeGl.FRAGMENT_SHADER, FRAG);
-    activeGl.attachShader(program, vertexShader);
-    activeGl.attachShader(program, fragmentShader);
-    activeGl.linkProgram(program);
-    activeGl.deleteShader(vertexShader);
-    activeGl.deleteShader(fragmentShader);
-    activeGl.useProgram(program);
+    const program = gl.createProgram()!;
+    const vertexShader = compile(gl.VERTEX_SHADER, VERT);
+    const fragmentShader = compile(gl.FRAGMENT_SHADER, FRAG);
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+    gl.useProgram(program);
 
-    const buf = activeGl.createBuffer();
-    activeGl.bindBuffer(activeGl.ARRAY_BUFFER, buf);
-    activeGl.bufferData(activeGl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), activeGl.STATIC_DRAW);
-    const loc = activeGl.getAttribLocation(program, "a_position");
-    activeGl.enableVertexAttribArray(loc);
-    activeGl.vertexAttribPointer(loc, 2, activeGl.FLOAT, false, 0, 0);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 3, -1, -1, 3]),
+      gl.STATIC_DRAW,
+    );
+    const loc = gl.getAttribLocation(program, "a_position");
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
     const uni = {
-      colors:    activeGl.getUniformLocation(program, "u_colors"),
-      scene:     activeGl.getUniformLocation(program, "u_scene"),
-      shape:     activeGl.getUniformLocation(program, "u_shape"),
-      surface:   activeGl.getUniformLocation(program, "u_surface"),
-      finish:    activeGl.getUniformLocation(program, "u_finish"),
-      transform: activeGl.getUniformLocation(program, "u_transform"),
-      space:     activeGl.getUniformLocation(program, "u_space"),
-      cursor:    activeGl.getUniformLocation(program, "u_cursor"),
+      colors: gl.getUniformLocation(program, "u_colors"),
+      scene: gl.getUniformLocation(program, "u_scene"),
+      shape: gl.getUniformLocation(program, "u_shape"),
+      surface: gl.getUniformLocation(program, "u_surface"),
+      finish: gl.getUniformLocation(program, "u_finish"),
+      transform: gl.getUniformLocation(program, "u_transform"),
+      space: gl.getUniformLocation(program, "u_space"),
+      cursor: gl.getUniformLocation(program, "u_cursor"),
     };
+    gl.uniform3fv(uni.colors, new Float32Array(UNIFORMS.colors.flat()));
+    gl.uniform4f(
+      uni.shape,
+      UNIFORMS.scale,
+      UNIFORMS.intensity,
+      UNIFORMS.paramA,
+      UNIFORMS.warp,
+    );
+    gl.uniform4f(
+      uni.surface,
+      UNIFORMS.detail,
+      UNIFORMS.contrast,
+      UNIFORMS.brightness,
+      UNIFORMS.saturation,
+    );
+    gl.uniform4f(
+      uni.finish,
+      UNIFORMS.hue,
+      UNIFORMS.vignette,
+      UNIFORMS.blur,
+      UNIFORMS.grain,
+    );
+    gl.uniform4f(
+      uni.transform,
+      UNIFORMS.seed,
+      UNIFORMS.rotate,
+      UNIFORMS.drift,
+      UNIFORMS.oklab,
+    );
+    gl.uniform4f(
+      uni.cursor,
+      0,
+      UNIFORMS.cursorEffect,
+      UNIFORMS.cursorStrength,
+      UNIFORMS.cursorRadius,
+    );
 
-    activeGl.uniform3fv(uni.colors, new Float32Array(UNIFORMS.colors.flat()));
-    activeGl.uniform4f(uni.shape,     UNIFORMS.scale, UNIFORMS.intensity, UNIFORMS.paramA, UNIFORMS.warp);
-    activeGl.uniform4f(uni.surface,   UNIFORMS.detail, UNIFORMS.contrast, UNIFORMS.brightness, UNIFORMS.saturation);
-    activeGl.uniform4f(uni.finish,    UNIFORMS.hue, UNIFORMS.vignette, UNIFORMS.blur, UNIFORMS.grain);
-    activeGl.uniform4f(uni.transform, UNIFORMS.seed, UNIFORMS.rotate, UNIFORMS.drift, UNIFORMS.oklab);
-    activeGl.uniform4f(uni.cursor,    0, UNIFORMS.cursorEffect, UNIFORMS.cursorStrength, UNIFORMS.cursorRadius);
-
-    let targetX = 0, targetY = 0, targetPresence = 0;
-    let mouseX = 0, mouseY = 0, cursorPresence = 0;
-    let bounds = activeCanvas.getBoundingClientRect();
-    let raf = 0, lastNow: number | null = null;
+    let targetX = 0;
+    let targetY = 0;
+    let targetPresence = 0;
+    let mouseX = 0;
+    let mouseY = 0;
+    let cursorPresence = 0;
+    let pointerKnown = false;
+    let pointerClientX = 0;
+    let pointerClientY = 0;
+    let bounds = canvas.getBoundingClientRect();
+    let raf = 0;
+    let lastNow: number | null = null;
     let visible = document.visibilityState === "visible";
-    let inView = true, disposed = false;
+    let inView = true;
+    let disposed = false;
     const start = performance.now();
     const timeAnimated = Math.abs(UNIFORMS.timeScale) > 0.0001;
 
     const resizeCanvas = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const rawWidth  = Math.max(1, Math.round(bounds.width  * dpr));
+      const rawWidth = Math.max(1, Math.round(bounds.width * dpr));
       const rawHeight = Math.max(1, Math.round(bounds.height * dpr));
-      const pixelScale = Math.min(1, Math.sqrt(2_000_000 / Math.max(1, rawWidth * rawHeight)));
-      const width  = Math.max(1, Math.round(rawWidth  * pixelScale));
+      const pixelScale = Math.min(
+        1,
+        Math.sqrt(2_000_000 / Math.max(1, rawWidth * rawHeight)),
+      );
+      const width = Math.max(1, Math.round(rawWidth * pixelScale));
       const height = Math.max(1, Math.round(rawHeight * pixelScale));
-      if (activeCanvas.width !== width || activeCanvas.height !== height) {
-        activeCanvas.width = width; activeCanvas.height = height;
-        activeGl.viewport(0, 0, width, height);
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+        gl.viewport(0, 0, width, height);
       }
     };
 
     function requestRender() {
-      if (!disposed && visible && inView && raf === 0)
+      if (!disposed && visible && inView && raf === 0) {
         raf = requestAnimationFrame(render);
+      }
     }
 
+    const updatePointerTarget = () => {
+      if (!pointerKnown) return;
+      if (bounds.width === 0 || bounds.height === 0) return;
+      const inside =
+        pointerClientX >= bounds.left &&
+        pointerClientX <= bounds.right &&
+        pointerClientY >= bounds.top &&
+        pointerClientY <= bounds.bottom;
+      if (!inside) {
+        targetPresence = 0;
+        requestRender();
+        return;
+      }
+      const nextX = ((pointerClientX - bounds.left) / bounds.width) * 2 - 1;
+      const nextY = -(((pointerClientY - bounds.top) / bounds.height) * 2 - 1);
+      if (targetPresence === 0 && cursorPresence < 0.01) {
+        mouseX = nextX;
+        mouseY = nextY;
+      }
+      targetX = nextX;
+      targetY = nextY;
+      targetPresence = 1;
+      requestRender();
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      pointerKnown = true;
+      pointerClientX = event.clientX;
+      pointerClientY = event.clientY;
+      bounds = canvas.getBoundingClientRect();
+      updatePointerTarget();
+    };
+    const onPointerLeave = () => {
+      pointerKnown = false;
+      targetPresence = 0;
+      requestRender();
+    };
     const updateLayout = () => {
-      bounds = activeCanvas.getBoundingClientRect();
+      bounds = canvas.getBoundingClientRect();
       resizeCanvas();
+      updatePointerTarget();
       requestRender();
     };
     window.addEventListener("resize", updateLayout);
+    if (UNIFORMS.cursorEnabled) {
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      window.addEventListener("pointercancel", onPointerLeave);
+      window.addEventListener("scroll", updateLayout, true);
+      window.addEventListener("blur", onPointerLeave);
+      document.documentElement.addEventListener("pointerleave", onPointerLeave);
+    }
 
     const resizeObserver = new ResizeObserver(updateLayout);
-    resizeObserver.observe(activeCanvas);
+    resizeObserver.observe(canvas);
     const intersectionObserver = new IntersectionObserver(([entry]) => {
       inView = entry?.isIntersecting ?? true;
       if (inView) requestRender();
-      else if (raf !== 0) { cancelAnimationFrame(raf); raf = 0; lastNow = null; }
+      else if (raf !== 0) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+        lastNow = null;
+      }
     });
-    intersectionObserver.observe(activeCanvas);
+    intersectionObserver.observe(canvas);
     const onVisibilityChange = () => {
       visible = document.visibilityState === "visible";
       if (visible) requestRender();
-      else if (raf !== 0) { cancelAnimationFrame(raf); raf = 0; lastNow = null; }
+      else if (raf !== 0) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+        lastNow = null;
+      }
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     function render(now: number) {
       raf = 0;
-      if (disposed || !visible || !inView) return;
+      if (disposed || !visible || !inView || !canvas || !gl) return;
       const dt = lastNow === null ? 0 : Math.min((now - lastNow) / 1000, 0.1);
       lastNow = now;
       const follow = 1 - Math.exp(-12 * dt);
@@ -354,15 +501,38 @@ export function ShaderBackground({ className, style }: { className?: string; sty
       mouseY += (targetY - mouseY) * follow;
       cursorPresence += (targetPresence - cursorPresence) * follow;
       resizeCanvas();
-      activeGl.uniform4f(uni.scene,  activeCanvas.width, activeCanvas.height, ((now - start) / 1000) * UNIFORMS.timeScale, UNIFORMS.colorCount);
-      activeGl.uniform4f(uni.space,  UNIFORMS.offsetX, UNIFORMS.offsetY, mouseX, mouseY);
-      activeGl.uniform4f(uni.cursor, 0, UNIFORMS.cursorEffect, UNIFORMS.cursorStrength, UNIFORMS.cursorRadius);
-      activeGl.drawArrays(activeGl.TRIANGLES, 0, 3);
-      if (timeAnimated) requestRender();
+      const width = canvas.width;
+      const height = canvas.height;
+      gl.uniform4f(
+        uni.scene,
+        width,
+        height,
+        ((now - start) / 1000) * UNIFORMS.timeScale,
+        UNIFORMS.colorCount,
+      );
+      gl.uniform4f(
+        uni.space,
+        UNIFORMS.offsetX,
+        UNIFORMS.offsetY,
+        mouseX,
+        mouseY,
+      );
+      gl.uniform4f(
+        uni.cursor,
+        UNIFORMS.cursorEnabled ? cursorPresence : 0,
+        UNIFORMS.cursorEffect,
+        UNIFORMS.cursorStrength,
+        UNIFORMS.cursorRadius,
+      );
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      const pointerSettling =
+        Math.abs(targetX - mouseX) > 0.001 ||
+        Math.abs(targetY - mouseY) > 0.001 ||
+        Math.abs(targetPresence - cursorPresence) > 0.001;
+      if (timeAnimated || pointerSettling) requestRender();
       else lastNow = null;
     }
     requestRender();
-
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
@@ -370,15 +540,26 @@ export function ShaderBackground({ className, style }: { className?: string; sty
       intersectionObserver.disconnect();
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("resize", updateLayout);
-      activeGl.deleteBuffer(buf);
-      activeGl.deleteProgram(program);
+      if (UNIFORMS.cursorEnabled) {
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointercancel", onPointerLeave);
+        window.removeEventListener("scroll", updateLayout, true);
+        window.removeEventListener("blur", onPointerLeave);
+        document.documentElement.removeEventListener(
+          "pointerleave",
+          onPointerLeave,
+        );
+      }
+      gl.deleteBuffer(buf);
+      gl.deleteProgram(program);
       const releaseTimer = window.setTimeout(() => {
-        if (pendingContextReleases.get(activeCanvas) !== releaseTimer) return;
-        pendingContextReleases.delete(activeCanvas);
-        activeGl.getExtension("WEBGL_lose_context")?.loseContext();
-        activeCanvas.width = 1; activeCanvas.height = 1;
+        if (pendingContextReleases.get(canvas) !== releaseTimer) return;
+        pendingContextReleases.delete(canvas);
+        gl.getExtension("WEBGL_lose_context")?.loseContext();
+        canvas.width = 1;
+        canvas.height = 1;
       }, 0);
-      pendingContextReleases.set(activeCanvas, releaseTimer);
+      pendingContextReleases.set(canvas, releaseTimer);
     };
   }, []);
 

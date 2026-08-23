@@ -1050,7 +1050,7 @@
     grid-template-columns: 1fr;
   }
   .ledgerColumn {
-    position: static;
+    position: relative;
   }
   .networkGrid {
     grid-template-columns: repeat(2, 1fr);

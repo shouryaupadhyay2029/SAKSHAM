@@ -855,7 +855,7 @@
     grid-template-columns: 1fr;
   }
   .ledgerColumn {
-    position: static;
+    position: relative;
   }
   .filterGroups {
     flex-direction: column;

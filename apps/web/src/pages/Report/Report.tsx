@@ -3,7 +3,7 @@ import { useOperationalState } from '../../context/OperationalStateContext';
 import { Send, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import styles from './Report.module.css';
-import { ShaderBackground } from '../../components/ui/blue-shader';
+import { ShaderBackground } from '../../components/ui/ShaderBackground';
 import { AddressPicker } from '../../components/ui/AddressPicker';
 
 export const Report: React.FC = () => {

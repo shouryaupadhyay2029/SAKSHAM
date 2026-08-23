@@ -548,11 +548,6 @@
   pointer-events: all;
 }
 
-.mobileDrawer > *:not(canvas) {
-  position: relative;
-  z-index: 1;
-}
-
 .mobileNavLinks {
   display: flex;
   flex-direction: column;
@@ -638,37 +633,20 @@
 
 /* Mobile drawer CTA */
 .mobileCtaButton {
-  background: linear-gradient(135deg, rgba(244, 124, 32, 0.45) 0%, rgba(179, 93, 56, 0.3) 100%);
-  border: 1px solid rgba(244, 124, 32, 0.65);
-  box-shadow: 0 8px 32px rgba(244, 124, 32, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background-color: #B35D38;
   color: #FAF8F3 !important;
   width: 100%;
-  padding: 15px;
-  border-radius: 30px;
-  font-family: var(--font-sans), sans-serif;
-  font-weight: 800;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  padding: 14px;
+  border-radius: 24px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   box-sizing: border-box;
-  margin-top: 24px;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
-}
-.mobileCtaButton:hover {
-  background: linear-gradient(135deg, rgba(244, 124, 32, 0.6) 0%, rgba(179, 93, 56, 0.4) 100%);
-  border-color: rgba(244, 124, 32, 0.85);
-  box-shadow: 0 12px 36px rgba(244, 124, 32, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  transform: translateY(-1.5px);
-}
-.mobileCtaButton:active {
-  transform: translateY(0.5px);
+  margin-top: 16px;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -919,7 +897,7 @@
 
   .hugeWordmark {
     font-size: 28vw;
-    bottom: 40px;
+    bottom: -30px;
     opacity: 0.035;
   }
 }

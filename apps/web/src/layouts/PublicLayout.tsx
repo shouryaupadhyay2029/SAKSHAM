@@ -9,8 +9,7 @@ import {
   FileText, Phone, Info, Zap, Activity, BookOpen,
 } from 'lucide-react';
 import styles from './PublicLayout.module.css';
-import { GradientBackground } from '../components/ui/noisy-gradient-backgrounds';
-import { ShaderBackground } from '../components/ui/blue-shader';
+import { ShaderBackground } from '../components/ui/ShaderBackground';
 import Footer from '../components/Footer/Footer';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -66,12 +65,6 @@ const RESOURCES_ITEMS = [
     to: '/operations/vehicles',
     title: 'Vehicle Fleet',
     desc: 'Deploy and track field vehicles',
-  },
-  {
-    icon: Home,
-    to: '/operations/shelters',
-    title: 'Shelter Network',
-    desc: 'Shelter locations & capacity',
   },
   {
     icon: FileText,
@@ -310,24 +303,7 @@ export const PublicLayout: React.FC = () => {
       <header className={`${styles.header} ${isScrolled ? styles.headerScrolled : ''} ${isCompressed ? styles.headerCompressed : ''} ${isStickyHeader ? styles.headerSticky : ''} ${isDarkHeader ? styles.headerHomeDark : ''}`}>
         {/* Animated gradient background — orange-dominant, mirrors hero palette */}
         {isHome && !isScrolled && (
-          <GradientBackground
-            gradientType="radial-gradient"
-            gradientSize="220% 600%"
-            gradientOrigin="bottom-right"
-            colors={[
-              { color: 'rgba(244, 124, 32, 1)', stop: '0%' },
-              { color: 'rgba(215, 101, 16, 1)', stop: '18%' },
-              { color: 'rgba(180, 80,  15, 1)', stop: '36%' },
-              { color: 'rgba(120, 55,  10, 1)', stop: '55%' },
-              { color: 'rgba(18,  50,  36, 1)', stop: '75%' },
-              { color: 'rgba(14,  35,  26, 1)', stop: '88%' },
-              { color: 'rgba(10,  24,  18, 1)', stop: '100%' },
-            ]}
-            noisePatternAlpha={18}
-            noiseIntensity={0.45}
-            noisePatternRefreshInterval={2}
-            noisePatternSize={90}
-          />
+          <ShaderBackground className="absolute inset-0" style={{ pointerEvents: 'none', zIndex: 0 }} />
         )}
         <div className={styles.headerWrapper}>
 
@@ -512,7 +488,6 @@ export const PublicLayout: React.FC = () => {
 
       {/* ── MOBILE DRAWER ── */}
       <div className={`${styles.mobileDrawer} ${isMobileOpen ? styles.mobileDrawerOpen : ''}`} role="dialog" aria-modal="true" aria-label="Navigation menu">
-        {isMobileOpen && <ShaderBackground className="absolute inset-0" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0, opacity: 0.85 }} />}
 
         <div className={styles.mobileNavLinks}>
 
