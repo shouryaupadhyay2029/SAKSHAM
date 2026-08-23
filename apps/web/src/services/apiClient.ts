@@ -3,6 +3,18 @@
  * Bridges React frontend modules to backend REST APIs.
  */
 
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.name = 'ApiError';
+  }
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 const TOKEN_KEY = 'saksham_auth_token';
@@ -25,9 +37,18 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<{ data
   });
 
   if (!response.ok) {
+    if (response.status === 401 && sessionStorage.getItem(TOKEN_KEY)) {
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem('saksham_auth_session');
+      // Redirect to login page to force getting a fresh JWT
+      window.location.href = '/officer/login?expired=true';
+    }
     const errorBody = await response.json().catch(() => ({}));
-    throw new Error(errorBody.error?.message || errorBody.detail || `HTTP Error ${response.status}: ${response.statusText}`);
+    const message = errorBody.error?.message || errorBody.detail || `HTTP Error ${response.status}: ${response.statusText}`;
+    const code = errorBody.error?.code;
+    throw new ApiError(message, response.status, code);
   }
+
 
   const json = await response.json();
   if (json && typeof json === 'object' && 'data' in json) {
@@ -35,6 +56,7 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<{ data
   }
   return { data: json };
 }
+
 
 
 export const apiClient = {

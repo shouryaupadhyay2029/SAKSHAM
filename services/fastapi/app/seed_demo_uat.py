@@ -2,12 +2,54 @@ import sys
 import uuid
 from datetime import datetime
 from app.core.database import SessionLocal
-from app.core.models import IncidentModel, DemandRequestModel, ResourceModel, VehicleModel, AllocationModel, DispatchModel, DeliveryModel
+from app.core.models import IncidentModel, DemandRequestModel, ResourceModel, VehicleModel, AllocationModel, DispatchModel, DeliveryModel, OfficerModel
+from app.core.security import hash_password
 
 def seed_uat_data():
     db = SessionLocal()
     try:
         print("[SEED] Seeding SAKSHAM-DEMO-UAT dataset...")
+
+        # 0. Seed Demo Officers
+        demo_officers = [
+            {
+                "email": "operator@saksham.demo",
+                "name": "Harshit Sharma",
+                "role": "OPERATOR",
+                "region": "Delhi NCR",
+            },
+            {
+                "email": "authority@saksham.demo",
+                "name": "Pradeep Kumar",
+                "role": "REGIONAL_AUTHORITY",
+                "region": "East Delhi",
+            },
+            {
+                "email": "admin@saksham.demo",
+                "name": "Rajesh Nair",
+                "role": "ADMIN",
+                "region": "National",
+            }
+        ]
+
+        for off_data in demo_officers:
+            existing = db.query(OfficerModel).filter(OfficerModel.email == off_data["email"]).first()
+            if not existing:
+                print(f"  -> Creating Demo Officer '{off_data['email']}'...")
+                officer = OfficerModel(
+                    id=uuid.uuid4(),
+                    email=off_data["email"],
+                    name=off_data["name"],
+                    role=off_data["role"],
+                    region=off_data["region"],
+                    passwordHash=hash_password("Password@123"),
+                    verificationStatus="VERIFIED",
+                    accountStatus="ACTIVE"
+                )
+                db.add(officer)
+            else:
+                print(f"  -> Demo Officer '{off_data['email']}' already exists.")
+        db.commit()
 
         # 1. Active Supply Depot
         depot_name = "SAKSHAM Demo Delhi Relief Depot"
