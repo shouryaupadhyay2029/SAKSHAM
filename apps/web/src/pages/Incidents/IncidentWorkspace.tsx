@@ -35,10 +35,32 @@ export const IncidentWorkspace: React.FC = () => {
   ]);
   const [newNoteText, setNewNoteText] = useState('');
 
+  // --- Lifecycle action state ---
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   // Find selected incident
   const incident = useMemo(() => {
     return incidents.find(i => i.id === incidentId) || null;
   }, [incidents, incidentId]);
+
+  // --- Awaited lifecycle action wrapper ---
+  // All incident status transitions go through this function so that:
+  // 1. The button shows a loading state
+  // 2. Backend failures are shown inline (not swallowed silently)
+  // 3. Optimistic UI is rolled back on failure (handled inside updateIncidentStatus)
+  const handleLifecycleAction = async (targetStatus: string) => {
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await updateIncidentStatus(incident!.id, targetStatus as any);
+    } catch (err: any) {
+      const msg = err?.message || 'Backend rejected this transition. Check officer credentials and incident state.';
+      setActionError(`❌ ${msg}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // GSAP animation refs
   const pageRef = useRef<HTMLDivElement>(null);
@@ -116,59 +138,67 @@ export const IncidentWorkspace: React.FC = () => {
     };
   }, [incidentRequests]);
 
-  // Primary action button calculation
+  // Primary action button — correctly maps frontend status labels to backend transitions.
+  //
+  // Backend state machine (exact enum values):
+  //   REPORTED → VERIFIED → AWAITING_MATCH → MATCHED → DISPATCHED → UNDER_RESPONSE → RESOLVED
+  //
+  // Frontend display labels:
+  //   REPORTED → VERIFIED → PRIORITIZED → RESOURCE_MATCHED → DISPATCHED → UNDER_RESPONSE → RESOLVED
+  //
+  // updateIncidentStatus() handles the frontend→backend enum translation internally.
   const primaryAction = useMemo(() => {
     switch (incident.status) {
       case 'REPORTED':
+        return {
+          label: 'VERIFY INCIDENT',
+          targetStatus: 'VERIFIED',
+          style: {}
+        };
       case 'VERIFIED':
         return {
-          label: 'Verify & Assess Needs',
-          action: () => updateIncidentStatus(incident.id, 'PRIORITIZED'),
+          label: 'PRIORITIZE & ASSESS NEEDS',
+          targetStatus: 'PRIORITIZED',
           style: {}
         };
       case 'PRIORITIZED':
         return {
           label: 'MATCH RESOURCES',
-          action: () => {
+          targetStatus: null, // navigates to matching page, not a status update
+          navigate: () => {
             const req = incidentRequests[0] || requests.find(r => r.incidentId === incident.id);
-            if (req) {
-              navigate(`/operations/matching?requestId=${req.id}`);
-            } else {
-              navigate('/operations/matching');
-            }
+            navigate(req ? `/operations/matching?requestId=${req.id}` : '/operations/matching');
           },
           style: { backgroundColor: '#E86F16' }
         };
       case 'RESOURCE_MATCHED':
         return {
           label: 'DISPATCH RESOURCE',
-          action: () => {
+          targetStatus: null, // navigates to dispatch page, not a status update
+          navigate: () => {
             const req = incidentRequests[0] || requests.find(r => r.incidentId === incident.id);
-            if (req) {
-              navigate(`/operations/dispatch?allocationId=${req.id}`);
-            } else {
-              navigate('/operations/dispatch');
-            }
+            navigate(req ? `/operations/dispatch?allocationId=${req.id}` : '/operations/dispatch');
           },
           style: { backgroundColor: '#2563EB' }
         };
       case 'DISPATCHED':
         return {
           label: 'MARK UNDER RESPONSE',
-          action: () => updateIncidentStatus(incident.id, 'UNDER_RESPONSE'),
+          targetStatus: 'UNDER_RESPONSE',
           style: {}
         };
       case 'UNDER_RESPONSE':
         if (incidentClosureCheck.ready) {
           return {
             label: 'RESOLVE INCIDENT',
-            action: () => updateIncidentStatus(incident.id, 'RESOLVED'),
+            targetStatus: 'RESOLVED',
             style: { backgroundColor: '#059669' }
           };
         } else {
           return {
-            label: 'RESOLVE INCIDENT (BLOCKED)',
-            action: () => alert(`Cannot resolve incident yet: There are still ${incidentClosureCheck.activeCount} outstanding demands that need to be fully fulfilled or cancelled first.`),
+            label: `RESOLVE INCIDENT (${incidentClosureCheck.activeCount} DEMANDS PENDING)`,
+            targetStatus: null,
+            navigate: () => setActionError(`⚠ Cannot resolve: ${incidentClosureCheck.activeCount} outstanding demand(s) must be fulfilled or cancelled first.`),
             style: { backgroundColor: '#4b5563', cursor: 'not-allowed', opacity: 0.6 }
           };
         }
@@ -176,7 +206,7 @@ export const IncidentWorkspace: React.FC = () => {
       default:
         return null;
     }
-  }, [incident.status, incidentRequests, requests, navigate, updateIncidentStatus, incident.id, incidentClosureCheck]);
+  }, [incident.status, incidentRequests, requests, navigate, incident.id, incidentClosureCheck]);
 
   const severityColors: Record<string, string> = {
     CRITICAL: '#DC2626',
@@ -264,34 +294,66 @@ export const IncidentWorkspace: React.FC = () => {
           <div className={styles.actionBannerText}>
             <h3>RECOMMENDED LOGISTICS ACTION</h3>
             <p>
-              {incident.status === 'PRIORITIZED'
-                ? 'Incident lacks allocated resources. Proceed to matching engine.'
-                : incident.status === 'RESOURCE_MATCHED'
-                  ? 'Resources matches are approved. Proceed to authorize dispatch.'
-                  : incident.status === 'UNDER_RESPONSE'
-                    ? (incidentClosureCheck.ready
-                      ? 'READY FOR CLOSURE: All incident demands are fully satisfied. System recommends resolution closure.'
-                      : `ACTIVE: There are still ${incidentClosureCheck.activeCount} outstanding demands. Fulfill or cancel all demands to enable closure.`)
-                    : `Next operational step: Advance incident stage to ${primaryAction.label.replace('MARK ', '')}.`}
+              {incident.status === 'REPORTED'
+                ? 'Confirm incident validity and advance to the VERIFIED stage.'
+                : incident.status === 'VERIFIED'
+                  ? 'Assign severity and resource priorities before matching logistics.'
+                  : incident.status === 'PRIORITIZED'
+                    ? 'Incident lacks allocated resources. Proceed to matching engine.'
+                    : incident.status === 'RESOURCE_MATCHED'
+                      ? 'Resources matches are approved. Proceed to authorize dispatch.'
+                      : incident.status === 'UNDER_RESPONSE'
+                        ? (incidentClosureCheck.ready
+                          ? 'READY FOR CLOSURE: All incident demands are fully satisfied. System recommends resolution closure.'
+                          : `ACTIVE: There are still ${incidentClosureCheck.activeCount} outstanding demands. Fulfill or cancel all demands to enable closure.`)
+                        : `Next operational step: Advance incident stage to ${primaryAction.label.replace('MARK ', '')}.`}
             </p>
           </div>
           <div className={styles.actionBtnGroup}>
             <button
+              id="btn-lifecycle-primary"
               className={styles.primaryActionBtn}
               style={primaryAction.style}
-              onClick={primaryAction.action}
+              disabled={actionLoading}
+              onClick={() => {
+                setActionError(null);
+                if (primaryAction.targetStatus) {
+                  handleLifecycleAction(primaryAction.targetStatus);
+                } else if (primaryAction.navigate) {
+                  primaryAction.navigate();
+                }
+              }}
             >
-              {primaryAction.label} <ArrowRight size={13} />
+              {actionLoading ? 'UPDATING…' : primaryAction.label} <ArrowRight size={13} />
             </button>
             {incident.status !== 'RESOLVED' && (
               <button
+                id="btn-lifecycle-force-resolve"
                 className={styles.secondaryActionBtn}
-                onClick={() => updateIncidentStatus(incident.id, 'RESOLVED')}
+                disabled={actionLoading}
+                onClick={() => {
+                  setActionError(null);
+                  handleLifecycleAction('RESOLVED');
+                }}
               >
                 Force Resolve
               </button>
             )}
           </div>
+          {actionError && (
+            <div style={{
+              marginTop: '10px',
+              padding: '8px 14px',
+              background: 'rgba(239,68,68,0.12)',
+              border: '1px solid rgba(239,68,68,0.35)',
+              borderRadius: '6px',
+              color: '#FCA5A5',
+              fontSize: '12px',
+              lineHeight: 1.5
+            }}>
+              {actionError}
+            </div>
+          )}
         </section>
       )}
 

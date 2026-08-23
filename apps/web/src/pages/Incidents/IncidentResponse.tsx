@@ -37,6 +37,10 @@ export const IncidentResponse: React.FC = () => {
     details: string;
   } | null>(null);
 
+  // --- Lifecycle action async state ---
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -70,17 +74,36 @@ export const IncidentResponse: React.FC = () => {
     setSelectedRecs(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // --- Awaited lifecycle action wrapper ---
+  // Wraps updateIncidentStatus so all calls in this component:
+  //   - await the backend PATCH
+  //   - show a loading state on the triggering button
+  //   - display an error banner if the backend rejects
+  const handleLifecycleAction = async (targetStatus: string) => {
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await updateIncidentStatus(incident!.id, targetStatus as any);
+    } catch (err: any) {
+      const msg = err?.message || 'Backend rejected this transition. Check officer credentials and incident state.';
+      setActionError(`❌ ${msg}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleDispatchClick = () => {
+    setActionError(null);
     setShowConfirmModal(true);
   };
 
-  const handleConfirmDispatch = () => {
-    if (recommendedVehicle) {
-      dispatchVehicleToIncident(recommendedVehicle.id, incident.id);
-    } else {
-      updateIncidentStatus(incident.id, 'DISPATCHED');
-    }
+  const handleConfirmDispatch = async () => {
     setShowConfirmModal(false);
+    if (recommendedVehicle) {
+      dispatchVehicleToIncident(recommendedVehicle.id, incident!.id);
+    }
+    // Always advance the incident status to DISPATCHED via the backend
+    await handleLifecycleAction('DISPATCHED');
   };
 
   // Safe UI colors
@@ -318,8 +341,13 @@ export const IncidentResponse: React.FC = () => {
           {/* Response Actions */}
           <div className={styles.actionBar}>
             {incident.status !== 'DISPATCHED' ? (
-              <button className={styles.dispatchBtn} onClick={handleDispatchClick}>
-                DISPATCH RESPONSE →
+              <button
+                id="btn-response-dispatch"
+                className={styles.dispatchBtn}
+                disabled={actionLoading}
+                onClick={handleDispatchClick}
+              >
+                {actionLoading ? 'PROCESSING…' : 'DISPATCH RESPONSE →'}
               </button>
             ) : (
               <div className={styles.dispatchedStatusBanner}>
@@ -327,16 +355,44 @@ export const IncidentResponse: React.FC = () => {
               </div>
             )}
             <button className={styles.reviewBtn}>REVIEW ALLOCATION</button>
-            
+
             <div className={styles.minorActions}>
-              <button onClick={() => updateIncidentStatus(incident.id, 'PRIORITIZED')}>ESCALATE</button>
+              <button
+                id="btn-response-escalate"
+                disabled={actionLoading}
+                onClick={() => handleLifecycleAction('PRIORITIZED')}
+              >
+                ESCALATE
+              </button>
               <button>HOLD</button>
               {incident.status !== 'RESOLVED' ? (
-                <button onClick={() => updateIncidentStatus(incident.id, 'RESOLVED')}>MARK RESOLVED</button>
+                <button
+                  id="btn-response-resolve"
+                  disabled={actionLoading}
+                  onClick={() => handleLifecycleAction('RESOLVED')}
+                >
+                  MARK RESOLVED
+                </button>
               ) : (
                 <span className={styles.resolvedLabel}>RESOLVED</span>
               )}
             </div>
+
+            {actionError && (
+              <div style={{
+                marginTop: '10px',
+                padding: '8px 14px',
+                background: 'rgba(239,68,68,0.12)',
+                border: '1px solid rgba(239,68,68,0.35)',
+                borderRadius: '6px',
+                color: '#FCA5A5',
+                fontSize: '12px',
+                lineHeight: 1.5,
+                width: '100%'
+              }}>
+                {actionError}
+              </div>
+            )}
           </div>
         </div>
       </div>
