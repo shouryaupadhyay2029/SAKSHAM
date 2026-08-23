@@ -385,7 +385,16 @@ export const Incidents: React.FC = () => {
               <div className={styles.lifecycleGrid}>
                 {['REPORTED', 'VERIFIED', 'PRIORITIZED', 'RESOURCE_MATCHED', 'DISPATCHED', 'UNDER_RESPONSE', 'RESOLVED'].map((step, idx) => {
                   const statusOrder: Record<string, number> = {
-                    REPORTED: 0, VERIFIED: 1, PRIORITIZED: 2, RESOURCE_MATCHED: 3, DISPATCHED: 4, UNDER_RESPONSE: 5, RESOLVED: 6, ACTIVE: 2
+                    REPORTED: 0,
+                    VERIFIED: 1,
+                    PRIORITIZED: 2,
+                    AWAITING_MATCH: 2,
+                    RESOURCE_MATCHED: 3,
+                    MATCHED: 3,
+                    DISPATCHED: 4,
+                    UNDER_RESPONSE: 5,
+                    RESOLVED: 6,
+                    ACTIVE: 2
                   };
                   const currentIdx = statusOrder[selectedIncident.status] ?? 0;
                   const stepIdx = idx;
