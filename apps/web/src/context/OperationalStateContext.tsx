@@ -100,7 +100,7 @@ interface OperationalStateContextType {
 
   // --- Status updaters ---
   updateIncidentStatus: (incidentId: string, status: IncidentStatus) => Promise<void>;
-  setIncidentPriority: (incidentId: string, severity: Severity) => void;
+  setIncidentPriority: (incidentId: string, severity: Severity) => Promise<void>;
   updateVehicleStatus: (vehicleId: string, status: VehicleStatus) => void;
   updateResourceStatus: (resourceId: string, status: ResourceStatus) => void;
   updateDemandStatus: (demandId: string, status: RequestStatus, resourceId?: string) => void;
@@ -825,11 +825,10 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       await apiClient.updateIncident(incidentId, { status: backendStatus });
       console.log(`[INCIDENT STATUS PERSISTENCE] ✅ ${incidentId} → ${backendStatus} persisted in PostgreSQL.`);
     } catch (err: any) {
-      const msg: string = err?.message || '';
       // 401 = demo/offline mode: no valid JWT, so backend can't auth.
       // Keep the optimistic UI update (don't roll back) — the state is shown correctly
       // in the UI even without DB persistence in demo sessions.
-      if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('Not authenticated')) {
+      if (err && err.status === 401) {
         console.warn(`[INCIDENT STATUS] Demo mode — backend auth required. UI updated locally only.`);
         return; // Don't throw — let the optimistic update stand
       }
@@ -842,11 +841,14 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
   };
 
 
-  const setIncidentPriority = (incidentId: string, severity: Severity) => {
+
+  const setIncidentPriority = async (incidentId: string, severity: Severity): Promise<void> => {
     const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
     
-    setIncidents(prev =>
-      prev.map(inc => {
+    let previousIncidents: typeof incidents = [];
+    setIncidents(prev => {
+      previousIncidents = prev;
+      return prev.map(inc => {
         if (inc.id !== incidentId) return inc;
         
         const currentTimeline = inc.timeline || [];
@@ -861,9 +863,26 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
             description: `Incident severity level explicitly set to ${severity} by coordinator.`
           }]
         };
-      })
-    );
+      });
+    });
+
+    try {
+      await apiClient.updateIncident(incidentId, { 
+        severity: severity, 
+        status: 'AWAITING_MATCH' // 'PRIORITIZED' maps to 'AWAITING_MATCH' on the backend
+      });
+      console.log(`[INCIDENT PRIORITY PERSISTENCE] ✅ ${incidentId} set to ${severity} (PRIORITIZED) in PostgreSQL.`);
+    } catch (err: any) {
+      if (err && err.status === 401) {
+        console.warn(`[INCIDENT PRIORITY] Demo mode — backend auth required. UI updated locally only.`);
+        return;
+      }
+      console.error(`[INCIDENT PRIORITY PERSISTENCE ERROR] ❌ Failed to persist priority for ${incidentId}:`, err);
+      setIncidents(previousIncidents);
+      throw err;
+    }
   };
+
 
   const updateVehicleStatus = (vehicleId: string, status: VehicleStatus) => {
     setVehicles(prev =>

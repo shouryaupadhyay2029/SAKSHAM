@@ -26,7 +26,7 @@ export const Incidents: React.FC = () => {
   const { t } = useTranslation();
   const { 
     incidents, resources, vehicles, shelters,
-    addManualIncident, updateIncidentStatus 
+    addManualIncident, updateIncidentStatus, setIncidentPriority
   } = useOperationalState();
 
   console.log('[INCIDENT DEBUG] incidents received by page:', incidents);
@@ -438,6 +438,53 @@ export const Incidents: React.FC = () => {
                   <button className={styles.primaryActionBtn} onClick={() => setActiveSubAction('PRIORITY')}>
                     {t('common.priority')}
                   </button>
+                )}
+
+                {selectedIncident.status === 'VERIFIED' && activeSubAction === 'PRIORITY' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: 'rgba(250, 248, 243, 0.6)', letterSpacing: '0.05em' }}>
+                      ASSIGN SEVERITY LEVEL:
+                    </span>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => (
+                        <button
+                          key={sev}
+                          className={styles.primaryActionBtn}
+                          style={{
+                            backgroundColor: sev === 'CRITICAL' ? '#EF4444' : sev === 'HIGH' ? '#F97316' : sev === 'MEDIUM' ? '#EAB308' : '#10B981',
+                            padding: '8px 10px',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                          disabled={verifyLoading}
+                          onClick={async () => {
+                            setVerifyError(null);
+                            setVerifyLoading(true);
+                            try {
+                              await setIncidentPriority(selectedIncident.id, sev as Severity);
+                              setActiveSubAction('NONE');
+                            } catch (err: any) {
+                              setVerifyError('Failed to assign priority. Please check backend.');
+                            } finally {
+                              setVerifyLoading(false);
+                            }
+                          }}
+                        >
+                          ● {sev}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      className={styles.primaryActionBtn}
+                      style={{ backgroundColor: 'rgba(250,248,243,0.1)', color: '#FAF8F3', border: '1px solid rgba(250,248,243,0.2)' }}
+                      onClick={() => setActiveSubAction('NONE')}
+                    >
+                      CANCEL
+                    </button>
+                  </div>
                 )}
 
                 {selectedIncident.status === 'PRIORITIZED' && (
