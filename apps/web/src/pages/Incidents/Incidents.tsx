@@ -41,6 +41,10 @@ export const Incidents: React.FC = () => {
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [activeSubAction, setActiveSubAction] = useState<'NONE' | 'VERIFY' | 'PRIORITY' | 'DISPATCH'>('NONE');
 
+  // --- Verify action state ---
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
   // --- Manual Incident Form State ---
   const [manualType, setManualType] = useState('FLOOD');
   const [manualSeverity, setManualSeverity] = useState<Severity>('HIGH');
@@ -117,6 +121,19 @@ export const Incidents: React.FC = () => {
       return new Date(b.time).getTime() - new Date(a.time).getTime();
     });
   }, [incidents, searchQuery, activeFilter]);
+
+  const handleVerifyIncident = async (incidentId: string) => {
+    setVerifyLoading(true);
+    setVerifyError(null);
+    try {
+      await updateIncidentStatus(incidentId, 'VERIFIED');
+    } catch (err: any) {
+      console.error('[VERIFY] Failed to persist VERIFIED status:', err);
+      setVerifyError('Unable to verify incident. The backend did not accept the transition. Please try again.');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
 
   const handleCreateManual = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -396,10 +413,25 @@ export const Incidents: React.FC = () => {
                   {t('common.view')} →
                 </Link>
 
-                {selectedIncident.status === 'REPORTED' && activeSubAction !== 'VERIFY' && (
-                  <button className={styles.primaryActionBtn} onClick={() => setActiveSubAction('VERIFY')}>
-                    {t('status.VERIFIED')}
-                  </button>
+                {selectedIncident.status === 'REPORTED' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <button
+                      id="btn-verify-incident"
+                      className={styles.primaryActionBtn}
+                      disabled={verifyLoading}
+                      onClick={() => {
+                        setVerifyError(null);
+                        handleVerifyIncident(selectedIncident.id);
+                      }}
+                    >
+                      {verifyLoading ? 'VERIFYING…' : t('status.VERIFIED')}
+                    </button>
+                    {verifyError && (
+                      <span style={{ color: '#EF4444', fontSize: '11px', lineHeight: 1.4 }}>
+                        ⚠ {verifyError}
+                      </span>
+                    )}
+                  </div>
                 )}
 
                 {selectedIncident.status === 'VERIFIED' && activeSubAction !== 'PRIORITY' && (

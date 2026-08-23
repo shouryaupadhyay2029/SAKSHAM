@@ -99,7 +99,7 @@ interface OperationalStateContextType {
   dispatchVehicleToIncident: (vehicleId: string, incidentId: string) => void;
 
   // --- Status updaters ---
-  updateIncidentStatus: (incidentId: string, status: IncidentStatus) => void;
+  updateIncidentStatus: (incidentId: string, status: IncidentStatus) => Promise<void>;
   setIncidentPriority: (incidentId: string, severity: Severity) => void;
   updateVehicleStatus: (vehicleId: string, status: VehicleStatus) => void;
   updateResourceStatus: (resourceId: string, status: ResourceStatus) => void;
@@ -741,7 +741,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     );
   };
 
-  const updateIncidentStatus = (incidentId: string, status: IncidentStatus) => {
+  const updateIncidentStatus = async (incidentId: string, status: IncidentStatus): Promise<void> => {
     const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
     
     let title = '';
@@ -780,21 +780,22 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
         break;
     }
 
-    setIncidents(prev =>
-      prev.map(inc => {
+    // --- Step 1: Capture previous state for rollback ---
+    let previousIncidents: typeof incidents = [];
+    setIncidents(prev => {
+      previousIncidents = prev;
+      return prev.map(inc => {
         if (inc.id !== incidentId) return inc;
-        
         const currentTimeline = inc.timeline || [];
         const newTimeline = title ? [...currentTimeline, { time: timeStr, title, description }] : currentTimeline;
-        
         return {
           ...inc,
           status,
           updatedAt: new Date().toISOString(),
           timeline: newTimeline
         };
-      })
-    );
+      });
+    });
 
     // If resolved, free up vehicle
     if (status === 'RESOLVED') {
@@ -807,28 +808,30 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       );
     }
 
-    // Call backend API to persist status update in PostgreSQL
-    (async () => {
-      try {
-        const statusMapFrontendToBackend: Record<string, string> = {
-          'REPORTED': 'REPORTED',
-          'VERIFIED': 'VERIFIED',
-          'PRIORITIZED': 'AWAITING_MATCH',
-          'RESOURCE_MATCHED': 'MATCHED',
-          'DISPATCHED': 'DISPATCHED',
-          'UNDER_RESPONSE': 'UNDER_RESPONSE',
-          'RESOLVED': 'RESOLVED',
-          'CANCELLED': 'CANCELLED'
-        };
-        const backendStatus = statusMapFrontendToBackend[status] || status;
-        
-        await apiClient.updateIncident(incidentId, { status: backendStatus });
-        console.log(`[INCIDENT STATUS PERSISTENCE] Successfully updated status of incident ${incidentId} to ${backendStatus} in PostgreSQL.`);
-      } catch (err: any) {
-        console.error('[INCIDENT STATUS PERSISTENCE ERROR] Failed to save status update to backend:', err);
-      }
-    })();
+    // --- Step 2: Persist to backend (await and throw on failure) ---
+    const statusMapFrontendToBackend: Record<string, string> = {
+      'REPORTED': 'REPORTED',
+      'VERIFIED': 'VERIFIED',
+      'PRIORITIZED': 'AWAITING_MATCH',
+      'RESOURCE_MATCHED': 'MATCHED',
+      'DISPATCHED': 'DISPATCHED',
+      'UNDER_RESPONSE': 'UNDER_RESPONSE',
+      'RESOLVED': 'RESOLVED',
+      'CANCELLED': 'CANCELLED'
+    };
+    const backendStatus = statusMapFrontendToBackend[status] || status;
+    
+    try {
+      await apiClient.updateIncident(incidentId, { status: backendStatus });
+      console.log(`[INCIDENT STATUS PERSISTENCE] ✅ ${incidentId} → ${backendStatus} persisted in PostgreSQL.`);
+    } catch (err: any) {
+      // --- Step 3: Roll back optimistic UI on failure ---
+      console.error(`[INCIDENT STATUS PERSISTENCE ERROR] ❌ Failed to persist ${incidentId} → ${backendStatus}:`, err);
+      setIncidents(previousIncidents);
+      throw err; // Re-throw so callers (e.g. handleVerifyIncident) can show error UI
+    }
   };
+
 
   const setIncidentPriority = (incidentId: string, severity: Severity) => {
     const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
