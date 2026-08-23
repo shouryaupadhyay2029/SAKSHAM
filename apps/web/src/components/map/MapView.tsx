@@ -570,9 +570,9 @@ export const MapView: React.FC<MapViewProps> = ({
                 onClick={() => {
                   const demand = requests.find(r => r.incidentId === data.id);
                   if (demand) {
-                    navigate(`/matching?demandId=${demand.id}`);
+                    navigate(`/operations/matching?requestId=${demand.id}`);
                   } else {
-                    navigate('/matching');
+                    navigate('/operations/matching');
                   }
                 }}
               >

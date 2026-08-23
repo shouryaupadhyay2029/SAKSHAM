@@ -493,6 +493,22 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       ? { lat: sosData.latitude, lng: sosData.longitude }
       : getZoneCoordinates(sosData.zone);
     const resolvedAddress = sosData.address || `${sosData.zone} SOS Zone`;
+    const categoryMap: Record<string, string> = {
+      'Rations & Drinking Water': 'WATER',
+      'Medical Assistance / First Aid': 'MEDICAL',
+      'Structural Evacuation / Rescue Boat': 'RESCUE_EQUIPMENT',
+      'Blankets & Temporary Bedding': 'SHELTER_SUPPLIES'
+    };
+    const standardNeed = categoryMap[sosData.need] || 'OTHER';
+    
+    const unitMap: Record<string, string> = {
+      'Rations & Drinking Water': 'L',
+      'Medical Assistance / First Aid': 'Units',
+      'Structural Evacuation / Rescue Boat': 'Units',
+      'Blankets & Temporary Bedding': 'Units'
+    };
+    const standardUnit = unitMap[sosData.need] || 'Units';
+
     const incidentId = `INC-2026-${Math.floor(Math.random() * 800) + 200}`;
     const requestId = `DEM-${Math.floor(Math.random() * 800) + 200}`;
 
@@ -514,7 +530,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       source: 'CIVILIAN SOS',
       peopleAffected: 50,
       requiredResources: [
-        { itemNeeded: sosData.need, quantity: 100, unit: 'Units', priority: 'HIGH' }
+        { itemNeeded: standardNeed, quantity: 100, unit: standardUnit, priority: 'HIGH' }
       ],
       timeline: [
         {
@@ -530,10 +546,10 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       incidentId: incidentId,
       zoneName: `${sosData.zone} SOS Area`,
       coordinates: coords,
-      itemNeeded: sosData.need,
-      category: 'FOOD',
+      itemNeeded: standardNeed,
+      category: standardNeed,
       quantity: 100,
-      unit: 'Units',
+      unit: standardUnit,
       priority: 'HIGH',
       affectedCount: 50,
       status: 'PENDING',
@@ -567,10 +583,10 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
           const demPayload = {
             incidentId: dbIncident.id,
             affectedZone: sosData.zone,
-            requestedType: sosData.need,
+            requestedType: standardNeed,
             description: `Civilian SOS: needs ${sosData.need}. Details: ${sosData.details}`,
             quantity: 100,
-            unit: 'Units',
+            unit: standardUnit,
             affectedPeople: 50,
             priority: 'HIGH',
             status: 'PENDING'

@@ -1,7 +1,7 @@
 import React, {
   useState, useMemo, useEffect, useRef, useCallback
 } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Search, X, Check, ChevronDown, ChevronUp, ArrowRight, Info, AlertTriangle } from 'lucide-react';
@@ -414,6 +414,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
 export const DemandMatching: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { requests, resources, incidents, allocateResourceToRequest } = useOperationalState();
 
   /* — State — */
@@ -939,6 +940,32 @@ export const DemandMatching: React.FC = () => {
                   ))}
                 </div>
                 <p className={styles.allocNote}>Ready for Dispatch &amp; Logistics phase. No vehicle has been assigned yet.</p>
+                <button
+                  className={styles.goToDispatchBtn}
+                  onClick={() => navigate(`/operations/dispatch?allocationId=${selectedDemand.id}`)}
+                  style={{
+                    marginTop: '20px',
+                    width: '100%',
+                    backgroundColor: '#E86F16',
+                    color: '#FAF8F3',
+                    border: 'none',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    fontFamily: 'var(--font-sans), sans-serif',
+                    fontSize: '11px',
+                    fontWeight: 750,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    transition: 'background-color 0.2s ease'
+                  }}
+                >
+                  Go to Dispatch Console <ArrowRight size={14} />
+                </button>
               </div>
             ) : matchOutput?.bestMatch ? (
               <RecommendationPanel
