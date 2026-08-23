@@ -5,19 +5,28 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
+const TOKEN_KEY = 'saksham_auth_token';
+
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<{ data: T; meta?: any }> {
   const url = `${API_BASE_URL}${path}`;
+
+  // Automatically inject the officer JWT when present in sessionStorage.
+  // authService.ts stores the token under TOKEN_KEY after a successful login.
+  const token = sessionStorage.getItem(TOKEN_KEY);
+  const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
   const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeader,
       ...(options?.headers || {}),
     },
   });
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    throw new Error(errorBody.error?.message || `HTTP Error ${response.status}: ${response.statusText}`);
+    throw new Error(errorBody.error?.message || errorBody.detail || `HTTP Error ${response.status}: ${response.statusText}`);
   }
 
   const json = await response.json();
@@ -26,6 +35,7 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<{ data
   }
   return { data: json };
 }
+
 
 export const apiClient = {
   // ── Incidents ──

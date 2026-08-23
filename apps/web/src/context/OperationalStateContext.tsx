@@ -825,10 +825,19 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       await apiClient.updateIncident(incidentId, { status: backendStatus });
       console.log(`[INCIDENT STATUS PERSISTENCE] ✅ ${incidentId} → ${backendStatus} persisted in PostgreSQL.`);
     } catch (err: any) {
-      // --- Step 3: Roll back optimistic UI on failure ---
+      const msg: string = err?.message || '';
+      // 401 = demo/offline mode: no valid JWT, so backend can't auth.
+      // Keep the optimistic UI update (don't roll back) — the state is shown correctly
+      // in the UI even without DB persistence in demo sessions.
+      if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('Not authenticated')) {
+        console.warn(`[INCIDENT STATUS] Demo mode — backend auth required. UI updated locally only.`);
+        return; // Don't throw — let the optimistic update stand
+      }
+      // All other errors (409 invalid transition, 403 wrong role, network failures)
+      // → roll back the optimistic UI change and re-throw so the component can show an error banner.
       console.error(`[INCIDENT STATUS PERSISTENCE ERROR] ❌ Failed to persist ${incidentId} → ${backendStatus}:`, err);
       setIncidents(previousIncidents);
-      throw err; // Re-throw so callers (e.g. handleVerifyIncident) can show error UI
+      throw err;
     }
   };
 
