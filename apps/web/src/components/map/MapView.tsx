@@ -109,12 +109,41 @@ export const MapView: React.FC<MapViewProps> = ({
       maxZoom: 18
     });
 
+    console.log("[SAKSHAM] FINAL MAP STYLE:", map.getStyle());
+    console.log("[SAKSHAM] MAP SOURCES:", map.getStyle().sources);
+
     map.on("load", () => {
       console.log("[SAKSHAM] MAP LOAD SUCCESS");
+      try {
+        console.log(
+          "[SAKSHAM] SOURCES AFTER LOAD:",
+          Object.entries(map.getStyle().sources).map(([id, source]: any) => ({
+            id,
+            type: source.type,
+            tiles: source.tiles
+          }))
+        );
+        console.log(
+          "[SAKSHAM] BASE MAP LAYER:",
+          map.getLayer("base-map")
+        );
+      } catch (err) {
+        console.error("[SAKSHAM] DIAGNOSTICS LOGGING ERROR", err);
+      }
     });
 
     map.on("error", (event: any) => {
       console.error("[SAKSHAM] MAP ERROR", event.error);
+    });
+
+    map.on("sourcedata", (e: any) => {
+      if (e.sourceId) {
+        console.log(
+          "[SAKSHAM] SOURCE DATA",
+          e.sourceId,
+          e.isSourceLoaded
+        );
+      }
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
@@ -132,10 +161,51 @@ export const MapView: React.FC<MapViewProps> = ({
     const map = mapRef.current;
     if (!map) return;
     const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
-    const styleUrl = mapMode === 'STREETS'
-      ? (apiKey ? `https://api.maptiler.com/maps/streets-v4/style.json?key=${apiKey}` : 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
-      : (apiKey ? `https://api.maptiler.com/maps/darkmatter/style.json?key=${apiKey}` : 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json');
-    map.setStyle(styleUrl);
+    
+    // Fallback light (OSM) / dark (CARTO Dark Matter) styles
+    const lightStyle = {
+      version: 8,
+      sources: {
+        "base-map": {
+          type: "raster",
+          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+          tileSize: 256,
+          attribution: "© OpenStreetMap contributors"
+        }
+      },
+      layers: [
+        {
+          id: "base-map",
+          type: "raster",
+          source: "base-map"
+        }
+      ]
+    };
+
+    const darkStyle = {
+      version: 8,
+      sources: {
+        "base-map": {
+          type: "raster",
+          tiles: ["https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png"],
+          tileSize: 256,
+          attribution: "© CARTO, © OpenStreetMap contributors"
+        }
+      },
+      layers: [
+        {
+          id: "base-map",
+          type: "raster",
+          source: "base-map"
+        }
+      ]
+    };
+
+    const styleVal: any = mapMode === 'STREETS'
+      ? (apiKey ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}` : lightStyle)
+      : (apiKey ? `https://api.maptiler.com/maps/darkmatter/style.json?key=${apiKey}` : darkStyle);
+      
+    map.setStyle(styleVal);
   }, [mapMode]);
 
   // Update Markers when data, filters or zoom change
