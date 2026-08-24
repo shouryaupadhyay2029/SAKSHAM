@@ -15,6 +15,7 @@ RUN npm run build
 RUN npx prisma generate
 
 FROM node:20-alpine
+RUN apk add --no-cache openssl
 
 WORKDIR /usr/src/app
 
