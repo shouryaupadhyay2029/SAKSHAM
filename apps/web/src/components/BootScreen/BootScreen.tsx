@@ -60,6 +60,12 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
   const featureTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // 3.5s Safety fallback timeout to guarantee app boot under all scenarios
+    const safetyTimeout = setTimeout(() => {
+      console.warn("[SAKSHAM] BootScreen safety fallback triggered.");
+      onComplete();
+    }, 3500);
+
     // 1. Initial State configurations
     gsap.set([
       logoMarkRef.current,
@@ -98,7 +104,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
       tl.to(brandWordmarkRef.current, {
         opacity: 1,
         y: 0,
-        duration: 0.58,
+        duration: 0.5,
         ease: 'power2.out'
       }, '-=0.4');
 
@@ -150,7 +156,10 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
       });
     }, containerRef);
 
-    return () => ctx.revert();
+    return () => {
+      clearTimeout(safetyTimeout);
+      ctx.revert();
+    };
   }, [onComplete]);
 
   // Handle ESC key to skip

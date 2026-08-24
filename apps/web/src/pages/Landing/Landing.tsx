@@ -505,7 +505,7 @@ export const Landing: React.FC = () => {
     }, landingRef);
     };
 
-    const isBooting = (() => {
+    const isFirstBoot = (() => {
       try {
         return !sessionStorage.getItem('saksham_boot_seen');
       } catch (e) {
@@ -513,25 +513,14 @@ export const Landing: React.FC = () => {
       }
     })();
 
-    let animCtx: any = null;
+    const delayTime = isFirstBoot ? 2600 : 100;
+    const timeoutId = setTimeout(() => {
+      runAnimations();
+    }, delayTime);
 
-    if (isBooting) {
-      const handleBootComplete = () => {
-        if (!animCtx) {
-          animCtx = runAnimations();
-        }
-      };
-      window.addEventListener('saksham_boot_complete', handleBootComplete);
-      return () => {
-        window.removeEventListener('saksham_boot_complete', handleBootComplete);
-        if (animCtx) animCtx.revert();
-      };
-    } else {
-      animCtx = runAnimations();
-      return () => {
-        if (animCtx) animCtx.revert();
-      };
-    }
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // Get dynamic numbers for later stats strip
