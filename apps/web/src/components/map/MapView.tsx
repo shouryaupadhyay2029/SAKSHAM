@@ -80,25 +80,25 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!mapContainerRef.current) return;
 
     const mapStyle: any = {
-          version: 8,
-          sources: {
-            'carto-raster': {
-              type: 'raster',
-              tiles: [
-                'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
-              ],
-              tileSize: 256,
-              attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
-            }
-          },
-          layers: [
-            {
-              id: 'carto-raster',
-              type: 'raster',
-              source: 'carto-raster'
-            }
-          ]
-        };
+      version: 8,
+      sources: {
+        "base-map": {
+          type: "raster",
+          tiles: [
+            "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          ],
+          tileSize: 256,
+          attribution: "© OpenStreetMap contributors"
+        }
+      },
+      layers: [
+        {
+          id: "base-map",
+          type: "raster",
+          source: "base-map"
+        }
+      ]
+    };
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
@@ -107,6 +107,14 @@ export const MapView: React.FC<MapViewProps> = ({
       zoom: 4.8,
       minZoom: 4,
       maxZoom: 18
+    });
+
+    map.on("load", () => {
+      console.log("[SAKSHAM] MAP LOAD SUCCESS");
+    });
+
+    map.on("error", (event: any) => {
+      console.error("[SAKSHAM] MAP ERROR", event.error);
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
