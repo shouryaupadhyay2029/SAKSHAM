@@ -504,3 +504,374 @@ router.post('/incidents/:id/timeline', asyncHandler(async (req, res) => {
     });
     res.status(201).json({ data: timelineItem });
 }));
+/* ==========================================
+   DISPATCH ROUTING & SCHEMAS
+   ========================================== */
+const dispatchCreateSchema = zod_1.z.object({
+    allocationId: zod_1.z.string().uuid('Valid Allocation UUID required'),
+    vehicleId: zod_1.z.string().uuid('Valid Vehicle UUID required'),
+    assignedOfficerId: zod_1.z.string().uuid('Valid Officer UUID required').optional(),
+    plannedDeparture: zod_1.z.string().datetime().optional().transform(v => v ? new Date(v) : undefined),
+    eta: zod_1.z.string().datetime().optional().transform(v => v ? new Date(v) : undefined),
+    notes: zod_1.z.string().optional(),
+});
+// GET /api/dispatch
+router.get('/dispatch', asyncHandler(async (req, res) => {
+    const { status, priority, vehicleId, search } = req.query;
+    const where = {};
+    if (status) {
+        where.status = status;
+    }
+    if (vehicleId) {
+        where.vehicleId = vehicleId;
+    }
+    if (priority) {
+        where.priority = priority;
+    }
+    if (search) {
+        where.OR = [
+            { dispatchId: { contains: search, mode: 'insensitive' } },
+            { origin: { contains: search, mode: 'insensitive' } },
+            { destination: { contains: search, mode: 'insensitive' } },
+        ];
+    }
+    const dispatches = await db_js_1.prisma.dispatch.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+            allocation: {
+                include: {
+                    demand: {
+                        include: {
+                            incident: true
+                        }
+                    },
+                    resource: true
+                }
+            },
+            vehicle: true,
+            officer: {
+                select: { name: true, role: true }
+            }
+        }
+    });
+    res.json({ data: dispatches });
+}));
+// POST /api/dispatch
+router.post('/dispatch', asyncHandler(async (req, res) => {
+    const body = dispatchCreateSchema.parse(req.body);
+    // Generate unique dispatchId
+    const count = await db_js_1.prisma.dispatch.count();
+    const indexStr = String(count + 1).padStart(3, '0');
+    const dispatchId = `DSP-2026-${indexStr}`;
+    // Fetch allocation, vehicle, and officer
+    const allocation = await db_js_1.prisma.allocation.findUnique({
+        where: { id: body.allocationId },
+        include: {
+            demand: {
+                include: {
+                    incident: true
+                }
+            },
+            resource: true
+        }
+    });
+    if (!allocation) {
+        return res.status(404).json({ error: { message: `Allocation ${body.allocationId} not found.` } });
+    }
+    const vehicle = await db_js_1.prisma.vehicle.findUnique({
+        where: { id: body.vehicleId }
+    });
+    if (!vehicle) {
+        return res.status(404).json({ error: { message: `Vehicle ${body.vehicleId} not found.` } });
+    }
+    let officerName = null;
+    if (body.assignedOfficerId) {
+        const officer = await db_js_1.prisma.officer.findUnique({
+            where: { id: body.assignedOfficerId }
+        });
+        if (officer) {
+            officerName = officer.name;
+        }
+    }
+    // Create dispatch
+    const dispatch = await db_js_1.prisma.dispatch.create({
+        data: {
+            dispatchId,
+            allocationId: body.allocationId,
+            vehicleId: body.vehicleId,
+            origin: allocation.resource.storageDepot || allocation.resource.location || "Central Depot",
+            destination: allocation.demand.incident.location,
+            assignedOfficer: officerName,
+            assignedOfficerId: body.assignedOfficerId,
+            plannedDeparture: body.plannedDeparture || new Date(),
+            estimatedArrival: body.eta || new Date(Date.now() + 3600 * 1000), // 1 hour default
+            quantity: allocation.demand.quantity,
+            priority: allocation.demand.priority,
+            status: client_1.DispatchStatus.DISPATCHED, // Immediately set to active/dispatched as confirmed
+            notes: body.notes,
+            latitude: allocation.demand.incident.latitude,
+            longitude: allocation.demand.incident.longitude
+        },
+        include: {
+            allocation: {
+                include: {
+                    demand: {
+                        include: {
+                            incident: true
+                        }
+                    },
+                    resource: true
+                }
+            },
+            vehicle: true,
+            officer: {
+                select: { name: true, role: true }
+            }
+        }
+    });
+    // Automatically transition related vehicle, allocation, and demand states
+    await db_js_1.prisma.vehicle.update({
+        where: { id: vehicle.id },
+        data: {
+            status: client_1.VehicleStatus.DISPATCHED,
+            currentMission: dispatchId
+        }
+    });
+    await db_js_1.prisma.allocation.update({
+        where: { id: allocation.id },
+        data: {
+            status: client_1.AllocationStatus.DISPATCHED
+        }
+    });
+    await db_js_1.prisma.demandRequest.update({
+        where: { id: allocation.demandId },
+        data: {
+            status: client_1.DemandStatus.DISPATCHED
+        }
+    });
+    // Log timeline to incident
+    await db_js_1.prisma.incidentTimeline.create({
+        data: {
+            incidentId: allocation.demand.incidentId,
+            eventType: 'VEHICLE_DISPATCHED',
+            message: `Vehicle ${vehicle.vehicleId} (${vehicle.name}) dispatched under mission ${dispatchId} carrying ${allocation.demand.quantity} ${allocation.demand.unit} of ${allocation.demand.requestedType} to destination.`,
+            actorId: body.assignedOfficerId
+        }
+    });
+    res.status(201).json({ data: dispatch });
+}));
+// PATCH /api/dispatch/:id/status?nextStatus=...
+router.patch('/dispatch/:id/status', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { nextStatus } = req.query;
+    const { notes, officerId } = req.body;
+    if (!nextStatus) {
+        return res.status(400).json({ error: { message: "Query parameter nextStatus is required." } });
+    }
+    const dispatch = await db_js_1.prisma.dispatch.findUnique({
+        where: { id },
+        include: {
+            allocation: {
+                include: {
+                    demand: {
+                        include: {
+                            incident: true
+                        }
+                    }
+                }
+            },
+            vehicle: true
+        }
+    });
+    if (!dispatch) {
+        return res.status(404).json({ error: { message: `Dispatch ${id} not found.` } });
+    }
+    const updated = await db_js_1.prisma.dispatch.update({
+        where: { id },
+        data: {
+            status: nextStatus,
+            notes: notes || dispatch.notes,
+            completionTime: nextStatus === client_1.DispatchStatus.COMPLETED ? new Date() : dispatch.completionTime
+        },
+        include: {
+            allocation: {
+                include: {
+                    demand: {
+                        include: {
+                            incident: true
+                        }
+                    },
+                    resource: true
+                }
+            },
+            vehicle: true,
+            officer: {
+                select: { name: true, role: true }
+            }
+        }
+    });
+    // Sync related models on completion or cancellation
+    if (nextStatus === client_1.DispatchStatus.COMPLETED) {
+        await db_js_1.prisma.vehicle.update({
+            where: { id: dispatch.vehicleId },
+            data: {
+                status: client_1.VehicleStatus.AVAILABLE,
+                currentMission: null
+            }
+        });
+        await db_js_1.prisma.allocation.update({
+            where: { id: dispatch.allocationId },
+            data: {
+                status: client_1.AllocationStatus.COMPLETED
+            }
+        });
+        await db_js_1.prisma.demandRequest.update({
+            where: { id: dispatch.allocation.demandId },
+            data: {
+                status: client_1.DemandStatus.FULFILLED
+            }
+        });
+        await db_js_1.prisma.incidentTimeline.create({
+            data: {
+                incidentId: dispatch.allocation.demand.incidentId,
+                eventType: 'DELIVERY_COMPLETED',
+                message: `Delivery completed: Mission ${dispatch.dispatchId} arrived and verified.`,
+                actorId: officerId
+            }
+        });
+    }
+    else if (nextStatus === client_1.DispatchStatus.CANCELLED || nextStatus === client_1.DispatchStatus.FAILED) {
+        await db_js_1.prisma.vehicle.update({
+            where: { id: dispatch.vehicleId },
+            data: {
+                status: client_1.VehicleStatus.AVAILABLE,
+                currentMission: null
+            }
+        });
+        await db_js_1.prisma.allocation.update({
+            where: { id: dispatch.allocationId },
+            data: {
+                status: client_1.AllocationStatus.REJECTED
+            }
+        });
+        await db_js_1.prisma.demandRequest.update({
+            where: { id: dispatch.allocation.demandId },
+            data: {
+                status: client_1.DemandStatus.PENDING
+            }
+        });
+        await db_js_1.prisma.incidentTimeline.create({
+            data: {
+                incidentId: dispatch.allocation.demand.incidentId,
+                eventType: 'DISPATCH_CANCELLED',
+                message: `Mission ${dispatch.dispatchId} cancelled/failed: ${notes || "No explanation provided"}.`,
+                actorId: officerId
+            }
+        });
+    }
+    res.json({ data: updated });
+}));
+// PATCH /api/dispatch/:id/route
+router.patch('/dispatch/:id/route', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const routeData = req.body;
+    const dispatch = await db_js_1.prisma.dispatch.findUnique({
+        where: { id }
+    });
+    if (!dispatch) {
+        return res.status(404).json({ error: { message: `Dispatch ${id} not found.` } });
+    }
+    const updated = await db_js_1.prisma.dispatch.update({
+        where: { id },
+        data: {
+            latitude: routeData.latitude || dispatch.latitude,
+            longitude: routeData.longitude || dispatch.longitude,
+            notes: routeData.notes || dispatch.notes
+        },
+        include: {
+            allocation: {
+                include: {
+                    demand: {
+                        include: {
+                            incident: true
+                        }
+                    },
+                    resource: true
+                }
+            },
+            vehicle: true,
+            officer: {
+                select: { name: true, role: true }
+            }
+        }
+    });
+    res.json({ data: updated });
+}));
+/* ==========================================
+   DELIVERIES ROUTING
+   ========================================== */
+// GET /api/delivery
+router.get('/delivery', asyncHandler(async (req, res) => {
+    const deliveries = await db_js_1.prisma.delivery.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+            dispatch: {
+                include: {
+                    allocation: {
+                        include: {
+                            demand: {
+                                include: {
+                                    incident: true
+                                }
+                            }
+                        }
+                    },
+                    vehicle: true
+                }
+            }
+        }
+    });
+    res.json({ data: deliveries });
+}));
+// PATCH /api/delivery/:id/status
+router.patch('/delivery/:id/status', asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.query;
+    const { notes, deliveredQty, verifiedBy } = req.body;
+    const delivery = await db_js_1.prisma.delivery.findUnique({
+        where: { id },
+        include: {
+            dispatch: true
+        }
+    });
+    if (!delivery) {
+        return res.status(404).json({ error: { message: `Delivery ${id} not found.` } });
+    }
+    const updated = await db_js_1.prisma.delivery.update({
+        where: { id },
+        data: {
+            status: status,
+            notes: notes || delivery.notes,
+            deliveredAt: status === client_1.DeliveryStatus.DELIVERED ? new Date() : delivery.deliveredAt,
+            receivedBy: verifiedBy || delivery.receivedBy
+        },
+        include: {
+            dispatch: {
+                include: {
+                    allocation: {
+                        include: {
+                            demand: {
+                                include: {
+                                    incident: true
+                                }
+                            }
+                        }
+                    },
+                    vehicle: true
+                }
+            }
+        }
+    });
+    res.json({ data: updated });
+}));
