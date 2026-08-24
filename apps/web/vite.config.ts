@@ -7,6 +7,9 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['maplibre-gl']
   },
+  build: {
+    chunkSizeWarningLimit: 3000
+  },
   server: {
     headers: {
       'Cache-Control': 'no-store',
