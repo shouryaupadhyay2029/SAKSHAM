@@ -505,18 +505,25 @@ export const Landing: React.FC = () => {
     }, landingRef);
     };
 
-    const isBooting = !sessionStorage.getItem('saksham_boot_seen');
+    const isBooting = (() => {
+      try {
+        return !sessionStorage.getItem('saksham_boot_seen');
+      } catch (e) {
+        return false;
+      }
+    })();
+
     let animCtx: any = null;
 
     if (isBooting) {
-      const interval = setInterval(() => {
-        if (sessionStorage.getItem('saksham_boot_seen') === 'true') {
-          clearInterval(interval);
+      const handleBootComplete = () => {
+        if (!animCtx) {
           animCtx = runAnimations();
         }
-      }, 100);
+      };
+      window.addEventListener('saksham_boot_complete', handleBootComplete);
       return () => {
-        clearInterval(interval);
+        window.removeEventListener('saksham_boot_complete', handleBootComplete);
         if (animCtx) animCtx.revert();
       };
     } else {
