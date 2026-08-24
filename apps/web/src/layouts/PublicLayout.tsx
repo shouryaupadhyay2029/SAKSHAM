@@ -316,7 +316,7 @@ export const PublicLayout: React.FC = () => {
                 width: isScrolled ? '60px' : '85px',
                 height: isScrolled ? '60px' : '85px',
                 objectFit: 'contain',
-                marginRight: '14px',
+                marginRight: '4px',
                 transition: 'width 400ms cubic-bezier(0.22, 1, 0.36, 1), height 400ms cubic-bezier(0.22, 1, 0.36, 1)'
               }}
             />
