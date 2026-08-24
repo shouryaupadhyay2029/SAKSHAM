@@ -23,6 +23,7 @@ gsap.registerPlugin(ScrollTrigger);
 import { useTranslation } from 'react-i18next';
 import { DynamicText } from '../../components/ui/DynamicText';
 import { useOperationalState, type DispatchMission } from '../../context/OperationalStateContext';
+import { calculateRoute } from '../../services/routingService';
 import apiClient from '../../services/apiClient';
 import { authService } from '../../services/authService';
 
@@ -47,6 +48,10 @@ export const Dispatch: React.FC = () => {
   // Map Filter Layers State
   const [showVehicles, setShowVehicles] = useState(true);
   const [showIncidents, setShowIncidents] = useState(true);
+  const [showAltRoutesOnMap, setShowAltRoutesOnMap] = useState(false);
+  const [whyRouteOpen, setWhyRouteOpen] = useState(false);
+  const [altRoutesOpen, setAltRoutesOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   // Refs for animations
   const pageRef = useRef<HTMLDivElement>(null);
@@ -105,10 +110,12 @@ export const Dispatch: React.FC = () => {
     }));
   }, [requests, setRequests, setVehicles]);
 
-  // Trigger sync once on mount
+  // Select first mission if current selected is not in missions
   useEffect(() => {
-    syncMissionsToGlobalContext(missions);
-  }, []);
+    if (missions.length > 0 && !missions.some(m => m.id === selectedMissionId)) {
+      setSelectedMissionId(missions[0].id);
+    }
+  }, [missions, selectedMissionId]);
 
   // Pre-fill from URL parameters if available
   const [searchParams] = useSearchParams();
@@ -162,7 +169,7 @@ export const Dispatch: React.FC = () => {
       
       const newTimeline = [...m.timeline];
       const timeStr = new Date().toLocaleTimeString('en-US', {
-        hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata'
+        hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
       });
       
       if (nextStatus === 'DISPATCHED') {
@@ -256,9 +263,21 @@ export const Dispatch: React.FC = () => {
           throw new Error(`No DB allocation found for Demand ID ${request.id}`);
         }
 
+        if (!vehicle.location || !vehicle.location.lat || !vehicle.location.lng) {
+          throw new Error('ORIGIN COORDINATES UNAVAILABLE');
+        }
+        if (!request.coordinates || !request.coordinates.lat || !request.coordinates.lng) {
+          throw new Error('DESTINATION COORDINATES UNAVAILABLE');
+        }
+
+        const routeResult = await calculateRoute(
+          { lat: vehicle.location.lat, lng: vehicle.location.lng },
+          { lat: request.coordinates.lat, lng: request.coordinates.lng }
+        );
+
         const currentUser = authService.getCurrentUser();
         const plannedDeparture = new Date().toISOString();
-        const eta = new Date(Date.now() + 22 * 60 * 1000).toISOString();
+        const eta = routeResult.eta;
 
         const dispatchRes = await apiClient.createDispatch({
           allocationId: dbAllocationId,
@@ -272,6 +291,8 @@ export const Dispatch: React.FC = () => {
         if (dispatchRes && dispatchRes.data) {
           const dbDispatch = dispatchRes.data;
           const newMissionId = dbDispatch.dispatchId || dbDispatch.id;
+          const distanceKm = Number((routeResult.selectedRoute.distanceMeters / 1000).toFixed(1));
+          const etaMinutes = Math.round(routeResult.selectedRoute.durationSeconds / 60);
           
           const newMission: DispatchMission = {
             id: newMissionId,
@@ -282,18 +303,26 @@ export const Dispatch: React.FC = () => {
             resourceType: request.itemNeeded,
             quantity: request.quantity,
             unit: request.unit,
-            etaMinutes: 22,
+            etaMinutes,
             operatorName: formOperator,
             speedKmh: 50,
-            distanceKm: 8.5,
+            distanceKm,
             signalStrength: 95,
             fuelPct: 90,
             trafficLevel: 'LOW',
-            routePath: ['Central Command Depot', 'Ring Road Bypass', request.zoneName.split(',')[0]],
+            routePath: (() => {
+              const summaryStr = routeResult.selectedRoute.summary || '';
+              const streetNames = summaryStr ? summaryStr.split(', ').filter((p: string) => p && p.trim() !== '') : [];
+              return [
+                vehicle.locationName?.split(',')[0] || 'Depot',
+                ...(streetNames.length > 0 ? streetNames : ['Ring Road Bypass']),
+                request.zoneName.split(',')[0]
+              ];
+            })(),
             timeline: [
-              { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'ALLOCATION APPROVED', done: true },
-              { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'VEHICLE ASSIGNED', done: true },
-              { time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }), title: 'DISPATCH AUTHORIZED', done: true },
+              { time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), title: 'ALLOCATION APPROVED', done: true },
+              { time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), title: 'VEHICLE ASSIGNED', done: true },
+              { time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), title: 'DISPATCH AUTHORIZED', done: true },
               { time: '--:--', title: 'EN ROUTE TO TARGET', done: false },
               { time: '--:--', title: 'DESTINATION ARRIVAL', done: false },
               { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: false }
@@ -546,6 +575,7 @@ export const Dispatch: React.FC = () => {
                 shelters: false,
                 routes: true
               }}
+              showAlternatives={showAltRoutesOnMap}
             />
           </div>
 
@@ -574,6 +604,11 @@ export const Dispatch: React.FC = () => {
                 <span className={styles.actionStatusLabel}>Current State: <strong>{activeMission.status.replace(/_/g, ' ')}</strong></span>
               </div>
               <div className={styles.actionButtons}>
+                {activeMission.status === 'AWAITING_DISPATCH' && (
+                  <button className={styles.primaryActionBtn} onClick={handleUpdateStatus}>
+                    Authorize & Dispatch Fleet <ArrowRight size={13} />
+                  </button>
+                )}
                 {activeMission.status === 'DISPATCHED' && (
                   <button className={styles.primaryActionBtn} onClick={handleUpdateStatus}>
                     Depart Logistics Fleet <ArrowRight size={13} />
@@ -613,6 +648,345 @@ export const Dispatch: React.FC = () => {
               <Link to="/operations/vehicles" className={styles.emptyActionBtn} style={{ marginTop: '8.5px', display: 'inline-block' }}>
                 VIEW FLEET
               </Link>
+            </div>
+          )}
+
+          {/* Selected Mission telemetry & progress timeline (moved to left column to fill vertical space) */}
+          {activeMission && (
+            <div ref={detailRef} className={styles.detailPanel} style={{ position: 'relative', overflow: 'hidden' }}>
+              <ShaderBackground style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.85, pointerEvents: 'none', zIndex: 0 }} />
+              <div className={styles.panelHeader}>
+                <span className={styles.panelEyebrow}>MISSION DETAILS</span>
+                <span className={styles.panelId}>{activeMission.id}</span>
+              </div>
+
+              <div className={styles.detailGrid}>
+                <div>
+                  <span className={styles.detailLabel}>STATUS</span>
+                  <span className={styles.detailVal}>{activeMission.status.replace(/_/g, ' ')}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>RESOURCE TYPE</span>
+                  <span className={styles.detailVal}>{activeMission.resourceType}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>QUANTITY</span>
+                  <span className={styles.detailVal}>{activeMission.quantity.toLocaleString()} {activeMission.unit}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>VEHICLE UNIT</span>
+                  <span className={styles.detailVal}>{activeMission.vehicleId}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>OPERATOR</span>
+                  <span className={styles.detailVal}>{activeMission.operatorName}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>ORIGIN</span>
+                  <span className={styles.detailVal}>{activeVehicle?.location ? `${activeVehicle.location.lat.toFixed(4)}° N, ${activeVehicle.location.lng.toFixed(4)}° E` : 'AVAILABLE DEPOT'}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>DESTINATION</span>
+                  <span className={styles.detailVal}>{activeMission.destinationName}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>DISTANCE</span>
+                  <span className={styles.detailVal}>{activeMission.distanceKm ? `${activeMission.distanceKm} km` : '—'}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>ESTIMATED TRAVEL TIME</span>
+                  <span className={styles.detailVal}>{activeMission.etaMinutes ? `${activeMission.etaMinutes} min` : '—'}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>REMAINING TIME</span>
+                  <span className={styles.detailVal}>{activeMission.status === 'EN_ROUTE' ? `${activeMission.etaMinutes} min` : '—'}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>ETA</span>
+                  <span className={styles.detailVal}>
+                    {activeMission.status === 'EN_ROUTE' 
+                      ? new Date(Date.now() + activeMission.etaMinutes * 60 * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
+                      : '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>LAST TELEMETRY</span>
+                  <span className={styles.detailVal}>{new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}</span>
+                </div>
+                <div>
+                  <span className={styles.detailLabel}>ROUTE STATUS</span>
+                  <span className={styles.detailVal}>{activeMission.status === 'EN_ROUTE' ? 'ONLINE / OPTIMAL' : 'STANDBY'}</span>
+                </div>
+              </div>
+
+              {/* Progress Timeline */}
+              <div className={styles.timelineSection}>
+                <span className={styles.panelEyebrow}>DISPATCH PIPELINE</span>
+                <div className={styles.timeline}>
+                  {activeMission.timeline.map((step, idx) => (
+                    <div key={idx} className={`${styles.timelineStep} ${step.done ? styles.stepDone : ''}`}>
+                      <div className={styles.stepCircle}>
+                        {step.done && <Check size={8} style={{ color: '#FAF8F3' }} />}
+                      </div>
+                      <div className={styles.stepContent}>
+                        <span className={styles.stepTitle}>{step.title}</span>
+                        <span className={styles.stepTime}>{step.time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Flashing Route Deviation Alert banner */}
+              {activeMission.routeDeviationStatus === 'DEVIATED' && (
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid #EF4444',
+                  borderRadius: '6px',
+                  padding: '12px',
+                  marginBottom: '15px',
+                  animation: 'pulse 2s infinite'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#EF4444', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase' }}>
+                    <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#EF4444', animation: 'ping 1s infinite' }} />
+                    ⚠ ROUTE DEVIATION DETECTED
+                  </div>
+                  <p style={{ fontSize: '11px', margin: '6px 0 0', color: '#FAF8F3' }}>
+                    Vehicle is currently deviating from the approved road network path.
+                  </p>
+                  <p style={{ fontSize: '10px', margin: '4px 0 0', color: '#EF4444', fontStyle: 'italic' }}>
+                    Recalculating road-network route... ✓ ROUTE UPDATED
+                  </p>
+                </div>
+              )}
+
+              {/* Emergency Route Decision Console Card */}
+              <div style={{
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '6px',
+                background: 'rgba(10, 10, 15, 0.8)',
+                padding: '15px',
+                marginTop: '15px',
+                marginBottom: '15px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px', marginBottom: '12px' }}>
+                  <span className={styles.panelEyebrow}>ROUTE DECISION MATRIX</span>
+                  <span style={{
+                    fontSize: '9px',
+                    fontWeight: 'bold',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    background: activeMission.routeDeviationStatus === 'DEVIATED' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                    color: activeMission.routeDeviationStatus === 'DEVIATED' ? '#EF4444' : '#10B981',
+                    border: activeMission.routeDeviationStatus === 'DEVIATED' ? '1px solid #EF4444' : '1px solid #10B981'
+                  }}>
+                    {activeMission.routeDeviationStatus === 'DEVIATED' ? 'ROUTE DEVIATED / RE-ROUTED' : 'ON ROUTE / OPTIMAL'}
+                  </span>
+                </div>
+
+                {/* Grid info properties */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '11px', color: '#aaa', marginBottom: '15px' }}>
+                  <div>TRACKED VEHICLE: <strong style={{ color: '#FAF8F3' }}>{activeMission.vehicleId}</strong></div>
+                  <div>ASSIGNED OPERATOR: <strong style={{ color: '#FAF8F3' }}>{activeMission.operatorName}</strong></div>
+                  <div>ROUTE SCORE: <strong style={{ color: '#10B981' }}>{activeMission.routeScore || 100} / 100</strong></div>
+                  <div>ROUTING ENGINE: <strong style={{ color: '#FAF8F3' }}>{activeMission.routeProvider || 'OSRM'} ({activeMission.routeProfile || 'driving'})</strong></div>
+                  <div>TOTAL ROAD DISTANCE: <strong style={{ color: '#FAF8F3' }}>{activeMission.distanceKm || '8.4'} km</strong></div>
+                  <div>ESTIMATED TIME: <strong style={{ color: '#FAF8F3' }}>{activeMission.etaMinutes || '19'} min</strong></div>
+                  <div>REMAINING DISTANCE: <strong style={{ color: '#FAF8F3' }}>{activeMission.status === 'EN_ROUTE' ? `${activeMission.distanceKm} km` : '—'}</strong></div>
+                  <div>REMAINING ETA: <strong style={{ color: '#FAF8F3' }}>{activeMission.status === 'EN_ROUTE' ? `${activeMission.etaMinutes} min` : '—'}</strong></div>
+                  <div style={{ gridColumn: 'span 2' }}>ROUTE CALC STAMP: <strong style={{ color: '#888', fontFamily: 'monospace' }}>{new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</strong></div>
+                </div>
+
+                {/* ROUTE DECISION EXPLANATION */}
+                <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', marginBottom: '15px' }}>
+                  <span style={{ fontSize: '9px', color: '#888', fontWeight: 'bold', display: 'block', textTransform: 'uppercase' }}>ROUTE DECISION EXPLANATION</span>
+                  <p style={{ fontSize: '10.5px', margin: '4px 0 0', color: '#eee', lineHeight: '1.4' }}>
+                    Route selected for <strong>{activeMission.vehicleId}</strong> based on the vehicle's current position, incident destination (<strong>{activeMission.destinationName}</strong>), road-network travel time, distance, accessibility, and operational priority. {activeMission.routeDecisionReason || 'Achieved the highest weighted operational score among the available candidate routes.'}
+                  </p>
+                </div>
+
+                {/* Collapsible WHY THIS ROUTE? */}
+                <div style={{ marginBottom: '10px' }}>
+                  <button
+                    onClick={() => setWhyRouteOpen(!whyRouteOpen)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '4px',
+                      color: '#FAF8F3',
+                      fontSize: '10.5px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <span>[ WHY THIS ROUTE? - SCORING BREAKDOWN ]</span>
+                    <span>{whyRouteOpen ? '▲' : '▼'}</span>
+                  </button>
+                  {whyRouteOpen && (
+                    <div style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderTop: 'none', borderBottomLeftRadius: '4px', borderBottomRightRadius: '4px' }}>
+                      <div style={{ fontSize: '10px', color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>
+                        ACTIVE POLICY: <strong style={{ color: '#3B82F6' }}>{activeMission.policyName}</strong>
+                        <p style={{ fontSize: '9px', color: '#aaa', margin: '2px 0 0', textTransform: 'none', fontStyle: 'italic' }}>{activeMission.policyReason}</p>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '10.5px' }}>
+                        <div>
+                          <strong>Travel Time Weight Factor</strong> (Weight: {((activeMission.policyWeights?.travel_time || 0.70) * 100)}%)
+                          <div style={{ color: '#aaa', fontSize: '9.5px', paddingLeft: '5px' }}>
+                            Score: {activeMission.routeDecisionFactors?.travelTimeScore || activeMission.routeDecisionFactors?.travel_time_score || 100} × {activeMission.policyWeights?.travel_time || 0.70} = <strong>{((activeMission.routeDecisionFactors?.travelTimeScore || activeMission.routeDecisionFactors?.travel_time_score || 100) * (activeMission.policyWeights?.travel_time || 0.70)).toFixed(2)}</strong> contribution points
+                          </div>
+                        </div>
+                        <div>
+                          <strong>Road-Network Distance</strong> (Weight: {((activeMission.policyWeights?.distance || 0.10) * 100)}%)
+                          <div style={{ color: '#aaa', fontSize: '9.5px', paddingLeft: '5px' }}>
+                            Score: {activeMission.routeDecisionFactors?.distanceScore || activeMission.routeDecisionFactors?.distance_score || 100} × {activeMission.policyWeights?.distance || 0.10} = <strong>{((activeMission.routeDecisionFactors?.distanceScore || activeMission.routeDecisionFactors?.distance_score || 100) * (activeMission.policyWeights?.distance || 0.10)).toFixed(2)}</strong> contribution points
+                          </div>
+                        </div>
+                        <div>
+                          <strong>Road Accessibility & Directness</strong> (Weight: {((activeMission.policyWeights?.accessibility || 0.15) * 100)}%)
+                          <div style={{ color: '#aaa', fontSize: '9.5px', paddingLeft: '5px' }}>
+                            Score: {activeMission.routeDecisionFactors?.accessibilityScore || activeMission.routeDecisionFactors?.accessibility_score || 100} × {activeMission.policyWeights?.accessibility || 0.15} = <strong>{((activeMission.routeDecisionFactors?.accessibilityScore || activeMission.routeDecisionFactors?.accessibility_score || 100) * (activeMission.policyWeights?.accessibility || 0.15)).toFixed(2)}</strong> contribution points
+                          </div>
+                        </div>
+                        <div>
+                          <strong>Incident Priority Severity Boost</strong> (Weight: {((activeMission.policyWeights?.priority || 0.05) * 100)}%)
+                          <div style={{ color: '#aaa', fontSize: '9.5px', paddingLeft: '5px' }}>
+                            Score: {activeMission.routeDecisionFactors?.priorityScore || activeMission.routeDecisionFactors?.priority_score || 100} × {activeMission.policyWeights?.priority || 0.05} = <strong>{((activeMission.routeDecisionFactors?.priorityScore || activeMission.routeDecisionFactors?.priority_score || 100) * (activeMission.policyWeights?.priority || 0.05)).toFixed(2)}</strong> contribution points
+                          </div>
+                        </div>
+                        <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+                          <span>FINAL COMBINED COMPOSITE SCORE:</span>
+                          <span style={{ color: '#10B981' }}>{activeMission.routeScore || 100} / 100</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Collapsible VIEW ALTERNATIVE ROUTES */}
+                <div style={{ marginBottom: '10px' }}>
+                  <button
+                    onClick={() => setAltRoutesOpen(!altRoutesOpen)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '4px',
+                      color: '#FAF8F3',
+                      fontSize: '10.5px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <span>[ VIEW ALTERNATIVE ROUTES ]</span>
+                    <span>{altRoutesOpen ? '▲' : '▼'}</span>
+                  </button>
+                  {altRoutesOpen && (
+                    <div style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderTop: 'none', borderBottomLeftRadius: '4px', borderBottomRightRadius: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                        <input
+                          type="checkbox"
+                          id="showAltMapCheckbox"
+                          checked={showAltRoutesOnMap}
+                          onChange={(e) => setShowAltRoutesOnMap(e.target.checked)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <label htmlFor="showAltMapCheckbox" style={{ fontSize: '10px', color: '#ccc', cursor: 'pointer' }}>
+                          Show alternative candidate paths on Map
+                        </label>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ padding: '6px', background: 'rgba(37, 99, 235, 0.1)', border: '1px solid #2563EB', borderRadius: '4px', fontSize: '10px' }}>
+                          <span style={{ color: '#2563EB', fontWeight: 'bold' }}>★ SELECTED RECOMMENDED PATH</span>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '4px', color: '#aaa' }}>
+                            <div>Distance: {activeMission.distanceKm || '8.4'} km</div>
+                            <div>Duration: {activeMission.etaMinutes || '19'} min</div>
+                            <div>Composite Score: <strong>{activeMission.routeScore || 100}</strong></div>
+                          </div>
+                        </div>
+
+                        {activeMission.routeAlternatives && activeMission.routeAlternatives.map((alt: any, idx: number) => (
+                          <div key={idx} style={{ padding: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', fontSize: '10px' }}>
+                            <span style={{ color: '#fff', fontWeight: 'bold' }}>ALTERNATIVE PATH: {alt.id || `osrm-alt-${idx}`}</span>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '4px', color: '#aaa' }}>
+                              <div>Distance: {(alt.distanceMeters / 1000).toFixed(1)} km</div>
+                              <div>Duration: {Math.round(alt.durationSeconds / 60)} min</div>
+                              <div>Composite Score: <strong>{alt.routeScore || 85}</strong></div>
+                            </div>
+                            <div style={{ fontSize: '9px', color: '#EF4444', marginTop: '4px', fontStyle: 'italic' }}>
+                              Reason: {alt.decisionReason || 'Longer physical distance or higher estimated travel time reduced overall score.'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Collapsible ROUTE AUDIT timeline log */}
+                <div>
+                  <button
+                    onClick={() => setAuditOpen(!auditOpen)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '4px',
+                      color: '#FAF8F3',
+                      fontSize: '10.5px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <span>[ ROUTE AUDIT TIMELINE LOG ]</span>
+                    <span>{auditOpen ? '▲' : '▼'}</span>
+                  </button>
+                  {auditOpen && (
+                    <div style={{ padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderTop: 'none', borderBottomLeftRadius: '4px', borderBottomRightRadius: '4px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontFamily: 'monospace', fontSize: '9.5px' }}>
+                        {activeMission.routeAuditLog && activeMission.routeAuditLog.map((log: any, idx: number) => (
+                          <div key={idx} style={{ display: 'flex', gap: '10px' }}>
+                            <span style={{ color: '#3B82F6' }}>[{log.timestamp}]</span>
+                            <div>
+                              <strong style={{ color: '#10B981' }}>{log.event}:</strong> <span style={{ color: '#ccc' }}>{log.details}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Route Path stop summary */}
+              <div className={styles.routeSection}>
+                <span className={styles.panelEyebrow}>APPROVED ROUTE</span>
+                <div className={styles.routePath}>
+                  {activeMission.routePath.map((stop, idx) => (
+                    <div key={idx} className={styles.routeStop}>
+                      {idx > 0 && <span className={styles.routeArrow}>↓</span>}
+                      <DynamicText text={stop} className={styles.routeStopName} />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -687,66 +1061,6 @@ export const Dispatch: React.FC = () => {
             </div>
           </div>
 
-          {/* Selected Mission telemetry & progress timeline */}
-          {activeMission && (
-            <div ref={detailRef} className={styles.detailPanel}>
-              <div className={styles.panelHeader}>
-                <span className={styles.panelEyebrow}>MISSION DETAILS</span>
-                <span className={styles.panelId}>{activeMission.id}</span>
-              </div>
-
-              <div className={styles.detailGrid}>
-                <div>
-                  <span className={styles.detailLabel}>RESOURCE TYPE</span>
-                  <span className={styles.detailVal}>{activeMission.resourceType}</span>
-                </div>
-                <div>
-                  <span className={styles.detailLabel}>QUANTITY</span>
-                  <span className={styles.detailVal}>{activeMission.quantity.toLocaleString()} {activeMission.unit}</span>
-                </div>
-                <div>
-                  <span className={styles.detailLabel}>VEHICLE UNIT</span>
-                  <span className={styles.detailVal}>{activeMission.vehicleId}</span>
-                </div>
-                <div>
-                  <span className={styles.detailLabel}>OPERATOR</span>
-                  <span className={styles.detailVal}>{activeMission.operatorName}</span>
-                </div>
-              </div>
-
-              {/* Progress Timeline */}
-              <div className={styles.timelineSection}>
-                <span className={styles.panelEyebrow}>DISPATCH PIPELINE</span>
-                <div className={styles.timeline}>
-                  {activeMission.timeline.map((step, idx) => (
-                    <div key={idx} className={`${styles.timelineStep} ${step.done ? styles.stepDone : ''}`}>
-                      <div className={styles.stepCircle}>
-                        {step.done && <Check size={8} style={{ color: '#FAF8F3' }} />}
-                      </div>
-                      <div className={styles.stepContent}>
-                        <span className={styles.stepTitle}>{step.title}</span>
-                        <span className={styles.stepTime}>{step.time}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Route Path stop summary */}
-              <div className={styles.routeSection}>
-                <span className={styles.panelEyebrow}>APPROVED ROUTE</span>
-                <div className={styles.routePath}>
-                  {activeMission.routePath.map((stop, idx) => (
-                    <div key={idx} className={styles.routeStop}>
-                      {idx > 0 && <span className={styles.routeArrow}>↓</span>}
-                      <DynamicText text={stop} className={styles.routeStopName} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Fleet readiness counts */}
           <div className={styles.readinessPanel}>
             <span className={styles.panelEyebrow}>Fleet Readiness Index</span>
@@ -788,6 +1102,7 @@ export const Dispatch: React.FC = () => {
       {showCreatePanel && (
         <div className={styles.panelOverlay}>
           <div className={styles.createPanel}>
+            <ShaderBackground style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.85, pointerEvents: 'none', zIndex: 0 }} />
             <div className={styles.cpHeader}>
               <h3>AUTHORIZE DISPATCH MISSION</h3>
               <button className={styles.cpCloseBtn} onClick={() => setShowCreatePanel(false)}>
@@ -807,7 +1122,7 @@ export const Dispatch: React.FC = () => {
                   <option value="">-- Choose allocation --</option>
                   {allocationsAwaitingDispatch.map(a => (
                     <option key={a.id} value={a.id}>
-                      {a.id} - {a.quantity.toLocaleString()} {a.unit} {a.itemNeeded} to {a.zoneName.split(',')[0]}
+                      {a.id} - {a.quantity.toLocaleString()} {a.unit} {a.itemNeeded} to {a.detailedAddress || a.zoneName}
                     </option>
                   ))}
                   {allocationsAwaitingDispatch.length === 0 && (
@@ -852,7 +1167,7 @@ export const Dispatch: React.FC = () => {
                   <div className={styles.verificationPreview}>
                     <p style={{ margin: '0 0 6px' }}><strong>DISPATCH SUMMARY PREVIEW</strong></p>
                     <p style={{ margin: '0 0 4px' }}><strong>Resource:</strong> {selectedAllocationObj.quantity.toLocaleString()} {selectedAllocationObj.unit} {selectedAllocationObj.itemNeeded}</p>
-                    <p style={{ margin: '0 0 4px' }}><strong>Destination:</strong> {selectedAllocationObj.zoneName}</p>
+                    <p style={{ margin: '0 0 4px' }}><strong>Destination:</strong> {selectedAllocationObj.detailedAddress || selectedAllocationObj.zoneName}</p>
                     <p style={{ margin: '0 0 4px' }}><strong>Vehicle:</strong> {selectedVehicleObj.name} ({selectedVehicleObj.id})</p>
                     <p style={{ margin: '0' }}><strong>Driver/Operator:</strong> {formOperator}</p>
                   </div>

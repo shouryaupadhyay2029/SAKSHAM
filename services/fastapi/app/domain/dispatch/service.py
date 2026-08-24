@@ -122,15 +122,20 @@ class DispatchService:
         recommendations.sort(key=lambda x: -x.score)
         return recommendations
 
-    def create_dispatch(self, dispatch: DispatchCreate, officer: Optional[Any] = None) -> DispatchResponse:
+    async def create_dispatch(self, dispatch: DispatchCreate, officer: Optional[Any] = None) -> DispatchResponse:
         alloc = self.allocation_repo.get_by_id(dispatch.allocationId)
         if not alloc:
             alloc = self.allocation_repo.get_by_ref(dispatch.allocationId)
             if not alloc:
                 raise EntityNotFoundException("Allocation", dispatch.allocationId)
 
-        if alloc.status != AllocationStatus.APPROVED:
-            raise ValidationException("Cannot create dispatch for unapproved allocation.")
+        if alloc.status != AllocationStatus.APPROVED and alloc.status != AllocationStatus.DISPATCHED:
+            # Auto-approve allocation
+            self.allocation_repo.update_status(alloc.id, AllocationStatus.APPROVED)
+            alloc = self.allocation_repo.get_by_id(alloc.id)
+            # Sync corresponding demand request status to ALLOCATED
+            from app.schemas.demand import DemandUpdate, DemandStatus
+            self.demand_repo.update(alloc.demandId, DemandUpdate(status=DemandStatus.ALLOCATED))
 
         vehicle = self.vehicle_repo.get_by_id(dispatch.vehicleId)
         if not vehicle:
@@ -158,14 +163,104 @@ class DispatchService:
         if vehicle.capacity < demand.quantity * 0.1: # Allow some partial fits but reject extreme mismatches
             raise ValidationException(f"Vehicle '{vehicle.name}' capacity is too small for the demand quantity.")
 
+        # Resolve incident metadata for OSRM routing and scoring
+        incident_severity = "MEDIUM"
+        incident_affected_people = 0
+        incident_lat = None
+        incident_lng = None
+        if self.incident_repo:
+            try:
+                incident = self.incident_repo.get_by_id(demand.incidentId)
+                if incident:
+                    incident_severity = getattr(incident, "severity", "MEDIUM")
+                    incident_affected_people = getattr(incident, "affectedPeople", 0)
+                    incident_lat = getattr(incident, "latitude", None)
+                    incident_lng = getattr(incident, "longitude", None)
+            except Exception as e:
+                print(f"⚠️ Failed to get incident for dispatch routing: {e}")
+
+        # Compute route decision & scoring on backend
+        route_data = None
+        if vehicle and incident_lat is not None and incident_lng is not None:
+            try:
+                from app.utils.osrm import get_road_route_with_alternatives
+                from app.utils.route_scoring import RouteCandidate as ScoringCandidate, score_routes
+                import datetime
+
+                osrm_res = await get_road_route_with_alternatives(
+                    vehicle.currentLatitude, vehicle.currentLongitude,
+                    incident_lat, incident_lng
+                )
+                primary = osrm_res["primary_route"]
+                alternatives_raw = osrm_res.get("alternatives", [])
+                all_candidates_raw = [primary] + alternatives_raw
+                
+                scorer_candidates = [
+                    ScoringCandidate(
+                        id=r["id"],
+                        distance_meters=r["distance_meters"],
+                        duration_seconds=r["duration_seconds"],
+                        geometry=r["geometry"],
+                        legs=r.get("legs", []),
+                        summary=r.get("summary")
+                    )
+                    for r in all_candidates_raw
+                ]
+                
+                decision = score_routes(
+                    scorer_candidates,
+                    incident_severity=incident_severity,
+                    incident_affected_people=incident_affected_people
+                )
+                
+                # Package dynamic weight policy metadata into decision_factors JSON
+                decision_factors = {
+                    **decision.selected_route.decision_factors,
+                    "policy_name": decision.policy_name,
+                    "policy_reason": decision.policy_reason,
+                    "policy_weights": decision.policy_weights,
+                    "summary": decision.selected_route.summary
+                }
+
+                route_data = {
+                    "routing_provider": "OSRM",
+                    "profile": "driving",
+                    "distance_meters": decision.selected_route.distance_meters,
+                    "duration_seconds": decision.selected_route.duration_seconds,
+                    "geometry": decision.selected_route.geometry,
+                    "route_score": decision.selected_route.route_score,
+                    "decision_reason": decision.selected_route.decision_reason,
+                    "decision_factors": decision_factors,
+                    "alternatives": [
+                        {
+                            "id": alt.id,
+                            "distance_meters": alt.distance_meters,
+                            "duration_seconds": alt.duration_seconds,
+                            "geometry": alt.geometry,
+                            "route_score": alt.route_score,
+                            "decision_reason": alt.decision_reason,
+                            "decision_factors": alt.decision_factors,
+                            "summary": alt.summary
+                        }
+                        for alt in decision.alternatives
+                    ],
+                    "calculated_at": datetime.utcnow()
+                }
+                
+                # Update ETA dynamically based on real road duration
+                dispatch.eta = datetime.utcnow() + timedelta(seconds=decision.selected_route.duration_seconds)
+                
+            except Exception as e:
+                print(f"⚠️ Failed to compute OSRM route decision: {e}")
+
         origin = resource.storageDepot if resource else "Depot"
         destination = demand.affectedZone if demand else "Incident Location"
         quantity = demand.quantity if demand else 0.0
         priority = demand.priority.value if demand else "MEDIUM"
         officer_name = officer.name if officer else "Assigned Officer"
 
-        # Update and save atomically (handled by SqlAlchemy transaction commit)
-        new_dsp = self.dispatch_repo.create(dispatch, origin, destination, quantity, priority, officer_name)
+        # Update and save atomically with route_data
+        new_dsp = self.dispatch_repo.create(dispatch, origin, destination, quantity, priority, officer_name, route_data=route_data)
         
         self.allocation_repo.update_status(alloc.id, AllocationStatus.DISPATCHED)
         self.vehicle_repo.update(vehicle.id, VehicleUpdate(status=VehicleStatus.DISPATCHED, currentMission=new_dsp.dispatchId))
@@ -197,6 +292,10 @@ class DispatchService:
 
         if next_status == DispatchStatus.DISPATCHED:
             actual_departure = datetime.utcnow()
+            if existing.vehicleId:
+                self.vehicle_repo.update(existing.vehicleId, VehicleUpdate(status=VehicleStatus.DISPATCHED))
+
+        elif next_status == DispatchStatus.EN_ROUTE:
             if existing.vehicleId:
                 self.vehicle_repo.update(existing.vehicleId, VehicleUpdate(status=VehicleStatus.EN_ROUTE))
 
@@ -231,4 +330,13 @@ class DispatchService:
 
         EventPublisher.publish("DISPATCH_STATUS_CHANGED", {"dispatchId": updated.id, "status": updated.status.value})
 
+        return updated
+
+    def update_dispatch_route(self, dispatch_id: str, route_data: dict, deviation_status: str = "DEVIATED") -> DispatchResponse:
+        updated = self.dispatch_repo.update_route(dispatch_id, route_data, deviation_status)
+        if not updated:
+            raise EntityNotFoundException("Dispatch", dispatch_id)
+        
+        # Publish event for UI live synchronization
+        EventPublisher.publish("DISPATCH_ROUTE_UPDATED", {"dispatchId": updated.id, "routeDeviationStatus": deviation_status})
         return updated

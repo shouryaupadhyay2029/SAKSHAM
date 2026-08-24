@@ -33,7 +33,7 @@ export const SituationalField: React.FC = () => {
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setTimeStr(now.toLocaleTimeString('en-US', { hour12: false }));
+      setTimeStr(now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }));
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);

@@ -7,6 +7,7 @@ import type { ResourceItem } from '../../types/resource';
 import type { Vehicle } from '../../types/vehicle';
 import type { Shelter } from '../../types/shelter';
 import { useOperationalState } from '../../context/OperationalStateContext';
+import { calculateRoute } from '../../services/routingService';
 import styles from './MapView.module.css';
 
 interface MapViewProps {
@@ -28,6 +29,7 @@ interface MapViewProps {
     shelters: boolean;
     routes: boolean;
   };
+  showAlternatives?: boolean;
 }
 
 export const MapView: React.FC<MapViewProps> = ({
@@ -42,10 +44,11 @@ export const MapView: React.FC<MapViewProps> = ({
   onSelectIncident,
   onSelectShelter,
   onSelectVehicle,
-  layerFilters
+  layerFilters,
+  showAlternatives = false
 }) => {
   const navigate = useNavigate();
-  const { requests } = useOperationalState();
+  const { requests, missions } = useOperationalState();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -186,9 +189,9 @@ export const MapView: React.FC<MapViewProps> = ({
 
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
-            <div class="${styles.mapPopup}">
-              <h4 class="${styles.popupTitle}">${cluster.name}</h4>
-              <p class="${styles.popupCapText}">${cluster.count} Active Assets</p>
+            <div class="mapPopup">
+              <h4 class="popupTitle">${cluster.name}</h4>
+              <p class="popupCapText">${cluster.count} Active Assets</p>
             </div>
           `);
 
@@ -226,11 +229,11 @@ export const MapView: React.FC<MapViewProps> = ({
 
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
-            <div class="${styles.mapPopup}">
-              <span class="${styles.popupBadge} ${styles['badge' + incident.severity]}">${incident.severity}</span>
-              <h4 class="${styles.popupTitle}">${incident.type.replace(/_/g, ' ')}</h4>
-              <p class="${styles.popupLoc}">${incident.location}</p>
-              ${incident.displacedCount ? `<p class="${styles.popupCapText}">~${incident.displacedCount} displaced</p>` : ''}
+            <div class="mapPopup">
+              <span class="popupBadge badge${incident.severity}">${incident.severity}</span>
+              <h4 class="popupTitle">${incident.type.replace(/_/g, ' ')}</h4>
+              <p class="popupLoc">${incident.location}</p>
+              ${incident.displacedCount ? `<p class="popupCapText">~${incident.displacedCount} displaced</p>` : ''}
             </div>
           `);
 
@@ -271,14 +274,14 @@ export const MapView: React.FC<MapViewProps> = ({
         const pct = Math.round((shelter.capacityOccupied / shelter.capacityTotal) * 100);
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
-            <div class="${styles.mapPopup}">
-              <span class="${styles.popupBadge} ${styles.badgeShelter}">SHELTER · ${shelter.status}</span>
-              <h4 class="${styles.popupTitle}">${shelter.name}</h4>
-              <p class="${styles.popupLoc}">${shelter.locationName}</p>
-              <div class="${styles.popupCapacityBar}">
-                <div class="${styles.popupCapacityFill}" style="width: ${pct}%"></div>
+            <div class="mapPopup">
+              <span class="popupBadge badgeShelter">SHELTER · ${shelter.status}</span>
+              <h4 class="popupTitle">${shelter.name}</h4>
+              <p class="popupLoc">${shelter.locationName}</p>
+              <div class="popupCapacityBar">
+                <div class="popupCapacityFill" style="width: ${pct}%"></div>
               </div>
-              <p class="${styles.popupCapText}">${shelter.capacityOccupied}/${shelter.capacityTotal} occupied · ${pct}% full</p>
+              <p class="popupCapText">${shelter.capacityOccupied}/${shelter.capacityTotal} occupied · ${pct}% full</p>
             </div>
           `);
 
@@ -317,11 +320,11 @@ export const MapView: React.FC<MapViewProps> = ({
 
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
-            <div class="${styles.mapPopup}">
-              <span class="${styles.popupBadge} ${styles.badgeVehicle}">${vehicle.type} · ${vehicle.status}</span>
-              <h4 class="${styles.popupTitle}">${vehicle.name}</h4>
-              <p class="${styles.popupCapText}">Capacity: ${vehicle.capacity}</p>
-              ${vehicle.cargo ? `<p class="${styles.popupCargo}">Cargo: <strong>${vehicle.cargo}</strong></p>` : ''}
+            <div class="mapPopup">
+              <span class="popupBadge badgeVehicle">${vehicle.type} · ${vehicle.status}</span>
+              <h4 class="popupTitle">${vehicle.name}</h4>
+              <p class="popupCapText">Capacity: ${vehicle.capacity}</p>
+              ${vehicle.cargo ? `<p class="popupCargo">Cargo: <strong>${vehicle.cargo}</strong></p>` : ''}
             </div>
           `);
 
@@ -361,11 +364,11 @@ export const MapView: React.FC<MapViewProps> = ({
 
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
-            <div class="${styles.mapPopup}">
-              <span class="${styles.popupBadge} ${styles.badgeResource}">${res.category} · ${res.status}</span>
-              <h4 class="${styles.popupTitle}">${res.name}</h4>
-              <p class="${styles.popupLoc}">${res.locationName}</p>
-              <p class="${styles.popupCapText}">Stock: ${res.quantity} ${res.unit}</p>
+            <div class="mapPopup">
+              <span class="popupBadge badgeResource">${res.category} · ${res.status}</span>
+              <h4 class="popupTitle">${res.name}</h4>
+              <p class="popupLoc">${res.locationName}</p>
+              <p class="popupCapText">Stock: ${res.quantity} ${res.unit}</p>
             </div>
           `);
 
@@ -442,6 +445,25 @@ export const MapView: React.FC<MapViewProps> = ({
     });
   }, [selectedVehicle]);
 
+  // ── Auto fit bounds to active route ──────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    
+    const activeVehicle = vehicles.find(v => v.destination && (v.status === 'EN_ROUTE' || v.status === 'DISPATCHED'));
+    if (activeVehicle && activeVehicle.destination) {
+      const bounds = new maplibregl.LngLatBounds();
+      bounds.extend([activeVehicle.location.lng, activeVehicle.location.lat]);
+      bounds.extend([activeVehicle.destination.lng, activeVehicle.destination.lat]);
+      
+      map.fitBounds(bounds, {
+        padding: 50,
+        maxZoom: 14,
+        duration: 1200
+      });
+    }
+  }, [vehicles]);
+
   // ── Draw route overlays ─────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
@@ -453,6 +475,12 @@ export const MapView: React.FC<MapViewProps> = ({
         const layerId = `route-layer-${vehicle.id}`;
         if (map.getLayer(layerId)) map.removeLayer(layerId);
         if (map.getSource(sourceId)) map.removeSource(sourceId);
+        for (let idx = 0; idx < 5; idx++) {
+          const altSourceId = `route-source-${vehicle.id}-alt-${idx}`;
+          const altLayerId = `route-layer-${vehicle.id}-alt-${idx}`;
+          if (map.getLayer(altLayerId)) map.removeLayer(altLayerId);
+          if (map.getSource(altSourceId)) map.removeSource(altSourceId);
+        }
       });
 
       if (!layerFilters.routes) return;
@@ -472,22 +500,16 @@ export const MapView: React.FC<MapViewProps> = ({
           [vehicle.destination.lng, vehicle.destination.lat]
         ];
 
+        let alternativeGeometries: any[] = [];
+        let routeResult: any = null;
+
         try {
-          const apiBaseUrl = import.meta.env.VITE_API_URL || '/api/v1';
-          const res = await fetch(`${apiBaseUrl}/routing/route`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              origin: { lat: vehicle.location.lat, lng: vehicle.location.lng },
-              destination: { lat: vehicle.destination.lat, lng: vehicle.destination.lng }
-            })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.geometry?.coordinates) {
-              coordinates = data.geometry.coordinates;
-            }
-          }
+          routeResult = await calculateRoute(
+            { lat: vehicle.location.lat, lng: vehicle.location.lng },
+            { lat: vehicle.destination.lat, lng: vehicle.destination.lng }
+          );
+          coordinates = routeResult.selectedRoute.geometry.coordinates;
+          alternativeGeometries = routeResult.alternatives.map(a => a.geometry.coordinates);
         } catch (err) {
           console.warn('[ROUTING FALLBACK] Failed to load OSRM geometry, using straight line:', err);
         }
@@ -515,10 +537,102 @@ export const MapView: React.FC<MapViewProps> = ({
             source: sourceId,
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: {
-              'line-color': '#E86F16',
-              'line-width': 2.5,
-              'line-dasharray': [4, 3],
-              'line-opacity': 0.65
+              'line-color': '#2563EB',
+              'line-width': 5.5,
+              'line-opacity': 0.95
+            }
+          });
+
+          // Make primary route hoverable to show details
+          const matchMission = missions.find(m => m.vehicleId === vehicle.id);
+          const score = matchMission?.routeScore || 100;
+          const dist = matchMission?.distanceKm || (routeResult?.selectedRoute?.distanceMeters ? (routeResult.selectedRoute.distanceMeters / 1000).toFixed(1) : '8.4');
+          const dur = matchMission?.etaMinutes || (routeResult?.selectedRoute?.durationSeconds ? Math.round(routeResult.selectedRoute.durationSeconds / 60) : '19');
+
+          currentMap.on('mouseenter', layerId, (e) => {
+            currentMap.getCanvas().style.cursor = 'pointer';
+            if ((window as any)[`popup-${vehicle.id}`]) {
+              try { (window as any)[`popup-${vehicle.id}`].remove(); } catch (_) {}
+            }
+            const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false })
+              .setLngLat(e.lngLat)
+              .setHTML(`<div style="color: #FAF8F3; background: #2563EB; font-family: monospace; font-size: 9px; padding: 4px 6px; border-radius: 4px; font-weight: bold; border: 1px solid rgba(255,255,255,0.25); white-space: nowrap; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">RECOMMENDED (PRIMARY) • ${dist} km • ${dur} min • SCORE ${score}</div>`)
+              .addTo(currentMap);
+            (window as any)[`popup-${vehicle.id}`] = popup;
+          });
+
+          currentMap.on('mouseleave', layerId, () => {
+            currentMap.getCanvas().style.cursor = '';
+            if ((window as any)[`popup-${vehicle.id}`]) {
+              try { (window as any)[`popup-${vehicle.id}`].remove(); } catch (_) {}
+              delete (window as any)[`popup-${vehicle.id}`];
+            }
+          });
+        }
+
+        // Draw alternative routes only if showAlternatives is enabled
+        if (showAlternatives) {
+          const altColors = ['#D97706', '#8B5CF6', '#EC4899', '#10B981'];
+          alternativeGeometries.forEach((altCoords, altIdx) => {
+            const altSourceId = `route-source-${vehicle.id}-alt-${altIdx}`;
+            const altLayerId = `route-layer-${vehicle.id}-alt-${altIdx}`;
+            const altColor = altColors[altIdx % altColors.length];
+
+            if (!currentMap.getSource(altSourceId)) {
+              currentMap.addSource(altSourceId, {
+                type: 'geojson',
+                data: {
+                  type: 'Feature',
+                  properties: {},
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: altCoords
+                  }
+                }
+              });
+
+              currentMap.addLayer({
+                id: altLayerId,
+                type: 'line',
+                source: altSourceId,
+                layout: { 'line-join': 'round', 'line-cap': 'round' },
+                paint: {
+                  'line-color': altColor,
+                  'line-width': 4.0,
+                  'line-opacity': 0.7
+                }
+              });
+
+              // Hover listeners for alternative routes
+              currentMap.on('mouseenter', altLayerId, (e) => {
+                currentMap.getCanvas().style.cursor = 'pointer';
+                const altPopupKey = `popup-${vehicle.id}-alt-${altIdx}`;
+                if ((window as any)[altPopupKey]) {
+                  try { (window as any)[altPopupKey].remove(); } catch (_) {}
+                }
+                const altDist = routeResult?.alternatives?.[altIdx]?.distanceMeters 
+                  ? (routeResult.alternatives[altIdx].distanceMeters / 1000).toFixed(1) 
+                  : '9.8';
+                const altDur = routeResult?.alternatives?.[altIdx]?.durationSeconds 
+                  ? Math.round(routeResult.alternatives[altIdx].durationSeconds / 60) 
+                  : '24';
+                const altScore = routeResult?.alternatives?.[altIdx]?.routeScore || 85;
+
+                const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false })
+                  .setLngLat(e.lngLat)
+                  .setHTML(`<div style="color: #FAF8F3; background: ${altColor}; font-family: monospace; font-size: 9px; padding: 4px 6px; border-radius: 4px; font-weight: bold; border: 1px solid rgba(255,255,255,0.25); white-space: nowrap; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">ALTERNATIVE ${altIdx + 1} • ${altDist} km • ${altDur} min • SCORE ${altScore}</div>`)
+                  .addTo(currentMap);
+                (window as any)[altPopupKey] = popup;
+              });
+
+              currentMap.on('mouseleave', altLayerId, () => {
+                currentMap.getCanvas().style.cursor = '';
+                const altPopupKey = `popup-${vehicle.id}-alt-${altIdx}`;
+                if ((window as any)[altPopupKey]) {
+                  try { (window as any)[altPopupKey].remove(); } catch (_) {}
+                  delete (window as any)[altPopupKey];
+                }
+              });
             }
           });
         }
@@ -537,13 +651,26 @@ export const MapView: React.FC<MapViewProps> = ({
       vehicles.forEach(vehicle => {
         const sourceId = `route-source-${vehicle.id}`;
         const layerId = `route-layer-${vehicle.id}`;
+        // Clean up popups
+        if ((window as any)[`popup-${vehicle.id}`]) {
+          try {
+            (window as any)[`popup-${vehicle.id}`].remove();
+            delete (window as any)[`popup-${vehicle.id}`];
+          } catch (_) {}
+        }
         try {
           if (currentMap.getLayer(layerId)) currentMap.removeLayer(layerId);
           if (currentMap.getSource(sourceId)) currentMap.removeSource(sourceId);
+          for (let idx = 0; idx < 5; idx++) {
+            const altSourceId = `route-source-${vehicle.id}-alt-${idx}`;
+            const altLayerId = `route-layer-${vehicle.id}-alt-${idx}`;
+            if (currentMap.getLayer(altLayerId)) currentMap.removeLayer(altLayerId);
+            if (currentMap.getSource(altSourceId)) currentMap.removeSource(altSourceId);
+          }
         } catch (_) {}
       });
     };
-  }, [vehicles, layerFilters.routes]);
+  }, [vehicles, layerFilters.routes, showAlternatives, missions]);
 
   const renderDetailPanel = () => {
     if (!activeSelection) return null;

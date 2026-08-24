@@ -31,4 +31,5 @@ export interface DemandRequest {
   allocatedResourceId?: string;
   allocatedVehicleId?: string;
   eta?: string; // Estimated Time of Arrival (e.g. "45 mins" or datetime)
+  description?: string;
 }

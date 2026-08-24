@@ -35,7 +35,7 @@ class InMemoryDispatchRepository(DispatchRepositoryInterface):
             ]
         return results
 
-    def create(self, dispatch: DispatchCreate, origin: str, destination: str, quantity: float, priority: str, officer_name: str) -> DispatchResponse:
+    def create(self, dispatch: DispatchCreate, origin: str, destination: str, quantity: float, priority: str, officer_name: str, route_data: Optional[dict] = None) -> DispatchResponse:
         dsp_id = str(uuid.uuid4())
         ref_id = f"DSP-2026-{len(self._db) + 1:03d}"
         
@@ -59,6 +59,18 @@ class InMemoryDispatchRepository(DispatchRepositoryInterface):
             priority=priority,
             status=DispatchStatus.PLANNED,
             notes=dispatch.notes,
+            # Route decision attributes
+            routeProvider=route_data.get("routing_provider") if route_data else None,
+            routeProfile=route_data.get("profile") if route_data else None,
+            routeDistanceMeters=route_data.get("distance_meters") if route_data else None,
+            routeDurationSeconds=route_data.get("duration_seconds") if route_data else None,
+            routeGeometry=route_data.get("geometry") if route_data else None,
+            routeScore=route_data.get("route_score") if route_data else None,
+            routeDecisionReason=route_data.get("decision_reason") if route_data else None,
+            routeDecisionFactors=route_data.get("decision_factors") if route_data else None,
+            routeAlternatives=route_data.get("alternatives") if route_data else None,
+            routeCalculatedAt=route_data.get("calculated_at") if route_data else None,
+            routeDeviationStatus="NOMINAL",
             createdAt=datetime.now(),
             updatedAt=datetime.now()
         )
@@ -83,6 +95,29 @@ class InMemoryDispatchRepository(DispatchRepositoryInterface):
             updated_dict["notes"] = notes
             
         updated_dict["updatedAt"] = datetime.now()
+        updated = DispatchResponse(**updated_dict)
+        self._db[dispatch_id] = updated
+        return updated
+
+    def update_route(self, dispatch_id: str, route_data: dict, deviation_status: str = "DEVIATED") -> Optional[DispatchResponse]:
+        if dispatch_id not in self._db:
+            return None
+        
+        dsp = self._db[dispatch_id]
+        updated_dict = dsp.model_dump()
+        
+        updated_dict["routeProvider"] = route_data.get("routing_provider", "OSRM")
+        updated_dict["routeDistanceMeters"] = route_data.get("distance_meters")
+        updated_dict["routeDurationSeconds"] = route_data.get("duration_seconds")
+        updated_dict["routeGeometry"] = route_data.get("geometry")
+        updated_dict["routeScore"] = route_data.get("route_score")
+        updated_dict["routeDecisionReason"] = route_data.get("decision_reason")
+        updated_dict["routeDecisionFactors"] = route_data.get("decision_factors")
+        updated_dict["routeAlternatives"] = route_data.get("alternatives")
+        updated_dict["routeCalculatedAt"] = datetime.utcnow()
+        updated_dict["routeDeviationStatus"] = deviation_status
+        updated_dict["updatedAt"] = datetime.now()
+        
         updated = DispatchResponse(**updated_dict)
         self._db[dispatch_id] = updated
         return updated

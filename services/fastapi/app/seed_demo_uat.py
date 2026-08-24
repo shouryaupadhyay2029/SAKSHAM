@@ -59,6 +59,7 @@ def seed_uat_data():
         if existing_res:
             print(f"  -> Depot '{depot_name}' already exists, updating inventory.")
             existing_res.availableQuantity = 500.0
+            existing_res.reservedQuantity = 0.0
             existing_res.status = "AVAILABLE"
             existing_res.latitude = 28.6761
             existing_res.longitude = 77.3204
@@ -112,6 +113,78 @@ def seed_uat_data():
                 status="AVAILABLE"
             )
             db.add(db_veh)
+
+        # VEH-DEMO-UAT-002
+        v2_id = "VEH-DEMO-UAT-002"
+        v2_name = "SAKSHAM Medical Transit Unit"
+        existing_v2 = db.query(VehicleModel).filter(VehicleModel.vehicleId == v2_id).first()
+        if existing_v2:
+            existing_v2.status = "AVAILABLE"
+            existing_v2.currentLatitude = 28.6480
+            existing_v2.currentLongitude = 77.2120
+        else:
+            db.add(VehicleModel(
+                id=uuid.uuid4(),
+                vehicleId=v2_id,
+                name=v2_name,
+                type="VAN",
+                capacity=1500.0,
+                capacityUnit="KG",
+                currentLatitude=28.6480,
+                currentLongitude=77.2120,
+                speed=0.0,
+                operatorName="Operator Rajesh Kumar",
+                contactRadio="Channel 18 / UHF",
+                status="AVAILABLE"
+            ))
+
+        # VEH-DEMO-UAT-003
+        v3_id = "VEH-DEMO-UAT-003"
+        v3_name = "SAKSHAM Heavy Supply Carrier"
+        existing_v3 = db.query(VehicleModel).filter(VehicleModel.vehicleId == v3_id).first()
+        if existing_v3:
+            existing_v3.status = "AVAILABLE"
+            existing_v3.currentLatitude = 28.6390
+            existing_v3.currentLongitude = 77.2210
+        else:
+            db.add(VehicleModel(
+                id=uuid.uuid4(),
+                vehicleId=v3_id,
+                name=v3_name,
+                type="TRUCK",
+                capacity=10000.0,
+                capacityUnit="L",
+                currentLatitude=28.6390,
+                currentLongitude=77.2210,
+                speed=0.0,
+                operatorName="Operator Vijay Singh",
+                contactRadio="Channel 22 / VHF",
+                status="AVAILABLE"
+            ))
+
+        # VEH-DEMO-UAT-004
+        v4_id = "VEH-DEMO-UAT-004"
+        v4_name = "SAKSHAM Rapid Water Tanker"
+        existing_v4 = db.query(VehicleModel).filter(VehicleModel.vehicleId == v4_id).first()
+        if existing_v4:
+            existing_v4.status = "AVAILABLE"
+            existing_v4.currentLatitude = 28.6550
+            existing_v4.currentLongitude = 77.2010
+        else:
+            db.add(VehicleModel(
+                id=uuid.uuid4(),
+                vehicleId=v4_id,
+                name=v4_name,
+                type="TANKER",
+                capacity=8000.0,
+                capacityUnit="L",
+                currentLatitude=28.6550,
+                currentLongitude=77.2010,
+                speed=0.0,
+                operatorName="Operator Sunil Verma",
+                contactRadio="Channel 24 / VHF",
+                status="AVAILABLE"
+            ))
 
         # 3. Incident
         incident_ref = "INC-DEMO-UAT-001"
@@ -204,9 +277,11 @@ def clear_uat_data():
         db.query(ResourceModel).filter(ResourceModel.resourceId == "RES-DEMO-UAT-001").delete()
         print("  -> Purged Demo Resource Depot.")
 
-        # Delete demo vehicle
-        db.query(VehicleModel).filter(VehicleModel.vehicleId == "VEH-DEMO-UAT-001").delete()
-        print("  -> Purged Demo Vehicle.")
+        # Delete demo vehicles
+        db.query(VehicleModel).filter(VehicleModel.vehicleId.in_([
+            "VEH-DEMO-UAT-001", "VEH-DEMO-UAT-002", "VEH-DEMO-UAT-003", "VEH-DEMO-UAT-004"
+        ])).delete(synchronize_session=False)
+        print("  -> Purged Demo Vehicles.")
 
         db.commit()
         print("[SUCCESS] SAKSHAM-DEMO-UAT dataset successfully purged!")

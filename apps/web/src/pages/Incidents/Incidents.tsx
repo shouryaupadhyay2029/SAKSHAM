@@ -333,7 +333,7 @@ export const Incidents: React.FC = () => {
                           </span>
                         </td>
                         <td className="tech-code">
-                          {new Date(inc.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                          {new Date(inc.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                         </td>
                         <td className={styles.impactCol}>{inc.peopleAffected ?? inc.displacedCount ?? '—'}</td>
                         <td>
@@ -574,7 +574,7 @@ export const Incidents: React.FC = () => {
                 <div className={styles.gridData}>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>{t('incidents.reported')}</span>
-                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{new Date(selectedIncident.reportedAt || selectedIncident.time).toLocaleTimeString()}</span>
+                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{new Date(selectedIncident.reportedAt || selectedIncident.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
                   </div>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>{t('incidents.impact')}</span>

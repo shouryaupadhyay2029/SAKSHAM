@@ -266,39 +266,42 @@
 
 .dqId {
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 900;
   font-family: 'Courier New', Courier, monospace;
-  color: #0B2119;
+  color: #050f0c;
   letter-spacing: 0.01em;
 }
 
 .dqPriority {
   font-size: 9px;
-  font-weight: 850;
+  font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .dqQty {
   font-size: 12px;
-  font-weight: 700;
-  color: #0B2119;
+  font-weight: 900;
+  color: #050f0c;
   font-family: 'Courier New', Courier, monospace;
 }
 
 .dqItem {
   font-size: 12.5px;
-  color: rgba(11, 33, 25, 0.75);
+  color: #050f0c;
+  font-weight: 700;
 }
 
 .dqZone {
   font-size: 11.5px;
-  color: rgba(11, 33, 25, 0.5);
+  color: #11281e;
+  font-weight: 600;
 }
 
 .dqAffected {
   font-size: 11px;
-  color: rgba(11, 33, 25, 0.4);
+  color: #11281e;
+  font-weight: 600;
 }
 
 .dqStatus {
@@ -1625,4 +1628,19 @@
   .compareHead, .compareRow { grid-template-columns: 2fr 50px 70px; }
   .compareHead span:nth-child(n+4),
   .compareRow span:nth-child(n+4) { display: none; }
+}
+
+.matchingWorkspaceGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 32px;
+  align-items: start;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .matchingWorkspaceGrid {
+    grid-template-columns: 1fr !important;
+    gap: 24px;
+  }
 }

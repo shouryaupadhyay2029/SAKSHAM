@@ -116,9 +116,9 @@ export const IncidentResponse: React.FC = () => {
 
   const formatDelhiTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleTimeString('en-US', {
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: false,
+      hour12: true,
       timeZone: 'Asia/Kolkata'
     });
   };

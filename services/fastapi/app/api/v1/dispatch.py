@@ -29,7 +29,7 @@ async def create_dispatch(
     service: DispatchService = Depends(get_dispatch_service),
     current_officer: OfficerModel = Depends(get_current_officer)
 ):
-    created = service.create_dispatch(dispatch, officer=current_officer)
+    created = await service.create_dispatch(dispatch, officer=current_officer)
     try:
         await publisher.publish(
             RealtimeEvent(
@@ -77,6 +77,27 @@ async def update_dispatch_status(
             )
             
     updated = service.update_dispatch_status(dispatch_id, nextStatus, action_req, officer=current_officer)
+    try:
+        await publisher.publish(
+            RealtimeEvent(
+                event=EventType.DISPATCH_STATUS_CHANGED,
+                entityType="dispatch",
+                entityId=str(updated.id),
+                data=DispatchResponse.model_validate(updated).model_dump(mode="json"),
+            )
+        )
+    except Exception as e:
+        print(f"⚠️ WebSocket publish failed: {e}")
+    return updated
+
+@router.patch("/{dispatch_id}/route", response_model=DispatchResponse, summary="Update dispatch route after deviation")
+async def update_dispatch_route(
+    dispatch_id: str,
+    route_data: dict,
+    service: DispatchService = Depends(get_dispatch_service),
+    current_officer: OfficerModel = Depends(get_current_officer)
+):
+    updated = service.update_dispatch_route(dispatch_id, route_data)
     try:
         await publisher.publish(
             RealtimeEvent(

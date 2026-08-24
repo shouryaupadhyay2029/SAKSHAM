@@ -19,4 +19,5 @@ export interface Vehicle {
   incidentId?: string; // Assigned incident
   etaMinutes?: number; // Estimated arrival minutes
   teamName?: string; // Team identifier e.g. "ALPHA"
+  locationName?: string;
 }

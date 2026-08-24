@@ -172,7 +172,7 @@ export const Analytics: React.FC = () => {
   useEffect(() => {
     const update = () => {
       const now = new Date();
-      setCurrentTime(now.toLocaleTimeString('en-IN', { hour12: false, timeZone: 'Asia/Kolkata' }) + ' IST');
+      setCurrentTime(now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }) + ' IST');
     };
     update();
     const id = setInterval(update, 1000);

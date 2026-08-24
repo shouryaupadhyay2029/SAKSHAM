@@ -188,6 +188,13 @@ export const apiClient = {
     });
   },
 
+  async updateVehicle(id: string, data: any) {
+    return fetchJson<any>(`/vehicles/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
   // ── Shelters ──
   async getShelters(params?: { status?: string; region?: string; limit?: number; offset?: number }) {
     const query = new URLSearchParams();
@@ -247,6 +254,19 @@ export const apiClient = {
     });
   },
 
+  async confirmAllocation(data: { demandId: string; resourceId: string; quantity: number }) {
+    return fetchJson<{
+      allocation: any;
+      incident: any;
+      demand: any;
+      resource: any;
+    }>('/allocations/confirm', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+
   async updateAllocationStatus(id: string, status: string, notes?: string) {
     return fetchJson<any>(`/allocations/${id}/status`, {
       method: 'PATCH',
@@ -286,6 +306,13 @@ export const apiClient = {
     return fetchJson<any>(`/dispatch/${id}/status?nextStatus=${nextStatus}`, {
       method: 'PATCH',
       body: JSON.stringify({ notes, officerId }),
+    });
+  },
+
+  async updateDispatchRoute(id: string, routeData: any) {
+    return fetchJson<any>(`/dispatch/${id}/route`, {
+      method: 'PATCH',
+      body: JSON.stringify(routeData),
     });
   },
 

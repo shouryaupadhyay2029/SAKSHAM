@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Float, Integer, ForeignKey, text, ARRAY
+from sqlalchemy import Column, String, DateTime, Float, Integer, ForeignKey, text, ARRAY, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -154,6 +154,18 @@ class DispatchModel(Base):
     priority = Column(String, nullable=True)
     status = Column(String, nullable=False, default="PLANNED") # e.g. PLANNED, READY, DISPATCHED, etc.
     notes = Column(String, nullable=True)
+    # Route persistence — populated at dispatch creation via OSRM route decision
+    routeProvider         = Column(String, nullable=True)    # e.g. "OSRM"
+    routeProfile          = Column(String, nullable=True)    # e.g. "driving"
+    routeDistanceMeters   = Column(Float,  nullable=True)
+    routeDurationSeconds  = Column(Float,  nullable=True)
+    routeGeometry         = Column(Text,   nullable=True)    # JSON-encoded GeoJSON LineString
+    routeScore            = Column(Float,  nullable=True)    # 0-100
+    routeDecisionReason   = Column(String, nullable=True)
+    routeDecisionFactors  = Column(Text,   nullable=True)    # JSON-encoded dict
+    routeAlternatives     = Column(Text,   nullable=True)    # JSON-encoded list of RouteCandidate
+    routeCalculatedAt     = Column(DateTime, nullable=True)
+    routeDeviationStatus  = Column(String, nullable=True, default="NOMINAL")  # NOMINAL / DEVIATED
     createdAt = Column(DateTime, nullable=False, default=datetime.utcnow)
     updatedAt = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 

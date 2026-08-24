@@ -402,18 +402,17 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(250, 248, 243, 0.98);
-  backdrop-filter: blur(12px);
+  background: #081020;
   z-index: 199;
   display: flex;
   flex-direction: column;
-  padding: 2rem 1.5rem;
-  gap: 1.5rem;
-  border-top: 1px solid rgba(11, 33, 25, 0.08);
+  padding: 85px 24px 32px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   opacity: 0;
   pointer-events: none;
   transform: translateY(-10px);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
 
 .mobileDrawerOpen {
@@ -423,21 +422,35 @@
 }
 
 .mobileNavLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-sans), sans-serif;
-  font-size: 1.25rem;
+  font-size: 13px;
   font-weight: 700;
-  color: rgba(11, 33, 25, 0.65);
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.85);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid rgba(11, 33, 25, 0.05);
-  transition: all 0.2s ease;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  text-decoration: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobileNavLink:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
 }
 
 .mobileNavLinkActive {
-  color: #e86f16;
-  border-bottom-color: #e86f16;
-  font-weight: 800;
+  background: rgba(232, 111, 22, 0.15);
+  border-color: #E86F16;
+  color: #FAF8F3;
+  box-shadow: 0 0 15px rgba(232, 111, 22, 0.2);
 }
 
 /* ── Responsive Media Queries ── */
@@ -592,21 +605,26 @@
 .mobileLogoutBtn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 14px 24px;
-  background: none;
-  border: none;
-  border-top: 1px solid rgba(11, 33, 25, 0.08);
+  padding: 16px 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(11, 33, 25, 0.5);
-  transition: color 0.15s;
-  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ef4444;
+  transition: all 0.2s;
+  margin-top: 16px;
 }
 .mobileLogoutBtn:hover {
-  color: #c82828;
+  background: rgba(239, 68, 68, 0.25);
+  color: #ffffff;
+  border-color: #ef4444;
 }
 

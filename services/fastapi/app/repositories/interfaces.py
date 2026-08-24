@@ -133,11 +133,15 @@ class DispatchRepositoryInterface(ABC):
         pass
 
     @abstractmethod
-    def create(self, dispatch: DispatchCreate, origin: str, destination: str, quantity: float, priority: str, officer_name: str) -> DispatchResponse:
+    def create(self, dispatch: DispatchCreate, origin: str, destination: str, quantity: float, priority: str, officer_name: str, route_data: Optional[dict] = None) -> DispatchResponse:
         pass
 
     @abstractmethod
     def update_status(self, dispatch_id: str, status: DispatchStatus, actual_departure: Optional[datetime] = None, actual_arrival: Optional[datetime] = None, completion_time: Optional[datetime] = None, notes: Optional[str] = None) -> Optional[DispatchResponse]:
+        pass
+
+    @abstractmethod
+    def update_route(self, dispatch_id: str, route_data: dict, deviation_status: str = "DEVIATED") -> Optional[DispatchResponse]:
         pass
 
 

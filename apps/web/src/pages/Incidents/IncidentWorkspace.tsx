@@ -9,11 +9,6 @@ import { ArrowRight } from 'lucide-react';
 import styles from './IncidentWorkspace.module.css';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
-interface LocalNote {
-  text: string;
-  time: string;
-  author: string;
-}
 
 export const IncidentWorkspace: React.FC = () => {
   const { incidentId } = useParams<{ incidentId: string }>();
@@ -29,11 +24,6 @@ export const IncidentWorkspace: React.FC = () => {
   } = useOperationalState();
 
   const [newLogText, setNewLogText] = useState('');
-  const [localNotes, setLocalNotes] = useState<LocalNote[]>([
-    { text: 'Eastern embankment visual coordinates verified by regional inspector.', time: '05:52', author: 'Control Room' },
-    { text: 'Water has reached the peripheral service road. Residents relocating.', time: '06:14', author: 'Field Unit 4' }
-  ]);
-  const [newNoteText, setNewNoteText] = useState('');
 
   // --- Lifecycle action state ---
   const [actionLoading, setActionLoading] = useState(false);
@@ -98,8 +88,9 @@ export const IncidentWorkspace: React.FC = () => {
 
   // Related requests (demands) connected to this incident
   const incidentRequests = useMemo(() => {
-    return requests.filter(r => r.incidentId === incident.id);
-  }, [requests, incident.id]);
+    const incUuid = (incident as any).uuid || incident.id;
+    return requests.filter(r => r.incidentId === incUuid || r.incidentId === incident.id);
+  }, [requests, incident.id, (incident as any).uuid]);
 
   // Active Dispatch missions associated with this incident
   const activeDispatches = useMemo(() => {
@@ -230,7 +221,7 @@ export const IncidentWorkspace: React.FC = () => {
     if (!newLogText.trim()) return;
 
     const timeStr = new Date().toLocaleTimeString('en-US', {
-      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata'
+      hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
     });
 
     const newTimelineEntry = {
@@ -244,21 +235,6 @@ export const IncidentWorkspace: React.FC = () => {
     setNewLogText('');
   };
 
-  // Add field note
-  const handleAddFieldNote = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newNoteText.trim()) return;
-
-    const timeStr = new Date().toLocaleTimeString('en-US', {
-      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata'
-    });
-
-    setLocalNotes(prev => [
-      { text: newNoteText, time: timeStr, author: 'Sgt. Amit Sharma' },
-      ...prev
-    ]);
-    setNewNoteText('');
-  };
 
   return (
     <div ref={pageRef} className={styles.container}>
@@ -646,35 +622,7 @@ export const IncidentWorkspace: React.FC = () => {
             </form>
           </div>
 
-          {/* Field Notes */}
-          <div className={styles.card}>
-            <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>FIELD NOTES</h2>
-              <span className={styles.sectionSubtitle}>OPERATIONAL OVERLAYS</span>
-            </div>
-            <div className={styles.notesList}>
-              {localNotes.map((note, idx) => (
-                <div key={idx} className={styles.noteItem}>
-                  <p className={styles.noteText}>“{note.text}”</p>
-                  <div className={styles.noteMeta}>
-                    <span>Logged at {note.time} by {note.author}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <form onSubmit={handleAddFieldNote} className={styles.timelineLogForm}>
-              <input
-                type="text"
-                className={styles.timelineLogInput}
-                placeholder="Add operator memo note..."
-                value={newNoteText}
-                onChange={(e) => setNewNoteText(e.target.value)}
-              />
-              <button type="submit" className={styles.timelineLogBtn}>
-                ADD NOTE
-              </button>
-            </form>
-          </div>
+
         </div>
       </main>
 

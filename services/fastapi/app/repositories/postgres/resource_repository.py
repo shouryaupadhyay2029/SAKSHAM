@@ -39,8 +39,14 @@ class SqlAlchemyResourceRepository(ResourceRepositoryInterface):
         return [ResourceResponse.model_validate(model_to_dict_safe(r)) for r in resources]
 
     def create(self, resource: ResourceCreate) -> ResourceResponse:
+        # Check if resourceId is already specified (e.g. from seeds), otherwise generate sequentially
+        res_id = getattr(resource, "resourceId", None)
+        if not res_id:
+            count = self.db.query(ResourceModel).count()
+            res_id = f"RES-2026-{count + 1:03d}"
+            
         db_obj = ResourceModel(
-            resourceId=resource.resourceId,
+            resourceId=res_id,
             materialName=resource.materialName,
             description=resource.description,
             category=resource.category,
@@ -51,7 +57,7 @@ class SqlAlchemyResourceRepository(ResourceRepositoryInterface):
             location=resource.location,
             latitude=resource.latitude,
             longitude=resource.longitude,
-            status=resource.status.value if resource.status else "AVAILABLE",
+            status=getattr(resource, "status", None).value if getattr(resource, "status", None) else "AVAILABLE",
             pointOfContact=resource.pointOfContact
         )
         self.db.add(db_obj)

@@ -177,7 +177,7 @@ export const Delivery: React.FC = () => {
     setIsSubmitting(true);
 
     const timeStr = new Date().toLocaleTimeString('en-US', {
-      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata'
+      hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
     });
 
     // Simulate verification processing lag (750ms) to prevent double clicks and ensure smooth UX
@@ -314,7 +314,7 @@ export const Delivery: React.FC = () => {
   const handleCloseIncident = () => {
     if (!linkedIncident) return;
     const timeStr = new Date().toLocaleTimeString('en-US', {
-      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata'
+      hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
     });
 
     setIncidents(prev => prev.map(inc => {

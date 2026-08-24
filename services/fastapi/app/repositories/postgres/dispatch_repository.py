@@ -1,6 +1,7 @@
 import uuid
+import json
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from app.repositories.interfaces import DispatchRepositoryInterface
 from app.core.models import DispatchModel
@@ -50,7 +51,16 @@ class SqlAlchemyDispatchRepository(DispatchRepositoryInterface):
         dispatches = query.order_by(DispatchModel.dispatchId.asc()).all()
         return [DispatchResponse.model_validate(model_to_dict_safe(d)) for d in dispatches]
 
-    def create(self, dispatch: DispatchCreate, origin: str, destination: str, quantity: float, priority: str, officer_name: str) -> DispatchResponse:
+    def create(
+        self,
+        dispatch: DispatchCreate,
+        origin: str,
+        destination: str,
+        quantity: float,
+        priority: str,
+        officer_name: str,
+        route_data: Optional[Dict[str, Any]] = None,
+    ) -> DispatchResponse:
         count = self.db.query(DispatchModel).count()
         ref_id = f"DSP-2026-{count + 1:03d}"
         
@@ -110,7 +120,19 @@ class SqlAlchemyDispatchRepository(DispatchRepositoryInterface):
             status="PLANNED",
             notes=dispatch.notes,
             latitude=lat_coord,
-            longitude=lng_coord
+            longitude=lng_coord,
+            # Route persistence
+            routeProvider=route_data.get("routing_provider") if route_data else None,
+            routeProfile=route_data.get("profile") if route_data else None,
+            routeDistanceMeters=route_data.get("distance_meters") if route_data else None,
+            routeDurationSeconds=route_data.get("duration_seconds") if route_data else None,
+            routeGeometry=json.dumps(route_data.get("geometry")) if route_data and route_data.get("geometry") else None,
+            routeScore=route_data.get("route_score") if route_data else None,
+            routeDecisionReason=route_data.get("decision_reason") if route_data else None,
+            routeDecisionFactors=json.dumps(route_data.get("decision_factors")) if route_data and route_data.get("decision_factors") else None,
+            routeAlternatives=json.dumps(route_data.get("alternatives")) if route_data and route_data.get("alternatives") else None,
+            routeCalculatedAt=route_data.get("calculated_at") if route_data else None,
+            routeDeviationStatus="NOMINAL",
         )
         self.db.add(db_obj)
         self.db.commit()
@@ -136,6 +158,41 @@ class SqlAlchemyDispatchRepository(DispatchRepositoryInterface):
         if notes:
             db_obj.notes = notes
             
+        db_obj.updatedAt = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(db_obj)
+        return DispatchResponse.model_validate(model_to_dict_safe(db_obj))
+
+    def update_route(
+        self,
+        dispatch_id: str,
+        route_data: Dict[str, Any],
+        deviation_status: str = "DEVIATED",
+    ) -> Optional[DispatchResponse]:
+        """Persist a recalculated route after vehicle deviation."""
+        db_obj = None
+        if is_valid_uuid(dispatch_id):
+            db_obj = self.db.query(DispatchModel).filter(DispatchModel.id == dispatch_id).first()
+        if not db_obj:
+            db_obj = self.db.query(DispatchModel).filter(DispatchModel.dispatchId == dispatch_id).first()
+        if not db_obj:
+            return None
+
+        db_obj.routeProvider = route_data.get("routing_provider", "OSRM")
+        db_obj.routeDistanceMeters = route_data.get("distance_meters")
+        db_obj.routeDurationSeconds = route_data.get("duration_seconds")
+        if route_data.get("geometry"):
+            db_obj.routeGeometry = json.dumps(route_data["geometry"])
+        if route_data.get("route_score") is not None:
+            db_obj.routeScore = route_data["route_score"]
+        if route_data.get("decision_reason"):
+            db_obj.routeDecisionReason = route_data["decision_reason"]
+        if route_data.get("decision_factors"):
+            db_obj.routeDecisionFactors = json.dumps(route_data["decision_factors"])
+        if route_data.get("alternatives"):
+            db_obj.routeAlternatives = json.dumps(route_data["alternatives"])
+        db_obj.routeCalculatedAt = datetime.utcnow()
+        db_obj.routeDeviationStatus = deviation_status
         db_obj.updatedAt = datetime.utcnow()
         self.db.commit()
         self.db.refresh(db_obj)

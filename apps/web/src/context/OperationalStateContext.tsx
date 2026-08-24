@@ -6,6 +6,7 @@ import type { DemandRequest, RequestStatus } from '../types/request';
 import type { ResourceItem, ResourceStatus } from '../types/resource';
 import type { Coordinates, Severity } from '../types/common';
 import apiClient from '../services/apiClient';
+import { calculateRoute } from '../services/routingService';
 
 export interface DispatchMission {
   id: string;
@@ -26,6 +27,18 @@ export interface DispatchMission {
   routePath: string[];
   alertMessage?: string;
   timeline: { time: string; title: string; done: boolean }[];
+  routeScore?: number;
+  routeDecisionReason?: string;
+  routeDecisionFactors?: Record<string, number>;
+  routeAlternatives?: any[];
+  routeGeometry?: any;
+  routeProvider?: string;
+  routeProfile?: string;
+  routeDeviationStatus?: string;
+  policyName?: string;
+  policyReason?: string;
+  policyWeights?: Record<string, number>;
+  routeAuditLog?: { timestamp: string; event: string; details?: string }[];
 }
 
 export interface ReliefDelivery {
@@ -105,12 +118,11 @@ interface OperationalStateContextType {
   updateResourceStatus: (resourceId: string, status: ResourceStatus) => void;
   updateDemandStatus: (demandId: string, status: RequestStatus, resourceId?: string) => void;
 
-  // --- Matching Engine Action ---
   allocateResourceToRequest: (
     demandId: string,
     resourceId: string,
     quantity: number
-  ) => string; // Returns allocationId
+  ) => Promise<string>; // Returns allocationId
 
   // --- Setters (for advanced overrides) ---
   setIncidents: React.Dispatch<React.SetStateAction<Incident[]>>;
@@ -136,6 +148,7 @@ export function normalizeIncident(backendInc: any): Incident {
   const createdStr = ensureUtcString(backendInc.createdAt);
   return {
     id: backendInc.incidentId || backendInc.id,
+    uuid: backendInc.id,
     type: backendInc.type,
     severity: backendInc.severity,
     location: backendInc.location,
@@ -158,7 +171,7 @@ export function normalizeIncident(backendInc: any): Incident {
     requiredResources: backendInc.requiredResources || [],
     timeline: backendInc.timeline || [
       {
-        time: new Date(reportedStr || createdStr || Date.now()).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' }),
+        time: new Date(reportedStr || createdStr || Date.now()).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }),
         title: 'INCIDENT REPORTED',
         description: 'Incident registered in the command network database.'
       }
@@ -209,16 +222,18 @@ export function normalizeVehicle(backendVeh: any): Vehicle {
 export function normalizeDemand(backendDem: any, incidents?: Incident[]): DemandRequest {
   let coords = { lat: 28.6139, lng: 77.2090 };
   let detailedAddress = '';
+  let incId = backendDem.incidentId;
   if (incidents) {
     const inc = incidents.find(i => i.id === backendDem.incidentId || (i as any).uuid === backendDem.incidentId);
     if (inc) {
       coords = inc.coordinates;
       detailedAddress = inc.location;
+      incId = inc.id;
     }
   }
   return {
     id: backendDem.requestId || backendDem.id,
-    incidentId: backendDem.incidentId,
+    incidentId: incId,
     zoneName: backendDem.affectedZone,
     coordinates: coords,
     detailedAddress: detailedAddress,
@@ -229,12 +244,34 @@ export function normalizeDemand(backendDem: any, incidents?: Incident[]): Demand
     priority: backendDem.priority,
     affectedCount: backendDem.affectedPeople || 0,
     status: backendDem.status,
-    requestedAt: ensureUtcString(backendDem.createdAt || backendDem.requestedAt)
-  };
+    requestedAt: ensureUtcString(backendDem.createdAt || backendDem.requestedAt),
+    backendIncidentId: backendDem.incidentId,
+    description: backendDem.description
+  } as any;
 }
 
-export function normalizeDispatchToMission(backendDsp: any, demandRequests: DemandRequest[]): DispatchMission {
-  const demand = demandRequests.find(r => r.id === backendDsp.allocationId || r.id === backendDsp.demandId);
+export function normalizeDispatchToMission(
+  backendDsp: any,
+  demandRequests: DemandRequest[],
+  allocations: any[] = [],
+  vehicles: Vehicle[] = []
+): DispatchMission {
+  // Find the allocation record by matching ID or UUID
+  const alloc = allocations.find(a => a.id === backendDsp.allocationId || a.allocationId === backendDsp.allocationId);
+  
+  // Find the demand request by matching either:
+  // 1. The demandId UUID / reference from the allocation
+  // 2. The allocationId directly
+  const demand = demandRequests.find(r => 
+    (alloc && (r.id === alloc.demandId || (r as any).uuid === alloc.demandId)) ||
+    r.id === backendDsp.allocationId || 
+    (r as any).uuid === backendDsp.allocationId ||
+    r.id === backendDsp.demandId
+  );
+
+  // Find the vehicle by matching ID (reference) or uuid (UUID)
+  const vehicle = vehicles.find(v => v.id === backendDsp.vehicleId || (v as any).uuid === backendDsp.vehicleId);
+
   const statusMap: Record<string, DispatchMission['status']> = {
     'PLANNED': 'AWAITING_DISPATCH',
     'READY': 'AWAITING_DISPATCH',
@@ -243,23 +280,69 @@ export function normalizeDispatchToMission(backendDsp: any, demandRequests: Dema
     'ARRIVED': 'ARRIVED',
     'COMPLETED': 'DELIVERED'
   };
+  const distanceKm = backendDsp.routeDistanceMeters 
+    ? Number((backendDsp.routeDistanceMeters / 1000).toFixed(1))
+    : (backendDsp.status === 'COMPLETED' ? 0 : 8.5);
+  
+  const etaMinutes = backendDsp.routeDurationSeconds
+    ? Math.round(backendDsp.routeDurationSeconds / 60)
+    : (backendDsp.status === 'COMPLETED' ? 0 : 22);
+
+  let routeGeometry = backendDsp.routeGeometry;
+  if (typeof routeGeometry === 'string') {
+    try {
+      routeGeometry = JSON.parse(routeGeometry);
+    } catch {
+      routeGeometry = null;
+    }
+  }
+
+  let routeDecisionFactors = backendDsp.routeDecisionFactors;
+  if (typeof routeDecisionFactors === 'string') {
+    try {
+      routeDecisionFactors = JSON.parse(routeDecisionFactors);
+    } catch {
+      routeDecisionFactors = null;
+    }
+  }
+
+  let routeAlternatives = backendDsp.routeAlternatives;
+  if (typeof routeAlternatives === 'string') {
+    try {
+      routeAlternatives = JSON.parse(routeAlternatives);
+    } catch {
+      routeAlternatives = [];
+    }
+  }
+
   return {
     id: backendDsp.dispatchId || backendDsp.id,
     requestId: demand?.id || backendDsp.allocationId,
-    vehicleId: backendDsp.vehicleId,
+    vehicleId: vehicle?.id || backendDsp.vehicleId,
     status: statusMap[backendDsp.status] || 'DISPATCHED',
     destinationName: backendDsp.destination || 'Incident Location',
     resourceType: demand?.itemNeeded || 'Supplies',
     quantity: backendDsp.quantity || demand?.quantity || 100,
     unit: demand?.unit || 'Units',
-    etaMinutes: backendDsp.status === 'COMPLETED' ? 0 : 20,
+    etaMinutes,
     operatorName: backendDsp.assignedOfficer || 'Sgt. Amit Sharma',
     speedKmh: backendDsp.status === 'COMPLETED' ? 0 : 50,
-    distanceKm: backendDsp.status === 'COMPLETED' ? 0 : 8.5,
+    distanceKm,
     signalStrength: 95,
     fuelPct: 88,
     trafficLevel: 'LOW',
-    routePath: ['Central Depot', 'Ring Road Bypass', backendDsp.destination?.split(',')[0] || 'Target'],
+    routePath: (() => {
+      const start = backendDsp.origin || 'Depot';
+      const dest = backendDsp.destination || 'Incident Location';
+      const summaryStr = routeDecisionFactors?.summary || '';
+      if (summaryStr) {
+        const parts = summaryStr.split(', ').filter((p: string) => p && p.trim() !== '');
+        if (parts.length > 0) {
+          return [start.split(',')[0], ...parts, dest.split(',')[0]];
+        }
+      }
+      return [start.split(',')[0], 'Ring Road Bypass', dest.split(',')[0]];
+    })(),
     timeline: [
       { time: '09:00', title: 'ALLOCATION APPROVED', done: true },
       { time: '09:05', title: 'VEHICLE ASSIGNED', done: true },
@@ -267,6 +350,28 @@ export function normalizeDispatchToMission(backendDsp: any, demandRequests: Dema
       { time: '--:--', title: 'EN ROUTE TO TARGET', done: ['EN_ROUTE', 'ARRIVED', 'COMPLETED'].includes(backendDsp.status) },
       { time: '--:--', title: 'DESTINATION ARRIVAL', done: ['ARRIVED', 'COMPLETED'].includes(backendDsp.status) },
       { time: '--:--', title: 'CARGO DELIVERY VERIFIED', done: backendDsp.status === 'COMPLETED' }
+    ],
+    // Persisted route decision attributes
+    routeProvider: backendDsp.routeProvider || 'OSRM',
+    routeProfile: backendDsp.routeProfile || 'driving',
+    routeScore: backendDsp.routeScore || 100,
+    routeDecisionReason: backendDsp.routeDecisionReason || 'Shortest path',
+    routeDecisionFactors: routeDecisionFactors || { travelTimeScore: 100, distanceScore: 100, accessibilityScore: 100, priorityScore: 100 },
+    routeAlternatives: routeAlternatives || [],
+    routeGeometry: routeGeometry,
+    routeDeviationStatus: backendDsp.routeDeviationStatus || 'NOMINAL',
+    policyName: routeDecisionFactors?.policy_name || 'HIGH-PRIORITY ARRIVAL',
+    policyReason: routeDecisionFactors?.policy_reason || 'Because this incident is high severity, the routing policy prioritizes rapid arrival.',
+    policyWeights: routeDecisionFactors?.policy_weights || { travel_time: 0.70, distance: 0.10, accessibility: 0.15, priority: 0.05 },
+    routeAuditLog: [
+      { timestamp: new Date(backendDsp.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }), event: 'Route Calculated', details: `Road network geometry generated by ${backendDsp.routeProvider || 'OSRM'} (${backendDsp.routeProfile || 'driving'})` },
+      { timestamp: new Date(backendDsp.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }), event: 'Alternative Routes Evaluated', details: `Evaluated ${(routeAlternatives || []).length} route candidates` },
+      { timestamp: new Date(backendDsp.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }), event: 'Route Selected', details: `Deterministically selected route with score ${backendDsp.routeScore || 100}/100 using policy: ${routeDecisionFactors?.policy_name || 'HIGH-PRIORITY ARRIVAL'}` },
+      ...(backendDsp.actualDeparture ? [{ timestamp: new Date(backendDsp.actualDeparture).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }), event: 'Departed', details: 'Vehicle departed logistics fleet' }] : []),
+      ...(backendDsp.routeDeviationStatus === 'DEVIATED' ? [
+        { timestamp: new Date(backendDsp.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }), event: 'Deviation Detected', details: 'Vehicle deviated from plan. Route recalculated.' },
+        { timestamp: new Date(backendDsp.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }), event: 'Route Recalculated', details: `New distance: ${distanceKm} km, score: ${backendDsp.routeScore || 100}/100` }
+      ] : [])
     ]
   };
 }
@@ -331,14 +436,15 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     let isMounted = true;
     const loadRealData = async () => {
       try {
-        const [incRes, reqRes, resRes, vehRes, shlRes, dspRes, delRes] = await Promise.allSettled([
+        const [incRes, reqRes, resRes, vehRes, shlRes, dspRes, delRes, allocRes] = await Promise.allSettled([
           apiClient.getIncidents(),
           apiClient.getDemands(),
           apiClient.getResources(),
           apiClient.getVehicles(),
           apiClient.getShelters(),
           apiClient.getDispatches(),
-          apiClient.getDeliveries()
+          apiClient.getDeliveries(),
+          apiClient.getAllocations()
         ]);
         if (!isMounted) return;
         
@@ -362,8 +468,8 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
             (norm as any).uuid = item.id;
             return norm;
           });
-          setRequests(normalizedRequests);
         }
+
         if (resRes.status === 'fulfilled') {
           const raw = (resRes.value as any)?.data || [];
           const normalized = raw.map((item: any) => {
@@ -373,6 +479,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
           });
           setResources(normalized);
         }
+
         let normalizedVehicles: Vehicle[] = [];
         if (vehRes.status === 'fulfilled') {
           const raw = (vehRes.value as any)?.data || [];
@@ -382,6 +489,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
             return norm;
           });
         }
+
         if (shlRes.status === 'fulfilled') {
           const raw = (shlRes.value as any)?.data || [];
           const normalized = raw.map((item: any) => {
@@ -391,33 +499,85 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
           });
           setShelters(normalized);
         }
+
+        let rawAllocations: any[] = [];
+        if (allocRes.status === 'fulfilled') {
+          rawAllocations = (allocRes.value as any)?.data || [];
+        }
+
+        let normalizedMissions: DispatchMission[] = [];
         if (dspRes.status === 'fulfilled') {
           const raw = (dspRes.value as any)?.data || [];
-          const normalized = raw.map((item: any) => {
-            return normalizeDispatchToMission(item, normalizedRequests);
+          normalizedMissions = raw.map((item: any) => {
+            return normalizeDispatchToMission(item, normalizedRequests, rawAllocations, normalizedVehicles);
           });
-          setMissions(normalized);
-
-          // Enrich vehicle objects with current coordinates destination
-          normalizedVehicles = normalizedVehicles.map(veh => {
-            const activeDsp = raw.find((d: any) => d.vehicleId === (veh as any).uuid || d.vehicleId === veh.id);
-            if (activeDsp && (veh.status === 'EN_ROUTE' || veh.status === 'DISPATCHED' || activeDsp.status === 'DISPATCHED' || activeDsp.status === 'EN_ROUTE')) {
-              let destCoords = undefined;
-              if (activeDsp.latitude !== undefined && activeDsp.latitude !== null) {
-                destCoords = { lat: activeDsp.latitude, lng: activeDsp.longitude };
-              }
-              return {
-                ...veh,
-                status: 'EN_ROUTE', // Make it active so MapView draws it
-                destination: destCoords,
-                cargo: activeDsp.notes || `Relief Cargo: Dispatch ${activeDsp.dispatchId}`,
-                incidentId: activeDsp.allocationId
-              };
-            }
-            return veh;
-          });
+          setMissions(normalizedMissions);
         }
+
+        // Sync request statuses with missions
+        normalizedRequests = normalizedRequests.map(req => {
+          const match = normalizedMissions.find(m => m.requestId === req.id);
+          if (match) {
+            let status = req.status;
+            if (match.status === 'DELIVERED') status = 'FULFILLED';
+            else if (match.status === 'ARRIVED') status = 'FULFILLING';
+            else if (match.status === 'EN_ROUTE' || match.status === 'DISPATCHED') status = 'DISPATCHED';
+            return { ...req, status };
+          }
+          return req;
+        });
+        setRequests(normalizedRequests);
+
+        // Sync vehicle statuses with missions
+        normalizedVehicles = normalizedVehicles.map(veh => {
+          const match = normalizedMissions.find(m => m.vehicleId === veh.id);
+          if (match) {
+            let status = veh.status;
+            if (match.status === 'EN_ROUTE') status = 'EN_ROUTE';
+            else if (match.status === 'DISPATCHED') status = 'DISPATCHED';
+            else if (match.status === 'ARRIVED') status = 'ARRIVED';
+            else if (match.status === 'DELIVERED') status = 'AVAILABLE';
+            
+            const reqObj = normalizedRequests.find(r => r.id === match.requestId);
+            return {
+              ...veh,
+              status,
+              destination: reqObj?.coordinates,
+              cargo: `${match.quantity.toLocaleString()} ${match.unit} ${match.resourceType}`,
+              incidentId: reqObj?.incidentId
+            };
+          }
+          return veh;
+        });
         setVehicles(normalizedVehicles);
+
+        // Sync incident statuses with missions
+        normalizedIncidents = normalizedIncidents.map(inc => {
+          const incRequests = normalizedRequests.filter(r => r.incidentId === inc.id);
+          const activeMissionsForInc = normalizedMissions.filter(m => incRequests.some(r => r.id === m.requestId));
+          
+          if (activeMissionsForInc.length > 0) {
+            let nextIncStatus: IncidentStatus = inc.status;
+            if (activeMissionsForInc.some(m => m.status === 'DELIVERED')) {
+              const allFulfilled = incRequests.every(r => r.status === 'FULFILLED');
+              if (allFulfilled) {
+                nextIncStatus = 'RESOLVED';
+              } else {
+                nextIncStatus = 'UNDER_RESPONSE';
+              }
+            } else if (activeMissionsForInc.some(m => m.status === 'ARRIVED' || m.status === 'EN_ROUTE')) {
+              nextIncStatus = 'UNDER_RESPONSE';
+            } else if (activeMissionsForInc.some(m => m.status === 'DISPATCHED')) {
+              nextIncStatus = 'DISPATCHED';
+            }
+            if (nextIncStatus !== inc.status) {
+              return { ...inc, status: nextIncStatus };
+            }
+          }
+          return inc;
+        });
+        setIncidents(normalizedIncidents);
+
         if (delRes.status === 'fulfilled') {
           const raw = (delRes.value as any)?.data || [];
           const normalized = raw.map(normalizeReliefDelivery);
@@ -430,6 +590,149 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     loadRealData();
     return () => { isMounted = false; };
   }, []);
+
+  // Telemetry simulation loop: updates vehicle coordinates on the backend
+  useEffect(() => {
+    const enRouteMissions = missions.filter(m => m.status === 'EN_ROUTE');
+    if (enRouteMissions.length === 0) return;
+
+    const interval = setInterval(async () => {
+      for (const mission of enRouteMissions) {
+        const vehicle = vehicles.find(v => v.id === mission.vehicleId);
+        const reqObj = requests.find(r => r.id === mission.requestId);
+        if (!vehicle || !reqObj) continue;
+
+        const targetLat = reqObj.coordinates.lat;
+        const targetLng = reqObj.coordinates.lng;
+        const currLat = vehicle.location.lat;
+        const currLng = vehicle.location.lng;
+        
+        const distToDest = Math.sqrt(Math.pow(currLat - targetLat, 2) + Math.pow(currLng - targetLng, 2));
+        if (distToDest < 0.0005) {
+          continue;
+        }
+
+        const step = 0.1; 
+        const nextLat = currLat + (targetLat - currLat) * step;
+        const nextLng = currLng + (targetLng - currLng) * step;
+
+        try {
+          const dbVehicleId = (vehicle as any).uuid || vehicle.id;
+          await apiClient.updateVehicle(dbVehicleId, {
+            currentLatitude: nextLat,
+            currentLongitude: nextLng,
+            speed: 55
+          });
+        } catch (err) {
+          console.warn('[Telemetry Simulator] Failed to update vehicle coordinates:', err);
+        }
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [missions, vehicles, requests]);
+
+  // Dynamically update active mission distance/duration/ETA when vehicle location updates
+  const lastCoordsRef = React.useRef<Record<string, { lat: number; lng: number }>>({});
+  
+  useEffect(() => {
+    const activeMissions = missions.filter(m => m.status === 'EN_ROUTE' || m.status === 'DISPATCHED');
+    if (activeMissions.length === 0) return;
+
+    activeMissions.forEach(async (mission) => {
+      const vehicle = vehicles.find(v => v.id === mission.vehicleId);
+      const reqObj = requests.find(r => r.id === mission.requestId);
+      if (!vehicle || !reqObj) return;
+
+      const lastCoords = lastCoordsRef.current[mission.id];
+      const currCoords = vehicle.location;
+
+      const coordChanged = !lastCoords || 
+        Math.abs(lastCoords.lat - currCoords.lat) > 0.0001 || 
+        Math.abs(lastCoords.lng - currCoords.lng) > 0.0001;
+
+      if (coordChanged) {
+        lastCoordsRef.current[mission.id] = { lat: currCoords.lat, lng: currCoords.lng };
+        try {
+          const incidentObj = incidents.find(inc => inc.id === reqObj.incidentId || (inc as any).uuid === reqObj.incidentId);
+          const severity = incidentObj ? incidentObj.severity : 'MEDIUM';
+          const affectedPeople = incidentObj ? incidentObj.peopleAffected : 0;
+
+          const route = await calculateRoute(currCoords, reqObj.coordinates, severity, affectedPeople);
+          
+          const distanceKm = Number((route.selectedRoute.distanceMeters / 1000).toFixed(1));
+          const etaMinutes = Math.round(route.selectedRoute.durationSeconds / 60);
+
+          setMissions(prev => prev.map(m => {
+            if (m.id !== mission.id) return m;
+            return {
+              ...m,
+              distanceKm,
+              etaMinutes,
+              routePath: (() => {
+                const summaryStr = route.selectedRoute.summary || '';
+                const streetNames = summaryStr ? summaryStr.split(', ').filter((p: string) => p && p.trim() !== '') : [];
+                return [
+                  'Current Location',
+                  ...(streetNames.length > 0 ? streetNames : ['Ring Road Bypass']),
+                  reqObj.zoneName.split(',')[0]
+                ];
+              })(),
+              routeScore: route.selectedRoute.routeScore,
+              routeDecisionReason: route.selectedRoute.decisionReason,
+              routeDecisionFactors: route.selectedRoute.decisionFactors as any,
+              routeAlternatives: route.alternatives,
+              routeGeometry: route.selectedRoute.geometry,
+              routeDeviationStatus: m.routeDeviationStatus
+            };
+          }));
+
+          // Perform route deviation check
+          if (mission.routeGeometry) {
+            const apiBaseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+            const devRes = await fetch(`${apiBaseUrl}/routing/check-deviation`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                route_geometry: mission.routeGeometry,
+                vehicle_lat: currCoords.lat,
+                vehicle_lng: currCoords.lng,
+                threshold_meters: 150.0
+              })
+            });
+
+            if (devRes.ok) {
+              const devData = await devRes.json();
+              if (devData.deviated && mission.routeDeviationStatus !== 'DEVIATED') {
+                addToast('WARNING', `Route deviation detected for vehicle ${vehicle.id}. Recalculating...`);
+                // Update route on backend
+                const dbDispatchId = (mission as any).uuid || mission.id;
+                await apiClient.updateDispatchRoute(dbDispatchId, {
+                  routing_provider: route.routingProvider,
+                  distance_meters: route.selectedRoute.distanceMeters,
+                  duration_seconds: route.selectedRoute.durationSeconds,
+                  geometry: route.selectedRoute.geometry,
+                  route_score: route.selectedRoute.routeScore,
+                  decision_reason: route.selectedRoute.decisionReason,
+                  decision_factors: route.selectedRoute.decisionFactors,
+                  alternatives: route.alternatives,
+                  deviation_status: 'DEVIATED'
+                });
+                
+                // Update local mission status
+                setMissions(prev => prev.map(m => {
+                  if (m.id !== mission.id) return m;
+                  return { ...m, routeDeviationStatus: 'DEVIATED' };
+                }));
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[Route Telemetry Sync] Failed to check deviation / recalculate:', err);
+        }
+      }
+    });
+  }, [vehicles, missions, requests]);
 
   React.useEffect(() => {
     const handleOnline = () => {
@@ -534,7 +837,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       ],
       timeline: [
         {
-          time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' }),
+          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }),
           title: 'INCIDENT REPORTED',
           description: 'Civilian SOS received from mobile portal.'
         }
@@ -652,7 +955,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     }
 
     const incidentId = `INC-2026-${Math.floor(Math.random() * 800) + 200}`;
-    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
 
     const newIncident: Incident = {
       id: incidentId,
@@ -708,7 +1011,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     setIncidents(prev =>
       prev.map(inc => {
         if (inc.id === incidentId) {
-          const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
+          const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
           const currentTimeline = inc.timeline || [];
           return {
             ...inc,
@@ -742,7 +1045,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
   };
 
   const updateIncidentStatus = async (incidentId: string, status: IncidentStatus): Promise<void> => {
-    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
     
     let title = '';
     let description = '';
@@ -843,7 +1146,7 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
 
 
   const setIncidentPriority = async (incidentId: string, severity: Severity): Promise<void> => {
-    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' });
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
     
     let previousIncidents: typeof incidents = [];
     setIncidents(prev => {
@@ -933,85 +1236,32 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
   };
 
   /** Allocate a resource to a demand — Matching Engine post-approval action */
-  const allocateResourceToRequest = (
+  const allocateResourceToRequest = async (
     demandId: string,
     resourceId: string,
     quantity: number
-  ): string => {
-    const allocationId = `ALLOC-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`;
-    const timeStr = new Date().toLocaleTimeString('en-US', {
-      hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata'
-    });
+  ): Promise<string> => {
+    try {
+      const res = await apiClient.confirmAllocation({ demandId, resourceId, quantity });
+      const { allocation, incident, demand, resource } = res.data;
 
-    // 1. Reduce resource quantity and mark as partially/fully allocated locally
-    setResources(prev =>
-      prev.map(res => {
-        if (res.id !== resourceId) return res;
-        const newQty = Math.max(0, res.quantity - quantity);
-        const newAllocated = (res.allocatedQuantity ?? 0) + quantity;
-        return {
-          ...res,
-          quantity: newQty,
-          allocatedQuantity: newAllocated,
-          allocationId,
-          status: newQty === 0 ? 'DEPLETED' as ResourceStatus : (newQty < res.quantity * 0.2 ? 'LOW' as ResourceStatus : res.status),
-          lastUpdated: new Date().toISOString(),
-        };
-      })
-    );
+      const normInc = normalizeIncident(incident);
+      const normDem = normalizeDemand(demand, [normInc]);
+      const normRes = normalizeResource(resource);
 
-    // 2. Update demand to ALLOCATED locally
-    let demandIncidentId: string | undefined;
-    setRequests(prev =>
-      prev.map(req => {
-        if (req.id !== demandId) return req;
-        demandIncidentId = req.incidentId;
-        return {
-          ...req,
-          status: 'ALLOCATED' as RequestStatus,
-          allocatedResourceId: resourceId,
-        };
-      })
-    );
+      // Update state
+      setIncidents(prev => prev.map(inc => inc.id === normInc.id ? normInc : inc));
+      setRequests(prev => prev.map(req => req.id === normDem.id ? normDem : req));
+      setResources(prev => prev.map(r => r.id === normRes.id ? normRes : r));
 
-    // 3. Update linked incident to RESOURCE_MATCHED and add timeline event locally
-    if (demandIncidentId) {
-      const resource = resources.find(r => r.id === resourceId);
-      const depot = resource ? resource.locationName.split(',')[0] : 'depot';
-      setIncidents(prev =>
-        prev.map(inc => {
-          if (inc.id !== demandIncidentId) return inc;
-          const currentTimeline = inc.timeline || [];
-          return {
-            ...inc,
-            status: 'RESOURCE_MATCHED' as IncidentStatus,
-            updatedAt: new Date().toISOString(),
-            timeline: [...currentTimeline, {
-              time: timeStr,
-              title: 'RESOURCE ALLOCATED',
-              description: `${quantity.toLocaleString()} units allocated from ${depot} (Ref: ${allocationId}).`,
-            }],
-          };
-        })
-      );
+      console.log('[SOS PIPELINE] Persisted and approved allocation successfully:', allocation.allocationId);
+      addToast('SUCCESS', `Resource allocated successfully. Allocation ID: ${allocation.allocationId}`);
+      return allocation.allocationId;
+    } catch (err: any) {
+      console.error('[SOS PIPELINE ERROR] Failed to persist resource allocation:', err);
+      addToast('ERROR', `Failed to persist allocation: ${err.message}`);
+      throw err;
     }
-
-    // Call SAKSHAM backend API to persist the allocation and approve it
-    (async () => {
-      try {
-        const createRes = await apiClient.createAllocation({ demandId, resourceId, quantity });
-        if (createRes && createRes.data) {
-          const dbAlloc = createRes.data;
-          await apiClient.updateAllocationStatus(dbAlloc.id, 'APPROVED');
-          console.log('[SOS PIPELINE] Persisted and approved allocation successfully:', dbAlloc.id);
-        }
-      } catch (err: any) {
-        console.error('[SOS PIPELINE ERROR] Failed to persist resource allocation:', err);
-        addToast('ERROR', `Failed to persist allocation: ${err.message}`);
-      }
-    })();
-
-    return allocationId;
   };
 
   return (

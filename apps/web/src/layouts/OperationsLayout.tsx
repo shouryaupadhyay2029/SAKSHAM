@@ -18,6 +18,7 @@ import type { DispatchMission, ReliefDelivery } from '../context/OperationalStat
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../components/LanguageSwitcher/LanguageSwitcher';
+import { ShaderBackground } from '../components/ui/ShaderBackground';
 import { websocketService } from '../services/websocketService';
 import type { RealtimeEvent } from '../services/websocketService';
 import type { DemandRequest } from '../types/request';
@@ -259,9 +260,9 @@ export const OperationsLayout: React.FC = () => {
             timeline: [
               {
                 time: new Date().toLocaleTimeString('en-US', {
-                  hour: '2-digit',
+                  hour: 'numeric',
                   minute: '2-digit',
-                  hour12: false,
+                  hour12: true,
                   timeZone: 'Asia/Kolkata',
                 }),
                 title: 'DISPATCH AUTHORIZED',
@@ -425,10 +426,10 @@ export const OperationsLayout: React.FC = () => {
 
   const formatDelhiTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false,
+      hour12: true,
       timeZone: 'Asia/Kolkata'
     });
   };
@@ -597,22 +598,31 @@ export const OperationsLayout: React.FC = () => {
 
       {/* Mobile Navigation Drawer */}
       <div className={`${styles.mobileDrawer} ${isMobileOpen ? styles.mobileDrawerOpen : ''}`}>
-        <LanguageSwitcher variant="mobile" className="mb-3" />
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `${styles.mobileNavLink} ${isActive ? styles.mobileNavLinkActive : ''}`
-            }
-          >
-            {item.label}
-          </NavLink>
-        ))}
-        <button className={styles.mobileLogoutBtn} onClick={handleLogout}>
-          <LogOut size={13} />
-          {t('navigation.logout')}
-        </button>
+        <ShaderBackground style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.85, pointerEvents: 'none', zIndex: 0 }} />
+        <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', height: '100%', width: '100%', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+              <LanguageSwitcher variant="mobile" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `${styles.mobileNavLink} ${isActive ? styles.mobileNavLinkActive : ''}`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+          <button className={styles.mobileLogoutBtn} onClick={handleLogout}>
+            <LogOut size={13} />
+            {t('navigation.logout')}
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}

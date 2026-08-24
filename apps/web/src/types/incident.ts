@@ -27,6 +27,7 @@ export interface RequiredResource {
 
 export interface Incident {
   id: string;
+  uuid?: string;
   type: IncidentType;
   severity: Severity;
   location: string;

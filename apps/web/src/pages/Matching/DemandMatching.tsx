@@ -1,10 +1,10 @@
 import React, {
   useState, useMemo, useEffect, useRef, useCallback
 } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Search, X, Check, ChevronDown, ChevronUp, ArrowRight, Info, AlertTriangle } from 'lucide-react';
+import { Search, X, Check, ChevronDown, ChevronUp, ArrowRight, Info } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { useTranslation } from 'react-i18next';
 import { EmptyState, NoResultsState } from '../../components/ui/SystemStates';
@@ -137,70 +137,7 @@ const ScoreBarRow: React.FC<ScoreBarRowProps> = ({ label, value, max, active }) 
 
 /* ─── Single Match Row ───────────────────────────────────────────────────── */
 
-interface MatchRowProps {
-  result: MatchResult;
-  resource: ResourceItem;
-  isTop: boolean;
-  isExpanded: boolean;
-  animateScore: boolean;
-  onToggle: () => void;
-  onSelect: () => void;
-}
 
-const MatchRow: React.FC<MatchRowProps> = ({
-  result, resource, isTop, isExpanded, animateScore, onToggle, onSelect
-}) => {
-  const qc = QUALITY_CFG[result.qualityLabel] ?? QUALITY_CFG.POOR;
-  const score = useCountUp(result.matchScore, 1200, animateScore);
-
-  return (
-    <div className={`${styles.matchRow} ${isTop ? styles.matchRowTop : ''} ${isExpanded ? styles.matchRowExpanded : ''}`}>
-      <div className={styles.matchRowMain} onClick={onToggle}>
-        <div className={styles.matchRank}>{String(result.rank).padStart(2, '0')}</div>
-        <div className={styles.matchRowInfo}>
-          <span className={styles.matchRowName}>{resource.name}</span>
-          <span className={styles.matchRowDepot}>{resource.locationName.split(',')[0]}</span>
-        </div>
-        <div className={styles.matchRowScoreArea}>
-          <span className={styles.matchRowScore} style={{ color: qc.color }}>{score}</span>
-          <span className={styles.matchRowScoreDenom}>/100</span>
-        </div>
-        <span className={styles.matchQualityTag} style={{ color: qc.color }}>{qc.label}</span>
-        <span className={styles.matchRowMeta}>{resource.quantity.toLocaleString()} {resource.unit}</span>
-        <span className={styles.matchRowDist}>{result.distanceKm} km</span>
-        <div className={styles.matchRowChevron}>
-          {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-        </div>
-      </div>
-
-      {isExpanded && (
-        <div className={styles.matchRowDetail}>
-          <div className={styles.matchDetailBars}>
-            <ScoreBarRow label="Availability"   value={result.breakdown.availability}       max={MATCH_WEIGHTS.availability}       active={isExpanded} />
-            <ScoreBarRow label="Distance"        value={result.breakdown.distance}            max={MATCH_WEIGHTS.distance}            active={isExpanded} />
-            <ScoreBarRow label="Priority"        value={result.breakdown.priority}            max={MATCH_WEIGHTS.priority}            active={isExpanded} />
-            <ScoreBarRow label="Compatibility"   value={result.breakdown.compatibility}       max={MATCH_WEIGHTS.compatibility}       active={isExpanded} />
-            <ScoreBarRow label="Pressure"        value={result.breakdown.allocationPressure} max={MATCH_WEIGHTS.allocationPressure} active={isExpanded} />
-          </div>
-          <div className={styles.matchDetailReasons}>
-            {result.reasoning.map((r, i) => (
-              <div key={i} className={styles.reasonItem}
-                style={{ animationDelay: `${i * 80}ms` }}>
-                <Check size={9} className={styles.reasonCheck} />
-                <span>{r}</span>
-              </div>
-            ))}
-          </div>
-          {isTop && (
-            <button className={styles.matchSelectBtn} onClick={(e) => { e.stopPropagation(); onSelect(); }}>
-              USE THIS MATCH <ArrowRight size={11} />
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
 
 /* ─── Network Status ─────────────────────────────────────────────────────── */
 
@@ -211,7 +148,7 @@ interface NetworkStatusProps {
 const NetworkStatus: React.FC<NetworkStatusProps> = ({ resources, requests }) => {
   const activeDepots   = new Set(resources.filter(r => r.status === 'AVAILABLE').map(r => r.locationName)).size;
   const available      = resources.filter(r => r.status === 'AVAILABLE' && r.quantity > 0).length;
-  const allocated      = resources.filter(r => (r.allocatedQuantity ?? 0) > 0).length;
+  const allocated      = requests.filter(r => ['ALLOCATED', 'MATCHED', 'DISPATCHED'].includes(r.status)).length;
   const pending        = requests.filter(r => r.status === 'PENDING').length;
 
   return (
@@ -320,93 +257,7 @@ const RecommendationPanel: React.FC<RecommendationPanelProps> = ({
   );
 };
 
-/* ─── Review Panel (slide-in) ────────────────────────────────────────────── */
-interface ReviewPanelProps {
-  reviewTarget: MatchResult;
-  demand: DemandRequest;
-  resourceMap: Map<string, ResourceItem>;
-  onClose: () => void;
-  onApprove: () => void;
-}
-const ReviewPanel: React.FC<ReviewPanelProps> = ({
-  reviewTarget, demand, resourceMap, onClose, onApprove
-}) => {
-  const res = resourceMap.get(reviewTarget.resourceId);
-  if (!res) return null;
-  const remaining = res.quantity - demand.quantity;
-  return (
-    <div className={styles.reviewOverlay}>
-      <div className={styles.reviewPanel}>
-        <div className={styles.reviewPanelHeader}>
-          <span>MATCH REVIEW</span>
-          <button onClick={onClose}><X size={15} /></button>
-        </div>
-        <div className={styles.reviewGrid}>
-          <div className={styles.reviewBlock}><span>DEMAND</span><strong>{demand.id}</strong><em>{demand.quantity.toLocaleString()} {demand.unit} {demand.itemNeeded}</em><b style={{ color: PRIORITY_COLOR[demand.priority] }}>{demand.priority}</b></div>
-          <div className={styles.reviewBlock}><span>RESOURCE</span><strong>{res.name}</strong><em>{res.locationName.split(',')[0]}</em><em>{res.quantity.toLocaleString()} {res.unit} available</em></div>
-          <div className={styles.reviewBlock}><span>DISTANCE</span><strong>{reviewTarget.distanceKm} km</strong></div>
-          <div className={styles.reviewBlock}><span>MATCH SCORE</span><strong>{reviewTarget.matchScore} / 100</strong></div>
-        </div>
-        <div className={styles.reviewImpact}>
-          <span>IMPACT AFTER ALLOCATION</span>
-          <div><span>Remaining stock</span><strong style={{ color: remaining <= 0 ? '#C0392B' : '#2E7D32' }}>{remaining > 0 ? `${remaining.toLocaleString()} ${res.unit}` : 'DEPLETED'}</strong></div>
-          <div><span>Other demands affected</span><strong>0</strong></div>
-        </div>
-        <div className={styles.reviewActions}>
-          <button className={styles.rejectBtn} onClick={onClose}>REJECT</button>
-          <button className={styles.approveBtn} onClick={onApprove}>APPROVE ALLOCATION</button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
-/* ─── Confirm Modal ───────────────────────────────────────────────────────── */
-interface ConfirmModalProps {
-  reviewTarget: MatchResult;
-  demand: DemandRequest;
-  resourceMap: Map<string, ResourceItem>;
-  onCancel: () => void;
-  onConfirm: () => void;
-}
-const ConfirmModal: React.FC<ConfirmModalProps> = ({
-  reviewTarget, demand, resourceMap, onCancel, onConfirm
-}) => {
-  const res = resourceMap.get(reviewTarget.resourceId);
-  if (!res) return null;
-  const remaining = res.quantity - demand.quantity;
-  return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
-        <h3>CONFIRM RESOURCE ALLOCATION</h3>
-        <div className={styles.modalRows}>
-          {[
-            ['DEMAND', demand.id],
-            ['RESOURCE', res.name],
-            ['DEPOT', res.locationName.split(',')[0]],
-            ['QUANTITY', `${demand.quantity.toLocaleString()} ${res.unit}`],
-            ['REMAINING STOCK', remaining > 0 ? `${remaining.toLocaleString()} ${res.unit}` : 'DEPLETED after allocation'],
-            ['CRITICAL IMPACT', 'None'],
-          ].map(([label, val]) => (
-            <div key={label} className={styles.modalRow}>
-              <span>{label}</span>
-              <strong style={{ color: label === 'REMAINING STOCK' && remaining <= 0 ? '#C0392B' : undefined }}>{val}</strong>
-            </div>
-          ))}
-        </div>
-        <div className={styles.modalStatusRow}>
-          {[['DEMAND', '→ ALLOCATED'], ['RESOURCE', '→ COMMITTED'], ['VEHICLE', '→ PENDING']].map(([k, v]) => (
-            <div key={k} className={styles.modalStatusTag}><span>{k}</span><strong>{v}</strong></div>
-          ))}
-        </div>
-        <div className={styles.modalActions}>
-          <button className={styles.modalCancelBtn} onClick={onCancel}>CANCEL</button>
-          <button className={styles.modalConfirmBtn} onClick={onConfirm}>CONFIRM ALLOCATION</button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 /* ════════════════════════════════════════════════════════════════════════════
    MAIN PAGE
@@ -424,7 +275,6 @@ export const DemandMatching: React.FC = () => {
   const [matchOutput, setMatchOutput]       = useState<MatchEngineOutput | null>(null);
   const [showResults, setShowResults]       = useState(false);
   const [animateScore, setAnimateScore]     = useState(false);
-  const [expandedId, setExpandedId]         = useState<string | null>(null);
   const [reviewTarget, setReviewTarget]     = useState<MatchResult | null>(null);
   const [showReview, setShowReview]         = useState(false);
   const [showConfirm, setShowConfirm]       = useState(false);
@@ -461,19 +311,6 @@ export const DemandMatching: React.FC = () => {
       r.priority.toLowerCase().includes(q)
     );
   }, [matchableDemands, searchQuery]);
-
-  /* — Related incident — */
-  const relatedIncident = useMemo(() => {
-    if (!selectedDemand?.incidentId) return null;
-    return incidents.find(i => i.id === selectedDemand.incidentId) ?? null;
-  }, [selectedDemand, incidents]);
-
-  /* — Map resource — */
-  const mapResources = useMemo<ResourceItem[]>(() => {
-    if (!reviewTarget) return [];
-    const r = resourceMap.get(reviewTarget.resourceId);
-    return r ? [r] : [];
-  }, [reviewTarget, resourceMap]);
 
   /* — Allocation state — */
   const liveSelectedDemand = selectedDemand
@@ -518,7 +355,6 @@ export const DemandMatching: React.FC = () => {
     setShowResults(false);
     setAnimateScore(false);
     setMatchOutput(null);
-    setExpandedId(null);
     setReviewTarget(null);
     setShowReview(false);
     setAllocationId(null);
@@ -526,36 +362,40 @@ export const DemandMatching: React.FC = () => {
 
     let backendPlan: any = null;
     try {
-      const res = await apiClient.getDispatchPlan(demand.id);
-      if (res && res.data) {
-        backendPlan = res.data;
-        console.log('[OPTIMIZATION DISPATCH PLAN] Backend recommendation:', backendPlan);
+      try {
+        const res = await apiClient.getDispatchPlan(demand.id);
+        if (res && res.data) {
+          backendPlan = res.data;
+          console.log('[OPTIMIZATION DISPATCH PLAN] Backend recommendation:', backendPlan);
+        }
+      } catch (err) {
+        console.warn('[OPTIMIZATION DISPATCH PLAN ERROR] Failed to fetch backend dispatch plan:', err);
       }
-    } catch (err) {
-      console.warn('[OPTIMIZATION DISPATCH PLAN ERROR] Failed to fetch backend dispatch plan:', err);
-    }
 
-    const output = matchResources(demand, resources, { otherRequests: requests });
-    
-    // Merge backend recommendation info into output bestMatch if available
-    if (backendPlan && output.bestMatch) {
-      const dbRes = resources.find(r => r.id === backendPlan.resourceId);
-      if (dbRes) {
-        const bestMatch = output.bestMatch as any;
-        bestMatch.resourceId = dbRes.id;
-        bestMatch.vehicleId = backendPlan.vehicleId;
-        bestMatch.distanceKm = Math.round(backendPlan.distance_meters / 100) / 10;
-        bestMatch.durationMinutes = Math.round(backendPlan.duration_seconds / 60);
-        bestMatch.geometry = backendPlan.geometry;
+      const output = matchResources(demand, resources, { otherRequests: requests });
+      
+      // Merge backend recommendation info into output bestMatch if available
+      if (backendPlan && output.bestMatch) {
+        const dbRes = resources.find(r => r.id === backendPlan.resourceId);
+        if (dbRes) {
+          const bestMatch = output.bestMatch as any;
+          bestMatch.resourceId = dbRes.id;
+          bestMatch.vehicleId = backendPlan.vehicleId;
+          bestMatch.distanceKm = Math.round(backendPlan.distance_meters / 100) / 10;
+          bestMatch.durationMinutes = Math.round(backendPlan.duration_seconds / 60);
+          bestMatch.geometry = backendPlan.geometry;
+        }
       }
-    }
 
-    setMatchOutput(output);
-    if (output.bestMatch) {
-      setReviewTarget(output.bestMatch);
-      setExpandedId(output.bestMatch.resourceId);
+      setMatchOutput(output);
+      if (output.bestMatch) {
+        setReviewTarget(output.bestMatch);
+      }
+    } catch (engineErr) {
+      console.error('[MATCHING ENGINE FATAL ERROR]', engineErr);
+    } finally {
+      setIsAnalyzing(false);
     }
-    setIsAnalyzing(false);
 
     // Animate workspace in
     setTimeout(() => {
@@ -591,12 +431,24 @@ export const DemandMatching: React.FC = () => {
     }
   };
 
-  const handleConfirmAllocation = () => {
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+
+  const handleConfirmAllocation = async () => {
     if (!selectedDemand || !reviewTarget) return;
-    const id = allocateResourceToRequest(selectedDemand.id, reviewTarget.resourceId, selectedDemand.quantity);
-    setAllocationId(id);
-    setShowConfirm(false);
-    setShowReview(false);
+    setIsConfirming(true);
+    setConfirmError(null);
+    try {
+      const id = await allocateResourceToRequest(selectedDemand.id, reviewTarget.resourceId, selectedDemand.quantity);
+      setAllocationId(id);
+      setShowConfirm(false);
+      setShowReview(false);
+    } catch (err: any) {
+      console.error('[CONFIRM MATCH ERROR]:', err);
+      setConfirmError(err.message || 'An error occurred during resource matching. Authorized officer required.');
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   /* ─── Scoring logic bar animation ─── */
@@ -681,20 +533,374 @@ export const DemandMatching: React.FC = () => {
             filteredDemands.map(d => {
               const isActive = selectedDemand?.id === d.id;
               return (
-                <button
+                <div
                   key={d.id}
-                  className={`${styles.demandQueueRow} ${isActive ? styles.demandRowActive : ''}`}
-                  onClick={() => handleSelectDemand(d)}
+                  style={{
+                    borderBottom: '1px solid rgba(11, 33, 25, 0.08)',
+                    background: isActive ? 'rgba(232, 111, 22, 0.02)' : 'transparent',
+                    borderRadius: '6px',
+                    marginBottom: '6px',
+                    transition: 'all 0.2s ease',
+                    border: isActive ? '1px solid rgba(232, 111, 22, 0.15)' : '1px solid transparent',
+                  }}
                 >
-                  <span className={styles.dqId}>{d.id}</span>
-                  <span className={styles.dqPriority} style={{ color: PRIORITY_COLOR[d.priority] }}>{t(`severity.${d.priority}`) || d.priority}</span>
-                  <span className={styles.dqQty}>{d.quantity.toLocaleString()} {d.unit}</span>
-                  <span className={styles.dqItem}>{d.itemNeeded}</span>
-                  <span className={styles.dqZone}>{d.zoneName.split(',')[0]}</span>
-                  <span className={styles.dqAffected}>{d.affectedCount.toLocaleString()}</span>
-                  <span className={styles.dqStatus}>{t(`status.${d.status}`) || d.status}</span>
-                  <ArrowRight size={12} className={styles.dqArrow} />
-                </button>
+                  <button
+                    className={`${styles.demandQueueRow} ${isActive ? styles.demandRowActive : ''}`}
+                    onClick={() => handleSelectDemand(d)}
+                    style={{ borderBottom: 'none' }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span className={styles.dqId}>{d.id}</span>
+                      <span style={{ fontSize: '9.5px', color: '#11281e', marginTop: '2px', fontWeight: 700 }}>
+                        {d.incidentId ? d.incidentId : 'No Incident'}
+                      </span>
+                    </div>
+                    <span className={styles.dqPriority} style={{ color: PRIORITY_COLOR[d.priority] }}>{t(`severity.${d.priority}`) || d.priority}</span>
+                    <span className={styles.dqQty}>{d.quantity.toLocaleString()} {d.unit}</span>
+                    <span className={styles.dqItem}>{d.itemNeeded}</span>
+                    <span className={styles.dqZone} title={d.detailedAddress || d.zoneName}>
+                      {d.detailedAddress ? (d.detailedAddress.length > 25 ? `${d.detailedAddress.substring(0, 25)}...` : d.detailedAddress) : d.zoneName}
+                    </span>
+                    <span className={styles.dqAffected}>{d.affectedCount.toLocaleString()}</span>
+                    <span className={styles.dqStatus}>{t(`status.${d.status}`) || d.status}</span>
+                    <ArrowRight size={12} className={styles.dqArrow} style={{ transform: isActive ? 'rotate(90deg)' : 'none' }} />
+                  </button>
+
+                  {isActive && (
+                    <div
+                      style={{
+                        padding: '24px',
+                        backgroundColor: 'rgba(11, 33, 25, 0.015)',
+                        borderTop: '1px dashed rgba(11, 33, 25, 0.08)',
+                        fontSize: '12px',
+                        color: '#0B2119',
+                        animation: 'fadeIn 0.25s ease-out',
+                      }}
+                    >
+                      {/* 1. Demand Core Info Metadata Row */}
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                          gap: '20px',
+                          marginBottom: '24px',
+                          paddingBottom: '20px',
+                          borderBottom: '1px solid rgba(11, 33, 25, 0.06)',
+                        }}
+                      >
+                        <div>
+                          <strong style={{ display: 'block', fontSize: '9px', color: 'rgba(11, 33, 25, 0.5)', letterSpacing: '0.05em', marginBottom: '4px' }}>DESCRIPTION</strong>
+                          <span style={{ fontSize: '13px', lineHeight: 1.4, fontWeight: 500 }}>{d.description || 'No description provided.'}</span>
+                        </div>
+                        <div>
+                          <strong style={{ display: 'block', fontSize: '9px', color: 'rgba(11, 33, 25, 0.5)', letterSpacing: '0.05em', marginBottom: '4px' }}>FULL LOCATION DETAILS</strong>
+                          <span style={{ fontSize: '12.5px', lineHeight: 1.4 }}>{d.detailedAddress || d.zoneName}</span>
+                        </div>
+                        <div>
+                          <strong style={{ display: 'block', fontSize: '9px', color: 'rgba(11, 33, 25, 0.5)', letterSpacing: '0.05em', marginBottom: '4px' }}>COORDINATES & SECTOR</strong>
+                          <span style={{ fontFamily: 'monospace', fontSize: '11.5px' }}>Lat: {d.coordinates.lat.toFixed(5)} · Lng: {d.coordinates.lng.toFixed(5)} ({d.zoneName})</span>
+                        </div>
+                        <div>
+                          <strong style={{ display: 'block', fontSize: '9px', color: 'rgba(11, 33, 25, 0.5)', letterSpacing: '0.05em', marginBottom: '4px' }}>REQUEST TIMESTAMP</strong>
+                          <span style={{ fontSize: '11.5px' }}>{new Date(d.requestedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</span>
+                        </div>
+                      </div>
+
+                      {/* 2. Inline Matching Workspace */}
+                      {isAnalyzing ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '32px 0', justifyContent: 'center' }}>
+                          <span className={styles.pulseDot} />
+                          <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', color: 'rgba(11, 33, 25, 0.7)' }}>
+                            ENGINE ANALYZING DEMAND → SCORING CANDIDATES
+                          </span>
+                        </div>
+                      ) : showResults && matchOutput ? (
+                        <div className={styles.matchingWorkspaceGrid}>
+                          {/* Left Column: Recommendations, Candidates, and Scoring */}
+                          <div>
+                            {isAllocated && allocationId ? (
+                              <div className={styles.allocatedState} style={{ margin: 0, padding: '24px' }}>
+                                <div className={styles.allocCheck}><Check size={20} /></div>
+                                <h3>RESOURCE ALLOCATED</h3>
+                                <p>Ref: {allocationId}</p>
+                                <div className={styles.allocStateGrid}>
+                                  {[
+                                    ['DEMAND', 'ALLOCATED'],
+                                    ['RESOURCE', 'COMMITTED'],
+                                    ['INCIDENT', 'RESOURCE MATCHED'],
+                                    ['NEXT', 'VEHICLE DISPATCH →']
+                                  ].map(([k, v]) => (
+                                    <div key={k}><span>{k}</span><strong>{v}</strong></div>
+                                  ))}
+                                </div>
+                                <p className={styles.allocNote}>Ready for Dispatch &amp; Logistics phase. No vehicle has been assigned yet.</p>
+                                <button
+                                  className={styles.goToDispatchBtn}
+                                  onClick={() => navigate(`/operations/dispatch?allocationId=${d.id}`)}
+                                >
+                                  Go to Dispatch Console <ArrowRight size={14} />
+                                </button>
+                              </div>
+                            ) : showConfirm && reviewTarget ? (
+                              (() => {
+                                const res = resourceMap.get(reviewTarget.resourceId);
+                                if (!res) return null;
+                                const remaining = res.quantity - d.quantity;
+                                return (
+                                  <div
+                                    style={{
+                                      backgroundColor: '#ffffff',
+                                      border: '1.5px solid rgba(232, 111, 22, 0.25)',
+                                      padding: '24px',
+                                      borderRadius: '8px',
+                                      boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+                                      animation: 'scaleIn 0.2s ease-out',
+                                    }}
+                                  >
+                                    <h3 style={{ fontSize: '13px', fontWeight: 800, color: '#E86F16', letterSpacing: '0.05em', marginBottom: '16px', textTransform: 'uppercase' }}>
+                                      CONFIRM RESOURCE ALLOCATION
+                                    </h3>
+                                    <div className={styles.modalRows}>
+                                      {[
+                                        ['DEMAND ID', d.id],
+                                        ['RESOURCE TYPE', res.name],
+                                        ['DEPOT NAME', res.locationName.split(',')[0]],
+                                        ['QUANTITY REQUIRED', `${d.quantity.toLocaleString()} ${res.unit}`],
+                                        ['REMAINING DEPOT STOCK', remaining > 0 ? `${remaining.toLocaleString()} ${res.unit}` : 'DEPLETED after allocation'],
+                                      ].map(([label, val]) => (
+                                        <div key={label} className={styles.modalRow} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(11, 33, 25, 0.05)' }}>
+                                          <span style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(11, 33, 25, 0.5)' }}>{label}</span>
+                                          <strong style={{ fontSize: '12px', color: label.includes('REMAINING') && remaining <= 0 ? '#C0392B' : '#0B2119' }}>{val}</strong>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px', margin: '16px 0', justifyContent: 'space-between' }}>
+                                      {[['DEMAND', '→ ALLOCATED'], ['RESOURCE', '→ COMMITTED'], ['VEHICLE', '→ PENDING']].map(([k, v]) => (
+                                        <div key={k} style={{ flex: 1, textAlign: 'center', padding: '6px', background: 'rgba(11,33,25,0.03)', borderRadius: '4px', border: '1px solid rgba(11,33,25,0.05)' }}>
+                                          <span style={{ display: 'block', fontSize: '8px', color: 'rgba(11,33,25,0.4)', fontWeight: 700 }}>{k}</span>
+                                          <strong style={{ fontSize: '10px', color: '#0B2119' }}>{v}</strong>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {confirmError && (
+                                      <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid #EF4444', color: '#EF4444', padding: '12px', borderRadius: '4px', fontSize: '11px', lineHeight: 1.4, margin: '12px 0', textAlign: 'left' }}>
+                                        ⚠ {confirmError}
+                                      </div>
+                                    )}
+                                    <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                                      <button
+                                        disabled={isConfirming}
+                                        onClick={() => { setShowConfirm(false); setShowReview(true); }}
+                                        style={{ flex: 1, padding: '11px', borderRadius: '4px', border: '1px solid rgba(11,33,25,0.15)', background: 'transparent', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                      >
+                                        BACK TO REVIEW
+                                      </button>
+                                      <button
+                                        disabled={isConfirming}
+                                        onClick={handleConfirmAllocation}
+                                        style={{ flex: 1, padding: '11px', borderRadius: '4px', border: 'none', background: '#E86F16', color: '#ffffff', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                      >
+                                        {isConfirming ? 'CONFIRMING...' : 'CONFIRM ALLOCATION'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })()
+                            ) : showReview && reviewTarget ? (
+                              (() => {
+                                const res = resourceMap.get(reviewTarget.resourceId);
+                                if (!res) return null;
+                                const remaining = res.quantity - d.quantity;
+                                return (
+                                  <div
+                                    style={{
+                                      backgroundColor: '#ffffff',
+                                      border: '1px solid rgba(11, 33, 25, 0.12)',
+                                      padding: '24px',
+                                      borderRadius: '8px',
+                                      boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+                                      animation: 'fadeIn 0.2s ease-out',
+                                    }}
+                                  >
+                                    <h3 style={{ fontSize: '13px', fontWeight: 800, color: '#0B2119', letterSpacing: '0.05em', marginBottom: '16px' }}>
+                                      MATCH REVIEW &amp; AUTHORIZATION
+                                    </h3>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                                      <div style={{ padding: '10px', background: 'rgba(11,33,25,0.02)', borderRadius: '6px' }}>
+                                        <span style={{ fontSize: '8px', color: 'rgba(11,33,25,0.4)', fontWeight: 700, display: 'block' }}>DEMAND REQUEST</span>
+                                        <strong style={{ fontSize: '11.5px', color: '#0B2119', display: 'block', margin: '2px 0' }}>{d.id}</strong>
+                                        <span style={{ fontSize: '11px', color: 'rgba(11,33,25,0.6)' }}>{d.quantity.toLocaleString()} {d.unit} Water</span>
+                                      </div>
+                                      <div style={{ padding: '10px', background: 'rgba(11,33,25,0.02)', borderRadius: '6px' }}>
+                                        <span style={{ fontSize: '8px', color: 'rgba(11,33,25,0.4)', fontWeight: 700, display: 'block' }}>DEPOT CANDIDATE</span>
+                                        <strong style={{ fontSize: '11.5px', color: '#0B2119', display: 'block', margin: '2px 0' }}>{res.name}</strong>
+                                        <span style={{ fontSize: '11px', color: 'rgba(11,33,25,0.6)' }}>{res.locationName.split(',')[0]}</span>
+                                      </div>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                                      <div style={{ padding: '10px', background: 'rgba(11,33,25,0.02)', borderRadius: '6px' }}>
+                                        <span style={{ fontSize: '8px', color: 'rgba(11,33,25,0.4)', fontWeight: 700, display: 'block' }}>ROUTING DISTANCE</span>
+                                        <strong style={{ fontSize: '13px', color: '#0B2119' }}>{reviewTarget.distanceKm} km</strong>
+                                      </div>
+                                      <div style={{ padding: '10px', background: 'rgba(11,33,25,0.02)', borderRadius: '6px' }}>
+                                        <span style={{ fontSize: '8px', color: 'rgba(11,33,25,0.4)', fontWeight: 700, display: 'block' }}>ENGINE MATCH SCORE</span>
+                                        <strong style={{ fontSize: '13px', color: '#0B2119' }}>{reviewTarget.matchScore} / 100</strong>
+                                      </div>
+                                    </div>
+                                    <div style={{ borderTop: '1px solid rgba(11,33,25,0.08)', paddingTop: '16px', marginBottom: '20px' }}>
+                                      <span style={{ fontSize: '8px', color: 'rgba(11,33,25,0.4)', fontWeight: 700, display: 'block', marginBottom: '8px' }}>IMPACT AFTER ALLOCATION</span>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                        <span style={{ fontSize: '11.5px', color: 'rgba(11,33,25,0.7)' }}>Remaining depot stock</span>
+                                        <strong style={{ fontSize: '11.5px', color: remaining <= 0 ? '#C0392B' : '#2E7D32' }}>{remaining > 0 ? `${remaining.toLocaleString()} ${res.unit}` : 'DEPLETED'}</strong>
+                                      </div>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: '11.5px', color: 'rgba(11,33,25,0.7)' }}>Other demands affected</span>
+                                        <strong style={{ fontSize: '11.5px', color: '#0B2119' }}>0</strong>
+                                      </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                      <button
+                                        onClick={() => setShowReview(false)}
+                                        style={{ flex: 1, padding: '11px', borderRadius: '4px', border: '1px solid rgba(11,33,25,0.15)', background: 'transparent', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                      >
+                                        REJECT
+                                      </button>
+                                      <button
+                                        onClick={() => { setShowReview(false); setShowConfirm(true); }}
+                                        style={{ flex: 1, padding: '11px', borderRadius: '4px', border: 'none', background: '#0B2119', color: '#ffffff', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                      >
+                                        APPROVE ALLOCATION
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })()
+                            ) : matchOutput.bestMatch ? (
+                              <div>
+                                <RecommendationPanel
+                                  bestMatch={matchOutput.bestMatch}
+                                  demand={d}
+                                  resourceMap={resourceMap}
+                                  animateScore={animateScore}
+                                  onAuthorize={() => setShowReview(true)}
+                                  onAlternatives={() => setShowAlternatives(v => !v)}
+                                />
+
+                                {/* Alternatives comparison nested right below */}
+                                {showAlternatives && matchOutput.results.length > 1 && (
+                                  <div className={styles.compareSection} style={{ marginTop: '24px' }}>
+                                    <div className={styles.compareTable}>
+                                      <div className={styles.compareHead}>
+                                        <span>RESOURCE</span><span>SCORE</span><span>STOCK</span><span>DISTANCE</span><span>STATUS</span>
+                                      </div>
+                                      {matchOutput.results.map(r => {
+                                        const res = resourceMap.get(r.resourceId);
+                                        if (!res) return null;
+                                        const isBest = r.rank === 1;
+                                        const isActiveCandidate = reviewTarget?.resourceId === res.id;
+                                        return (
+                                          <div
+                                            key={r.resourceId}
+                                            className={`${styles.compareRow} ${isBest ? styles.compareRowBest : ''} ${isActiveCandidate ? styles.compareRowActiveCandidate : ''}`}
+                                            onClick={() => setReviewTarget(r)}
+                                            style={{ cursor: 'pointer', borderLeft: isActiveCandidate ? '3px solid #E86F16' : undefined }}
+                                          >
+                                            <div className={styles.compareResName}>
+                                              <span>{res.locationName.split(',')[0]}</span>
+                                              <span className={styles.compareResType}>{res.name}</span>
+                                            </div>
+                                            <span style={{ color: QUALITY_CFG[r.qualityLabel]?.color, fontWeight: 700 }}>{r.matchScore}</span>
+                                            <span>{res.quantity.toLocaleString()} {res.unit}</span>
+                                            <span>{r.distanceKm} km</span>
+                                            <span className={`${styles.compareStatus} ${res.status === 'AVAILABLE' ? styles.compareAvail : styles.compareLow}`}>{res.status}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className={styles.noMatchPanel}>
+                                <span>No suitable match found. Consider split allocation or escalation.</span>
+                              </div>
+                            )}
+
+                            {/* Scoring Logic Explanation */}
+                            <div className={styles.scoringLogicSection} style={{ marginTop: '24px' }}>
+                              <button
+                                className={styles.scoringLogicToggle}
+                                onClick={() => setShowScoringLogic(v => !v)}
+                              >
+                                <Info size={11} />
+                                HOW WAS THIS MATCH SCORED?
+                                {showScoringLogic ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                              </button>
+                              {showScoringLogic && (
+                                <div className={styles.scoringLogicBody}>
+                                  {[
+                                    { label: 'Availability', weight: MATCH_WEIGHTS.availability },
+                                    { label: 'Distance', weight: MATCH_WEIGHTS.distance },
+                                    { label: 'Demand Priority', weight: MATCH_WEIGHTS.priority },
+                                    { label: 'Compatibility', weight: MATCH_WEIGHTS.compatibility },
+                                    { label: 'Allocation Pressure', weight: MATCH_WEIGHTS.allocationPressure },
+                                  ].map(({ label, weight }) => (
+                                    <ScoreBarRow key={label} label={label} value={weight} max={100} active={scoringActive} />
+                                  ))}
+                                  <p className={styles.scoringNote}>
+                                    Weighted deterministic model. Weights are centralized constants, replaceable with ML-ranked scoring in future iterations.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right Column: Routing Map & Geographic Preview */}
+                          {(() => {
+                            const relatedIncident = incidents.find(
+                              i => i.id === d.incidentId || (i as any).uuid === d.incidentId || i.id === (d as any).backendIncidentId || (i as any).uuid === (d as any).backendIncidentId
+                            );
+                            const mapResources = (() => {
+                              if (!reviewTarget) return [];
+                              const r = resourceMap.get(reviewTarget.resourceId);
+                              return r ? [r] : [];
+                            })();
+
+                            return (
+                              <div className={styles.mapSection} style={{ margin: 0, height: '100%' }}>
+                                <span className={styles.mapEyebrow}>GEOGRAPHIC CONTEXT</span>
+                                <div className={styles.mapContainer} style={{ height: '320px', borderRadius: '4px', overflow: 'hidden' }}>
+                                  <MapView
+                                    incidents={relatedIncident ? [relatedIncident] : []}
+                                    resources={mapResources}
+                                    vehicles={[]}
+                                    shelters={[]}
+                                    layerFilters={{
+                                      incidents: !!relatedIncident,
+                                      resources: true,
+                                      vehicles: false,
+                                      shelters: false,
+                                      routes: false,
+                                    }}
+                                  />
+                                </div>
+                                <div className={styles.mapLegend} style={{ padding: '8px 4px' }}>
+                                  {relatedIncident && <span><span className={styles.mapDot} style={{ background: '#C0392B' }} /> Demand location</span>}
+                                  <span><span className={styles.mapDot} style={{ background: '#2E7D32' }} /> Resource depot</span>
+                                  {reviewTarget && <span className={styles.mapDist}>{reviewTarget.distanceKm} km between sites</span>}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      ) : (
+                        <div style={{ padding: '24px 0', textAlign: 'center', color: 'rgba(11, 33, 25, 0.45)' }}>
+                          Click the request row to start AI-powered matching calculation.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               );
             })
           )}
@@ -709,302 +915,9 @@ export const DemandMatching: React.FC = () => {
         </div>
       )}
 
-      {/* ── Main Workspace (after selection + analysis) ── */}
-      {selectedDemand && showResults && matchOutput && (
-        <div ref={workspaceRef} className={styles.workspace}>
 
-          {/* LEFT COL */}
-          <div className={styles.leftCol}>
 
-            {/* Demand Context */}
-            <div className={styles.demandContext}>
-              <span className={styles.dcEyebrow}>DEMAND CONTEXT</span>
-              <div className={styles.dcIdRow}>
-                <span className={styles.dcId}>{selectedDemand.id}</span>
-                <span className={styles.dcPriority} style={{ color: PRIORITY_COLOR[selectedDemand.priority] }}>
-                  {selectedDemand.priority}
-                </span>
-                {isAllocated && allocationId && (
-                  <span className={styles.dcAllocated}>ALLOCATED · {allocationId}</span>
-                )}
-              </div>
-              <div className={styles.dcGrid}>
-                <div className={styles.dcStat}>
-                  <span className={styles.dcStatVal}>{selectedDemand.detailedAddress || selectedDemand.zoneName}</span>
-                  <span className={styles.dcStatLabel}>{selectedDemand.detailedAddress ? `Secondary Zone: ${selectedDemand.zoneName}` : 'Demand location'}</span>
-                </div>
-                <div className={styles.dcStat}>
-                  <span className={styles.dcStatVal}>{selectedDemand.affectedCount.toLocaleString()}</span>
-                  <span className={styles.dcStatLabel}>People affected</span>
-                </div>
-                <div className={styles.dcStat}>
-                  <span className={styles.dcStatVal}>{selectedDemand.quantity.toLocaleString()} {selectedDemand.unit}</span>
-                  <span className={styles.dcStatLabel}>{selectedDemand.itemNeeded} required</span>
-                </div>
-                <div className={styles.dcStat}>
-                  <span className={styles.dcStatVal}>
-                    {selectedDemand.priority === 'CRITICAL' ? 'IMMEDIATE' : '< 4 HOURS'}
-                  </span>
-                  <span className={styles.dcStatLabel}>Required by</span>
-                </div>
-              </div>
-              {relatedIncident && (
-                <div className={styles.dcIncident}>
-                  <span>Linked incident</span>
-                  <Link to={`/operations/incidents/${relatedIncident.id}/response`} className={styles.dcIncidentLink}>
-                    {relatedIncident.id} → {relatedIncident.location}
-                  </Link>
-                </div>
-              )}
-            </div>
 
-            {/* Matching Results */}
-            <div className={styles.matchingSection}>
-              <div className={styles.matchingHeader}>
-                <span className={styles.matchingEyebrow}>MATCHING ANALYSIS</span>
-                <span className={styles.matchingCount}>{matchOutput.results.length} candidate{matchOutput.results.length !== 1 ? 's' : ''} evaluated</span>
-              </div>
-
-              {resources.length === 0 && (
-                <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid #EF4444', padding: '16px', borderRadius: '4px', color: '#EF4444', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <AlertTriangle size={18} style={{ flexShrink: 0 }} />
-                  <div>
-                    <strong>Inventory Empty:</strong> There are no depots or resource stocks registered in the SAKSHAM database. Seed or log resources to calculate compatibility.
-                  </div>
-                </div>
-              )}
-
-              {matchOutput.results.length === 0 ? (
-                <div className={styles.noMatch}>
-                  No compatible resources found for category "{selectedDemand.category}".
-                </div>
-              ) : (
-                <div className={styles.matchList}>
-                  {matchOutput.results.map(result => {
-                    const res = resourceMap.get(result.resourceId);
-                    if (!res) return null;
-                    return (
-                      <MatchRow
-                        key={result.resourceId}
-                        result={result}
-                        resource={res}
-                        isTop={result.rank === 1}
-                        isExpanded={expandedId === result.resourceId}
-                        animateScore={animateScore}
-                        onToggle={() => setExpandedId(
-                          expandedId === result.resourceId ? null : result.resourceId
-                        )}
-                        onSelect={() => {
-                          setReviewTarget(result);
-                          setShowReview(true);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Shortfall / Split */}
-              {matchOutput.shortfall > 0 && (
-                <div className={styles.shortfallNote}>
-                  Shortfall: {matchOutput.shortfall.toLocaleString()} {selectedDemand.unit} unavailable.
-                  {matchOutput.splitAllocation?.isFulfilled && ' Split allocation available.'}
-                </div>
-              )}
-
-              {/* Split Allocation */}
-              {matchOutput.splitAllocation && !matchOutput.canFulfill && (
-                <div className={styles.splitSection}>
-                  <span className={styles.splitEyebrow}>SPLIT ALLOCATION</span>
-                  <p className={styles.splitDesc}>
-                    {matchOutput.splitAllocation.isFulfilled
-                      ? 'No single source meets the full demand. Combination allocation is possible:'
-                      : `Partial coverage only. Best combination: ${matchOutput.splitAllocation.totalQuantity.toLocaleString()} of ${matchOutput.splitAllocation.requestedQuantity.toLocaleString()} ${selectedDemand.unit}.`}
-                  </p>
-                  <div className={styles.splitParts}>
-                    {matchOutput.splitAllocation.parts.map((part, i) => {
-                      const r = resourceMap.get(part.resourceId);
-                      if (!r) return null;
-                      return (
-                        <div key={part.resourceId} className={styles.splitPart}>
-                          {i > 0 && <span className={styles.splitPlus}>+</span>}
-                          <div className={styles.splitCard}>
-                            <span className={styles.splitName}>{r.name}</span>
-                            <span className={styles.splitDepot}>{r.locationName.split(',')[0]}</span>
-                            <span className={styles.splitQty}>{part.quantity.toLocaleString()} {r.unit}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Scoring Logic */}
-              <div className={styles.scoringLogicSection}>
-                <button
-                  className={styles.scoringLogicToggle}
-                  onClick={() => setShowScoringLogic(v => !v)}
-                >
-                  <Info size={11} />
-                  HOW WAS THIS MATCH SCORED?
-                  {showScoringLogic ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                </button>
-                {showScoringLogic && (
-                  <div className={styles.scoringLogicBody}>
-                    {[
-                      { label: 'Availability', weight: MATCH_WEIGHTS.availability },
-                      { label: 'Distance', weight: MATCH_WEIGHTS.distance },
-                      { label: 'Demand Priority', weight: MATCH_WEIGHTS.priority },
-                      { label: 'Compatibility', weight: MATCH_WEIGHTS.compatibility },
-                      { label: 'Allocation Pressure', weight: MATCH_WEIGHTS.allocationPressure },
-                    ].map(({ label, weight }) => (
-                      <ScoreBarRow key={label} label={label} value={weight} max={100} active={scoringActive} />
-                    ))}
-                    <p className={styles.scoringNote}>
-                      Weighted deterministic model. Weights are centralized constants, replaceable with ML-ranked scoring in future iterations.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Compare Alternatives */}
-            {matchOutput.results.length > 1 && (
-              <div className={styles.compareSection}>
-                <button
-                  className={styles.compareToggle}
-                  onClick={() => setShowAlternatives(v => !v)}
-                >
-                  COMPARE ALTERNATIVES
-                  {showAlternatives ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                </button>
-                {showAlternatives && (
-                  <div className={styles.compareTable}>
-                    <div className={styles.compareHead}>
-                      <span>RESOURCE</span><span>SCORE</span><span>STOCK</span><span>DISTANCE</span><span>STATUS</span>
-                    </div>
-                    {matchOutput.results.slice(0, 4).map(r => {
-                      const res = resourceMap.get(r.resourceId);
-                      if (!res) return null;
-                      return (
-                        <div key={r.resourceId} className={`${styles.compareRow} ${r.rank === 1 ? styles.compareRowBest : ''}`}>
-                          <div className={styles.compareResName}>
-                            <span>{res.locationName.split(',')[0]}</span>
-                            <span className={styles.compareResType}>{res.name}</span>
-                          </div>
-                          <span style={{ color: QUALITY_CFG[r.qualityLabel]?.color }}>{r.matchScore}</span>
-                          <span>{res.quantity.toLocaleString()} {res.unit}</span>
-                          <span>{r.distanceKm} km</span>
-                          <span className={`${styles.compareStatus} ${res.status === 'AVAILABLE' ? styles.compareAvail : styles.compareLow}`}>{res.status}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Map Context */}
-            {reviewTarget && (
-              <div className={styles.mapSection}>
-                <span className={styles.mapEyebrow}>GEOGRAPHIC CONTEXT</span>
-                <div className={styles.mapContainer}>
-                  <MapView
-                    incidents={relatedIncident ? [relatedIncident] : []}
-                    resources={mapResources}
-                    vehicles={[]}
-                    shelters={[]}
-                    layerFilters={{ incidents: !!relatedIncident, resources: true, vehicles: false, shelters: false, routes: false }}
-                  />
-                </div>
-                <div className={styles.mapLegend}>
-                  {relatedIncident && <span><span className={styles.mapDot} style={{ background: '#C0392B' }} /> Demand location</span>}
-                  <span><span className={styles.mapDot} style={{ background: '#2E7D32' }} /> Resource depot</span>
-                  {reviewTarget && <span className={styles.mapDist}>{reviewTarget.distanceKm} km between sites</span>}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT COL */}
-          <div className={styles.rightCol}>
-            {isAllocated && allocationId ? (
-              <div className={styles.allocatedState}>
-                <div className={styles.allocCheck}><Check size={20} /></div>
-                <h3>RESOURCE ALLOCATED</h3>
-                <p>Ref: {allocationId}</p>
-                <div className={styles.allocStateGrid}>
-                  {[['DEMAND','ALLOCATED'],['RESOURCE','COMMITTED'],['INCIDENT','RESOURCE MATCHED'],['NEXT','VEHICLE DISPATCH →']].map(([k,v]) => (
-                    <div key={k}><span>{k}</span><strong>{v}</strong></div>
-                  ))}
-                </div>
-                <p className={styles.allocNote}>Ready for Dispatch &amp; Logistics phase. No vehicle has been assigned yet.</p>
-                <button
-                  className={styles.goToDispatchBtn}
-                  onClick={() => navigate(`/operations/dispatch?allocationId=${selectedDemand.id}`)}
-                  style={{
-                    marginTop: '20px',
-                    width: '100%',
-                    backgroundColor: '#E86F16',
-                    color: '#FAF8F3',
-                    border: 'none',
-                    padding: '12px',
-                    borderRadius: '4px',
-                    fontFamily: 'var(--font-sans), sans-serif',
-                    fontSize: '11px',
-                    fontWeight: 750,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    transition: 'background-color 0.2s ease'
-                  }}
-                >
-                  Go to Dispatch Console <ArrowRight size={14} />
-                </button>
-              </div>
-            ) : matchOutput?.bestMatch ? (
-              <RecommendationPanel
-                bestMatch={matchOutput.bestMatch}
-                demand={selectedDemand}
-                resourceMap={resourceMap}
-                animateScore={animateScore}
-                onAuthorize={() => setShowReview(true)}
-                onAlternatives={() => setShowAlternatives(true)}
-              />
-            ) : (
-              <div className={styles.noMatchPanel}>
-                <span>No suitable match found. Consider split allocation or escalation.</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Overlays ── */}
-      {showReview && reviewTarget && selectedDemand && (
-        <ReviewPanel
-          reviewTarget={reviewTarget}
-          demand={selectedDemand}
-          resourceMap={resourceMap}
-          onClose={() => setShowReview(false)}
-          onApprove={() => { setShowReview(false); setShowConfirm(true); }}
-        />
-      )}
-
-      {showConfirm && reviewTarget && selectedDemand && (
-        <ConfirmModal
-          reviewTarget={reviewTarget}
-          demand={selectedDemand}
-          resourceMap={resourceMap}
-          onCancel={() => setShowConfirm(false)}
-          onConfirm={handleConfirmAllocation}
-        />
-      )}
       <PageGuidebook guideKey="matching" />
     </div>
   );
