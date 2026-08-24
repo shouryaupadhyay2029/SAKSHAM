@@ -68,6 +68,18 @@ def _geometry_directness(geometry: dict, distance_meters: float) -> float:
     directness_ratio = straight_distance / distance_meters
     return min(100.0, max(0.0, directness_ratio * 100.0))
 
+def _evaluate_accessibility(summary: Optional[str], geometry: dict, distance_meters: float) -> float:
+    base_score = _geometry_directness(geometry, distance_meters)
+    if not summary:
+        return base_score
+    summary_lower = summary.lower()
+    boost = 0.0
+    if any(kw in summary_lower for kw in ["nh", "ah", "highway", "expressway", "bypass", "ring road", "flyover", "arterial"]):
+        boost += 20.0
+    if any(kw in summary_lower for kw in ["gali", "lane", "residential", "alley", "narrow"]):
+        boost -= 15.0
+    return min(100.0, max(0.0, base_score + boost))
+
 def _normalize_inverse(value: float, all_values: List[float]) -> float:
     min_v = min(all_values)
     if not value or min_v <= 0:
@@ -115,7 +127,7 @@ def score_routes(
     for cand in candidates:
         travel_time_score   = _normalize_inverse(cand.duration_seconds, all_durations)
         distance_score      = _normalize_inverse(cand.distance_meters,  all_distances)
-        accessibility_score = _geometry_directness(cand.geometry, cand.distance_meters)
+        accessibility_score = _evaluate_accessibility(cand.summary, cand.geometry, cand.distance_meters)
 
         composite = round(
             weights["travel_time"]      * travel_time_score

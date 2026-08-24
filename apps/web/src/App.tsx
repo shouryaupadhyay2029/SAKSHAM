@@ -128,21 +128,9 @@ const AppRoutes: React.FC = () => {
 };
 
 export const App: React.FC = () => {
-  const [showBoot, setShowBoot] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return !sessionStorage.getItem('saksham_boot_seen');
-      } catch (e) {
-        return false;
-      }
-    }
-    return true;
-  });
+  const [showBoot, setShowBoot] = useState(true);
 
   const handleBootComplete = () => {
-    try {
-      sessionStorage.setItem('saksham_boot_seen', 'true');
-    } catch (e) {}
     setShowBoot(false);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('saksham_boot_complete'));

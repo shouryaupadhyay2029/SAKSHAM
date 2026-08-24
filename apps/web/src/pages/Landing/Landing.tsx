@@ -505,21 +505,31 @@ export const Landing: React.FC = () => {
     }, landingRef);
     };
 
-    const isFirstBoot = (() => {
-      try {
-        return !sessionStorage.getItem('saksham_boot_seen');
-      } catch (e) {
-        return false;
-      }
-    })();
+    const delayTime = 200; // short settle delay after boot screen ends
+    let timeoutId: ReturnType<typeof setTimeout>;
 
-    const delayTime = isFirstBoot ? 2600 : 100;
-    const timeoutId = setTimeout(() => {
-      runAnimations();
-    }, delayTime);
+    const startAnimations = () => {
+      timeoutId = setTimeout(() => {
+        runAnimations();
+      }, delayTime);
+    };
+
+    // If boot has already completed (e.g. navigated back), run immediately
+    // Otherwise, wait for the boot complete event fired by App.tsx
+    const bootAlreadyDone = !document.querySelector('[data-boot-active]');
+    if (bootAlreadyDone) {
+      startAnimations();
+    } else {
+      window.addEventListener('saksham_boot_complete', startAnimations, { once: true });
+      // Fallback: if event never fires within 14s, animate anyway
+      timeoutId = setTimeout(() => {
+        runAnimations();
+      }, 14500);
+    }
 
     return () => {
       clearTimeout(timeoutId);
+      window.removeEventListener('saksham_boot_complete', startAnimations);
     };
   }, []);
 

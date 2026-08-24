@@ -60,11 +60,11 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
   const featureTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // 3.5s Safety fallback timeout to guarantee app boot under all scenarios
+    // Safety fallback: total timeline = ~10s. Give 14s before forcing completion.
     const safetyTimeout = setTimeout(() => {
       console.warn("[SAKSHAM] BootScreen safety fallback triggered.");
       onComplete();
-    }, 3500);
+    }, 14000);
 
     // 1. Initial State configurations
     gsap.set([
@@ -184,6 +184,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onComplete }) => {
       ref={containerRef}
       className={`${styles.bootOverlay} ${isExiting ? styles.exiting : ''}`}
       style={{ '--active-index': activeIndexVal } as React.CSSProperties}
+      data-boot-active="true"
     >
       <GradientBackground className={styles.bootBackground} />
       {/* LEFT SURFACE */}

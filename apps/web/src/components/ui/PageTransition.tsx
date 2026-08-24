@@ -14,14 +14,19 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const animating = useRef(false);
 
   // Detect prefers-reduced-motion
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
     if (location.pathname === displayLocation.pathname) return;
+    if (animating.current) {
+      // If already animating, just commit the new location immediately
+      setDisplayLocation(location);
+      return;
+    }
 
-    // Operational context page list (Command Centre workflow pages)
     const isOpPath = (path: string) =>
       ['/operations/command-center', '/operations/matching', '/operations/dispatch', '/operations/delivery'].some(p => path.startsWith(p));
 
@@ -29,106 +34,89 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
     const isOp = isOpPath(location.pathname);
     const isContextChange = wasOp !== isOp;
 
-    const exitDuration = prefersReducedMotion ? 0.15 : (isContextChange ? 0.35 : 0.22);
+    animating.current = true;
+
+    if (prefersReducedMotion) {
+      gsap.to(contentRef.current, {
+        opacity: 0,
+        duration: 0.12,
+        onComplete: () => {
+          setDisplayLocation(location);
+          animating.current = false;
+        }
+      });
+      return;
+    }
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         onComplete: () => {
-          // Commit route change
           setDisplayLocation(location);
+          animating.current = false;
         }
       });
 
-      if (prefersReducedMotion) {
-        tl.to(contentRef.current, { opacity: 0, duration: exitDuration });
-        return;
-      }
-
-      // Exit current page content subtly
+      // Fast fade+slide exit — GPU composited only (opacity + transform)
       tl.to(contentRef.current, {
-        opacity: 0.1,
-        y: -10,
-        duration: exitDuration,
-        ease: 'power2.inOut'
-      }, 0);
+        opacity: 0,
+        y: isContextChange ? -8 : -5,
+        duration: isContextChange ? 0.18 : 0.12,
+        ease: 'power2.in',
+        force3D: true
+      });
 
-      // Context change ivory bridge reveal
       if (isContextChange && overlayRef.current) {
-        tl.fromTo(overlayRef.current, {
-          yPercent: 100,
-          opacity: 0
-        }, {
+        tl.fromTo(overlayRef.current, { yPercent: 100, opacity: 0 }, {
           yPercent: 0,
           opacity: 1,
-          duration: 0.38,
+          duration: 0.28,
           ease: 'power3.out'
         }, 0)
-          .fromTo(progressBarRef.current, { width: '0%' }, {
-            width: '100%',
-            duration: 0.45,
-            ease: 'power2.inOut'
-          }, 0.15);
+        .fromTo(progressBarRef.current, { width: '0%' }, {
+          width: '100%',
+          duration: 0.32,
+          ease: 'power2.inOut'
+        }, 0.08);
       }
     });
 
     return () => ctx.revert();
-  }, [location, displayLocation, prefersReducedMotion]);
+  }, [location]);
 
   // Entrance transition once displayLocation is updated
   useEffect(() => {
+    if (!contentRef.current) return;
+
+    // Reset position before animating in
+    gsap.set(contentRef.current, { opacity: 0, y: 8 });
+
     const ctx = gsap.context(() => {
-      if (prefersReducedMotion) {
-        gsap.fromTo(contentRef.current, { opacity: 0 }, { opacity: 1, duration: 0.15 });
-        initScrollReveals();
-        return;
-      }
+      const entranceTl = gsap.timeline({
+        onStart: () => { initScrollReveals(); }
+      });
 
-      const entranceTl = gsap.timeline();
-
-      // Fade & lift in new page content
-      entranceTl.fromTo(contentRef.current, {
-        opacity: 0,
-        y: 15
-      }, {
+      entranceTl.to(contentRef.current, {
         opacity: 1,
         y: 0,
-        duration: 0.58,
+        duration: prefersReducedMotion ? 0.15 : 0.28,
         ease: 'power3.out',
-        onStart: () => {
-          // Trigger the text block reveals once the new DOM elements are fully mounted
-          initScrollReveals();
-        }
-      }, 0);
+        force3D: true,
+        clearProps: 'transform'
+      });
 
-      // Find major headings (H1 or custom hero headers) and stagger them, excluding block reveal ones
-      const headings = contentRef.current?.querySelectorAll('h1:not(.reveal-block), h2:not(.reveal-block)');
-      if (headings && headings.length > 0) {
-        gsap.fromTo(headings, {
-          opacity: 0,
-          y: 12
-        }, {
-          opacity: 1,
-          y: 0,
-          duration: 0.65,
-          ease: 'power3.out',
-          stagger: 0.08,
-          delay: 0.05
-        });
-      }
-
-      // Hide overlay
+      // Hide overlay fast
       if (overlayRef.current) {
         entranceTl.to(overlayRef.current, {
           yPercent: -100,
           opacity: 0,
-          duration: 0.35,
+          duration: 0.22,
           ease: 'power3.inOut'
-        }, 0.1);
+        }, 0.05);
       }
     }, contentRef);
 
     return () => ctx.revert();
-  }, [displayLocation, prefersReducedMotion]);
+  }, [displayLocation]);
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', width: '100vw', backgroundColor: '#FAF8F3' }}>

@@ -8,7 +8,6 @@ import type { Vehicle } from '../../types/vehicle';
 import type { Shelter } from '../../types/shelter';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { calculateRoute } from '../../services/routingService';
-import type { RouteCandidate } from '../../services/routingService';
 import styles from './MapView.module.css';
 
 interface MapViewProps {
@@ -79,27 +78,8 @@ export const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
-    const mapStyle: any = apiKey
-      ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}`
-      : {
-          version: 8,
-          sources: {
-            "base-map": {
-              type: "raster",
-              tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-              tileSize: 256,
-              attribution: "© OpenStreetMap contributors"
-            }
-          },
-          layers: [
-            {
-              id: "base-map",
-              type: "raster",
-              source: "base-map"
-            }
-          ]
-        };
+    const apiKey = import.meta.env.VITE_MAPTILER_API_KEY || "itWmaIIvDdX6bC6L0Onn";
+    const mapStyle = `https://api.maptiler.com/maps/openstreetmap/style.json?key=${apiKey}`;
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
@@ -108,55 +88,6 @@ export const MapView: React.FC<MapViewProps> = ({
       zoom: 4.8,
       minZoom: 4,
       maxZoom: 18
-    });
-
-    try {
-      const style = map.getStyle();
-      if (style) {
-        console.log("[SAKSHAM] FINAL MAP STYLE:", style);
-        if (style.sources) {
-          console.log("[SAKSHAM] MAP SOURCES:", style.sources);
-        }
-      }
-    } catch (e) {
-      console.warn("[SAKSHAM] Map style not yet initialized for sync logging");
-    }
-
-    map.on("load", () => {
-      console.log("[SAKSHAM] MAP LOAD SUCCESS");
-      try {
-        const style = map.getStyle();
-        if (style && style.sources) {
-          console.log(
-            "[SAKSHAM] SOURCES AFTER LOAD:",
-            Object.entries(style.sources).map(([id, source]: any) => ({
-              id,
-              type: source?.type,
-              tiles: source?.tiles
-            }))
-          );
-        }
-        console.log(
-          "[SAKSHAM] BASE MAP LAYER:",
-          map.getLayer("base-map")
-        );
-      } catch (err) {
-        console.error("[SAKSHAM] DIAGNOSTICS LOGGING ERROR", err);
-      }
-    });
-
-    map.on("error", (event: any) => {
-      console.error("[SAKSHAM] MAP ERROR", event.error);
-    });
-
-    map.on("sourcedata", (e: any) => {
-      if (e.sourceId) {
-        console.log(
-          "[SAKSHAM] SOURCE DATA",
-          e.sourceId,
-          e.isSourceLoaded
-        );
-      }
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
@@ -173,52 +104,11 @@ export const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
-    
-    // Fallback light (OSM) / dark (CARTO Dark Matter) styles
-    const lightStyle = {
-      version: 8,
-      sources: {
-        "base-map": {
-          type: "raster",
-          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-          tileSize: 256,
-          attribution: "© OpenStreetMap contributors"
-        }
-      },
-      layers: [
-        {
-          id: "base-map",
-          type: "raster",
-          source: "base-map"
-        }
-      ]
-    };
-
-    const darkStyle = {
-      version: 8,
-      sources: {
-        "base-map": {
-          type: "raster",
-          tiles: ["https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png"],
-          tileSize: 256,
-          attribution: "© CARTO, © OpenStreetMap contributors"
-        }
-      },
-      layers: [
-        {
-          id: "base-map",
-          type: "raster",
-          source: "base-map"
-        }
-      ]
-    };
-
-    const styleVal: any = mapMode === 'STREETS'
-      ? (apiKey ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}` : lightStyle)
-      : (apiKey ? `https://api.maptiler.com/maps/darkmatter/style.json?key=${apiKey}` : darkStyle);
-      
-    map.setStyle(styleVal);
+    const apiKey = import.meta.env.VITE_MAPTILER_API_KEY || "itWmaIIvDdX6bC6L0Onn";
+    const styleUrl = mapMode === 'STREETS'
+      ? `https://api.maptiler.com/maps/openstreetmap/style.json?key=${apiKey}`
+      : `https://api.maptiler.com/maps/darkmatter/style.json?key=${apiKey}`;
+    map.setStyle(styleUrl);
   }, [mapMode]);
 
   // Update Markers when data, filters or zoom change
@@ -617,7 +507,7 @@ export const MapView: React.FC<MapViewProps> = ({
             { lat: vehicle.destination.lat, lng: vehicle.destination.lng }
           );
           coordinates = routeResult.selectedRoute.geometry.coordinates;
-          alternativeGeometries = routeResult.alternatives.map((a: RouteCandidate) => a.geometry.coordinates);
+          alternativeGeometries = routeResult.alternatives.map((a: any) => a.geometry.coordinates);
         } catch (err) {
           console.warn('[ROUTING FALLBACK] Failed to load OSRM geometry, using straight line:', err);
         }
