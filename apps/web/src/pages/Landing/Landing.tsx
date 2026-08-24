@@ -9,6 +9,7 @@ import { LanguageSwitcher } from '../../components/LanguageSwitcher/LanguageSwit
 import { GradientBackground } from '../../components/ui/noisy-gradient-backgrounds';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
+import { useTranslation } from 'react-i18next';
 gsap.registerPlugin(ScrollTrigger);
 import {
   ShieldAlert,
@@ -22,6 +23,7 @@ import {
 import styles from './Landing.module.css';
 
 export const Landing: React.FC = () => {
+  const { t } = useTranslation();
   const { incidents, vehicles, shelters, addIncidentFromSOS } = useOperationalState();
   const [sosSubmitted, setSosSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -573,7 +575,7 @@ export const Landing: React.FC = () => {
                 {/* Eyebrow row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px', position: 'relative', zIndex: 20 }} className="parallax-front">
                   <span className={styles.eyebrowText} style={{ marginBottom: 0 }}>
-                    <span className={styles.eyebrowDot} />● LIVE SITUATIONAL AWARENESS
+                    <span className={styles.eyebrowDot} />● {t('landing.liveSituationalAwareness')}
                   </span>
                   <LanguageSwitcher variant="navbar" />
                 </div>
@@ -582,19 +584,19 @@ export const Landing: React.FC = () => {
                 <h1 className={`${styles.editorialHeading} parallax-mid`}>
                   <span className={styles.headingLineMask}>
                     <span className={styles.headingLine} style={{ color: '#FAF8F3' }}>
-                      From the first signal
+                      {t('landing.heroTitleLine1')}
                     </span>
                   </span>
                   <span className={styles.headingLineMask}>
                     <span className={`${styles.headingLine} ${styles.accentOrangeText}`}>
-                      to the right response.
+                      {t('landing.heroTitleLine2')}
                     </span>
                   </span>
                 </h1>
               </div>
 
               <p className={`${styles.editorialDesc} ${styles.editorialDescDark}`}>
-                SAKSHAM connects incidents, risk signals, available resources, and field operations into one coordinated response picture.
+                {t('landing.heroDesc')}
               </p>
 
               {/* Redesigned Response Chain Component */}
@@ -606,8 +608,8 @@ export const Landing: React.FC = () => {
                     <div className={styles.stageIndicator} />
                     <div className={styles.stageContent}>
                       <span className={styles.stageNumber}>01</span>
-                      <span className={styles.stageLabel}>SIGNAL</span>
-                      <p className={styles.stageDesc}>What is happening?</p>
+                      <span className={styles.stageLabel}>{t('landing.stage1Label')}</span>
+                      <p className={styles.stageDesc}>{t('landing.stage1Desc')}</p>
                     </div>
                   </div>
 
@@ -620,8 +622,8 @@ export const Landing: React.FC = () => {
                     <div className={styles.stageIndicator} />
                     <div className={styles.stageContent}>
                       <span className={styles.stageNumber}>02</span>
-                      <span className={styles.stageLabel}>ASSESS</span>
-                      <p className={styles.stageDesc}>What matters now?</p>
+                      <span className={styles.stageLabel}>{t('landing.stage2Label')}</span>
+                      <p className={styles.stageDesc}>{t('landing.stage2Desc')}</p>
                     </div>
                   </div>
 
@@ -634,8 +636,8 @@ export const Landing: React.FC = () => {
                     <div className={styles.stageIndicator} />
                     <div className={styles.stageContent}>
                       <span className={styles.stageNumber}>03</span>
-                      <span className={styles.stageLabel}>MATCH</span>
-                      <p className={styles.stageDesc}>What can respond?</p>
+                      <span className={styles.stageLabel}>{t('landing.stage3Label')}</span>
+                      <p className={styles.stageDesc}>{t('landing.stage3Desc')}</p>
                     </div>
                   </div>
 
@@ -648,8 +650,8 @@ export const Landing: React.FC = () => {
                     <div className={styles.stageIndicator} />
                     <div className={styles.stageContent}>
                       <span className={styles.stageNumber}>04</span>
-                      <span className={styles.stageLabel}>ACT</span>
-                      <p className={styles.stageDesc}>Who moves next?</p>
+                      <span className={styles.stageLabel}>{t('landing.stage4Label')}</span>
+                      <p className={styles.stageDesc}>{t('landing.stage4Desc')}</p>
                     </div>
                   </div>
 
@@ -669,7 +671,7 @@ export const Landing: React.FC = () => {
                   aria-label="Scroll to Situational Awareness Guidebook"
                 >
                   <span className={styles.guideInfoIcon}>ⓘ</span>
-                  <span>Situational Awareness Guidebook →</span>
+                  <span>{t('landing.guidebookLink')}</span>
                 </button>
               </div>
             </div>
@@ -688,11 +690,11 @@ export const Landing: React.FC = () => {
                   }`}>
                   <span className={styles.annotationDot} />
                   <span className={styles.annotationText}>
-                    {mapPhase === 'MONITOR' && 'MONITORING'}
-                    {mapPhase === 'INCIDENT' && 'INCIDENT DETECTED'}
-                    {mapPhase === 'PRIORITY' && 'PRIORITY ASSESSED'}
-                    {mapPhase === 'RESPONSE' && 'RESPONDING'}
-                    {mapPhase === 'RETURN' && 'LIVE MONITORING'}
+                    {mapPhase === 'MONITOR' && t('common.loading').toUpperCase()}
+                    {mapPhase === 'INCIDENT' && t('realtimeToasts.incidentReported', { title: '' }).replace(': ', '').toUpperCase()}
+                    {mapPhase === 'PRIORITY' && t('status.PRIORITIZED').toUpperCase()}
+                    {mapPhase === 'RESPONSE' && t('status.UNDER_RESPONSE').toUpperCase()}
+                    {mapPhase === 'RETURN' && t('dashboard.liveStatus').toUpperCase()}
                   </span>
                 </div>
               </div>
@@ -711,17 +713,17 @@ export const Landing: React.FC = () => {
 
         <div className={styles.networkFlowContent}>
           <div className={styles.networkHeader}>
-            <span className={styles.sectionSub}>SAKSHAM ECOSYSTEM</span>
-            <h2 className={styles.sectionTitle}>One Response Network. Everything Connected.</h2>
+            <span className={styles.sectionSub}>{t('landing.ecoEyebrow')}</span>
+            <h2 className={styles.sectionTitle}>{t('landing.ecoTitle')}</h2>
             <p className={styles.sectionDesc}>
-              SAKSHAM bridges the gap between field updates, inventory registries, and routing models to deliver speed and clarity.
+              {t('landing.ecoDesc')}
             </p>
           </div>
 
           <div className={styles.networkDiagram}>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><ShieldAlert size={20} /></div>
-              <span>Incidents</span>
+              <span>{t('landing.nodeIncidents')}</span>
             </div>
             <div className={styles.diagramLine}>
               <div className={styles.diagramLineInner} />
@@ -729,7 +731,7 @@ export const Landing: React.FC = () => {
             </div>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><Layers size={20} /></div>
-              <span>Demand</span>
+              <span>{t('landing.nodeDemand')}</span>
             </div>
             <div className={styles.diagramLine}>
               <div className={styles.diagramLineInner} />
@@ -737,7 +739,7 @@ export const Landing: React.FC = () => {
             </div>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><Link2 size={20} /></div>
-              <span>Resources</span>
+              <span>{t('landing.nodeResources')}</span>
             </div>
             <div className={styles.diagramLine}>
               <div className={styles.diagramLineInner} />
@@ -745,7 +747,7 @@ export const Landing: React.FC = () => {
             </div>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><Truck size={20} /></div>
-              <span>Routes</span>
+              <span>{t('landing.nodeRoutes')}</span>
             </div>
           </div>
         </div>
@@ -755,40 +757,40 @@ export const Landing: React.FC = () => {
       <section id="how-it-works" className={`${styles.workflowSection} textureCream ${styles.stackedLayer}`}>
         <div className={styles.sectionContainer}>
           <div className={styles.networkHeader}>
-            <span className={styles.sectionSub}>OPERATIONAL RUNTIME</span>
-            <h2 className={styles.sectionTitle}>From Distress to Relief in Six Steps</h2>
+            <span className={styles.sectionSub}>{t('landing.workflowEyebrow')}</span>
+            <h2 className={styles.sectionTitle}>{t('landing.workflowTitle')}</h2>
           </div>
 
           <div className={styles.stepsGrid}>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>01</div>
-              <h4>Incident Reported</h4>
-              <p>Civilians or field officers file coordinates and urgency specs.</p>
+              <h4>{t('landing.step1Title')}</h4>
+              <p>{t('landing.step1Desc')}</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>02</div>
-              <h4>Verified &amp; Analyzed</h4>
-              <p>Central desk prioritizes incidents based on local risk values.</p>
+              <h4>{t('landing.step2Title')}</h4>
+              <p>{t('landing.step2Desc')}</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>03</div>
-              <h4>Resources Matched</h4>
-              <p>The routing engine reserves supplies from the nearest active depot.</p>
+              <h4>{t('landing.step3Title')}</h4>
+              <p>{t('landing.step3Desc')}</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>04</div>
-              <h4>Units Deployed</h4>
-              <p>Vehicles receive live GPS navigation maps to direct deliveries.</p>
+              <h4>{t('landing.step4Title')}</h4>
+              <p>{t('landing.step4Desc')}</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>05</div>
-              <h4>On-Ground Response</h4>
-              <p>Responders arrive at destination, updating status live on map.</p>
+              <h4>{t('landing.step5Title')}</h4>
+              <p>{t('landing.step5Desc')}</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>06</div>
-              <h4>Relief Delivered</h4>
-              <p>Supplies are verified as handed over, resolving the incident node.</p>
+              <h4>{t('landing.step6Title')}</h4>
+              <p>{t('landing.step6Desc')}</p>
             </div>
           </div>
         </div>
@@ -811,17 +813,17 @@ export const Landing: React.FC = () => {
         <div className={styles.sectionContainer}>
           <div className={styles.radarLayoutGrid}>
             <div className={styles.radarText}>
-              <span className={`${styles.badgeText} radar-eyebrow`}>[ ● LIVE ] RESPONSE MATRIX</span>
+              <span className={`${styles.badgeText} radar-eyebrow`}>{t('landing.radarEyebrow')}</span>
               <h2 className={styles.radarHeading}>
                 <span className={styles.radarHeadingLineMask}>
-                  <span className={`${styles.radarHeadingLine} reveal-block`} data-reveal-color="#F47C20">Building Resilient</span>
+                  <span className={`${styles.radarHeadingLine} reveal-block`} data-reveal-color="#F47C20">{t('landing.radarTitleLine1')}</span>
                 </span>
                 <span className={styles.radarHeadingLineMask}>
-                  <span className={`${styles.radarHeadingLine} reveal-block`} data-reveal-color="#F47C20">Communities.</span>
+                  <span className={`${styles.radarHeadingLine} reveal-block`} data-reveal-color="#F47C20">{t('landing.radarTitleLine2')}</span>
                 </span>
               </h2>
               <p className={`${styles.radarDesc} radar-description`}>
-                Our telemetry radar and incident routing loops coordinate relief depots and fleet deployment protocols synchronously.
+                {t('landing.radarDesc')}
               </p>
             </div>
 
@@ -833,9 +835,9 @@ export const Landing: React.FC = () => {
                 <div className={styles.radarHeader}>
                   <div className={styles.liveIndicator}>
                     <span className={styles.liveDot} />
-                    <span>HQ LIVE TELEMETRY (DELHI)</span>
+                    <span>{t('landing.radarScopeTitle')}</span>
                   </div>
-                  <span className={styles.techText}>NODE: DL-CP-01</span>
+                  <span className={styles.techText}>{t('landing.radarScopeNode')}</span>
                 </div>
                 <div className={styles.radarBody}>
                   <div className={styles.radarScope}>
@@ -898,22 +900,22 @@ export const Landing: React.FC = () => {
           {/* Moved stats strip here */}
           <div className={styles.indicatorBar}>
             <div className={styles.indicatorItem}>
-              <span className={styles.indLabel}>ACTIVE INCIDENTS</span>
+              <span className={styles.indLabel}>{t('landing.metricsActiveIncidents')}</span>
               <span className={`${styles.indVal} ${styles.textCritical} tech-code`}>{String(activeIncidentsCount).padStart(2, '0')}</span>
             </div>
             <div className={styles.indicatorDivider} />
             <div className={styles.indicatorItem}>
-              <span className={styles.indLabel}>RELIEF DEPOTS STATUS</span>
-              <span className={`${styles.indVal} ${styles.textSuccess} tech-code`}>ONLINE</span>
+              <span className={styles.indLabel}>{t('landing.metricsDepotsStatus')}</span>
+              <span className={`${styles.indVal} ${styles.textSuccess} tech-code`}>{t('common.active').toUpperCase()}</span>
             </div>
             <div className={styles.indicatorDivider} />
             <div className={styles.indicatorItem}>
-              <span className={styles.indLabel}>VEHICLES ON-MISSION</span>
+              <span className={styles.indLabel}>{t('landing.metricsVehiclesMission')}</span>
               <span className={`${styles.indVal} ${styles.textPrimary} tech-code`}>{String(dispatchedVehiclesCount || 6).padStart(2, '0')}</span>
             </div>
             <div className={styles.indicatorDivider} />
             <div className={styles.indicatorItem}>
-              <span className={styles.indLabel}>SHELTER SPACES AVAIL.</span>
+              <span className={styles.indLabel}>{t('landing.metricsSheltersAvailable')}</span>
               <span className={`${styles.indVal} tech-code`}>354</span>
             </div>
           </div>
@@ -921,18 +923,18 @@ export const Landing: React.FC = () => {
           <div className={styles.metricsGrid}>
             <div className={styles.metricCard}>
               <div className={styles.metricValue}>12m</div>
-              <h4>Average Dispatch Time</h4>
-              <p>Emergency trucks are loaded, routed, and rolling in under 12 minutes.</p>
+              <h4>{t('landing.metricCard1Title')}</h4>
+              <p>{t('landing.metricCard1Desc')}</p>
             </div>
             <div className={styles.metricCard}>
               <div className={styles.metricValue}>99%</div>
-              <h4>Demand-Supply Match</h4>
-              <p>Almost zero wastage in relief materials due to coordinate-based allocations.</p>
+              <h4>{t('landing.metricCard2Title')}</h4>
+              <p>{t('landing.metricCard2Desc')}</p>
             </div>
             <div className={styles.metricCard}>
               <div className={styles.metricValue}>15k+</div>
-              <h4>Civilians Assisted</h4>
-              <p>Lives supported with food, water, shelter, and active medical rescues.</p>
+              <h4>{t('landing.metricCard3Title')}</h4>
+              <p>{t('landing.metricCard3Desc')}</p>
             </div>
           </div>
         </div>
@@ -954,26 +956,26 @@ export const Landing: React.FC = () => {
         <div className={styles.sectionContainer}>
           <div className={styles.sosGrid}>
             <div className={styles.sosContent}>
-              <span className={`${styles.sectionSub} sos-eyebrow`}>CIVILIAN EMERGENCY PORTAL ● PRIORITY CHANNEL</span>
+              <span className={`${styles.sectionSub} sos-eyebrow`}>{t('landing.sosEyebrow')}</span>
               <h2 className={styles.sectionTitle}>
                 <span className={styles.sosHeadingLineMask}>
-                  <span className={`${styles.sosHeadingLine} reveal-block`} data-reveal-color="#F47C20">Need Assistance?</span>
+                  <span className={`${styles.sosHeadingLine} reveal-block`} data-reveal-color="#F47C20">{t('landing.sosTitleLine1')}</span>
                 </span>
                 <span className={styles.sosHeadingLineMask}>
-                  <span className={`${styles.sosHeadingLine} reveal-block`} data-reveal-color="#F47C20">File an SOS Request</span>
+                  <span className={`${styles.sosHeadingLine} reveal-block`} data-reveal-color="#F47C20">{t('landing.sosTitleLine2')}</span>
                 </span>
               </h2>
               <p className={`${styles.sosText} sos-description`}>
-                Are you an affected civilian, NGO worker, or volunteer? Submit your zone demand immediately. SAKSHAM's matching engine pairs incoming requests with the nearest available depot.
+                {t('landing.sosDesc')}
               </p>
               <div className={styles.sosBenefits}>
                 <div className={`${styles.sosBenefitItem} sos-reassurance-item`}>
                   <span className={styles.reassuranceBullet}>◉</span>
-                  <span>Immediate notification to Delhi NDRF Control Room</span>
+                  <span>{t('landing.sosBenefit1')}</span>
                 </div>
                 <div className={`${styles.sosBenefitItem} sos-reassurance-item`}>
                   <span className={styles.reassuranceBullet}>◉</span>
-                  <span>Automated tracking ID generated on submission</span>
+                  <span>{t('landing.sosBenefit2')}</span>
                 </div>
               </div>
             </div>
@@ -990,40 +992,40 @@ export const Landing: React.FC = () => {
                 {sosSubmitted ? (
                   <div className={styles.formSuccess}>
                     <FileCheck size={48} className={styles.successIcon} />
-                    <h3>SOS Request Registered</h3>
-                    <p>Your emergency demand has been logged into the SAKSHAM Command Center.</p>
+                    <h3>{t('landing.successTitle')}</h3>
+                    <p>{t('landing.successDesc')}</p>
                     <div className={styles.successBadge}>
-                      <span>STATUS:</span>
-                      <strong className={styles.textPrimary}>RESPONSE NETWORK NOTIFIED</strong>
+                      <span>{t('landing.successStatusLabel')}</span>
+                      <strong className={styles.textPrimary}>{t('landing.successStatusVal')}</strong>
                     </div>
                     <div className={styles.successTicket}>
-                      <span>REQUEST ID:</span>
+                      <span>{t('landing.successIdLabel')}</span>
                       <strong>{ticketId}</strong>
                     </div>
                     <button
                       onClick={() => setSosSubmitted(false)}
                       className={styles.resetBtn}
                     >
-                      File Another Request
+                      {t('landing.successResetBtn')}
                     </button>
                   </div>
                 ) : (
                   <form onSubmit={handleSosSubmit} className={styles.form}>
                     <div className={styles.formHeader}>
                       <div className={styles.formHeaderTitle}>
-                        <span>EMERGENCY REQUEST</span>
-                        <span>SAKSHAM CIVILIAN CHANNEL</span>
+                        <span>{t('landing.formHeader')}</span>
+                        <span>{t('landing.formSub')}</span>
                       </div>
                       <div className={styles.formHeaderStatus}>
                         <span className={styles.formLiveDot} />
-                        <span>SECURE INTAKE</span>
+                        <span>{t('landing.formSecure')}</span>
                       </div>
                     </div>
 
                     <div className={styles.formDivider} />
 
                     <div className={styles.formGroup}>
-                      <label htmlFor="name">Reporter Full Name</label>
+                      <label htmlFor="name">{t('landing.formNameLabel')}</label>
                       <input
                         id="name"
                         type="text"
@@ -1035,7 +1037,7 @@ export const Landing: React.FC = () => {
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="phone">Contact Number</label>
+                      <label htmlFor="phone">{t('landing.formPhoneLabel')}</label>
                       <input
                         id="phone"
                         type="tel"
@@ -1047,7 +1049,7 @@ export const Landing: React.FC = () => {
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="need">Primary Need</label>
+                      <label htmlFor="need">{t('landing.formNeedLabel')}</label>
                       <div className={styles.selectWrapper}>
                         <select
                           id="need"
@@ -1064,27 +1066,27 @@ export const Landing: React.FC = () => {
                       </div>
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="details">Situation Details</label>
+                      <label htmlFor="details">{t('landing.formDetailsLabel')}</label>
                       <textarea
                         id="details"
                         rows={3}
-                        placeholder="Describe the number of people affected and current safety levels..."
+                        placeholder={t('landing.formDetailsPlaceholder')}
                         value={sosForm.details}
                         onChange={(e) => setSosForm({ ...sosForm, details: e.target.value })}
                         required
                         disabled={isSubmitting}
                       />
-                      <span className={styles.fieldHelper}>Describe who needs help, what happened, and current safety conditions.</span>
+                      <span className={styles.fieldHelper}>{t('landing.formDetailsPlaceholder')}</span>
                     </div>
                     <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
                       {isSubmitting ? (
                         <>
-                          Submitting SOS Request...
+                          {t('common.loading')}
                           <span className={styles.buttonSpinner} />
                         </>
                       ) : (
                         <>
-                          Submit Emergency SOS
+                          {t('landing.formSubmitBtn')}
                           <Send size={15} />
                         </>
                       )}
@@ -1101,10 +1103,10 @@ export const Landing: React.FC = () => {
       <section className={`${styles.ctaSection} textureForest ${styles.stackedLayer}`}>
         <div className={styles.sectionContainer}>
           <div className={styles.ctaWrapper}>
-            <h2>Ready to Respond.</h2>
-            <p>Access live GIS maps, dispatch logs, active alert filters, and coordinates registries.</p>
+            <h2>{t('landing.accessConsole')}</h2>
+            <p>{t('landing.heroDesc')}</p>
             <Link to="/operations/command-center" className={styles.ctaButton}>
-              Go to Command Center
+              {t('landing.exploreConsole')}
               <ArrowRight size={18} />
             </Link>
           </div>
