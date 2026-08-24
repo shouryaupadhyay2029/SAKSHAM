@@ -47,6 +47,8 @@ const queryClient = new QueryClient({
 import { ToastContainer } from './components/ui/SystemStates';
 import { useOperationalState } from './context/OperationalStateContext';
 
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+
 const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
 
@@ -154,7 +156,9 @@ export const App: React.FC = () => {
           <SmoothScrollProvider>
             {showBoot && <BootScreen onComplete={handleBootComplete} />}
             <BrowserRouter>
-              <AppRoutes />
+              <ErrorBoundary name="Main System Dashboard">
+                <AppRoutes />
+              </ErrorBoundary>
             </BrowserRouter>
           </SmoothScrollProvider>
         </OperationalStateProvider>

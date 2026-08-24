@@ -2,6 +2,7 @@ import React from 'react';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { MapView } from './MapView';
 import { Activity } from 'lucide-react';
+import ErrorBoundary from '../ErrorBoundary/ErrorBoundary';
 import styles from './SituationalAwarenessMap.module.css';
 
 export const SituationalAwarenessMap: React.FC = () => {
@@ -48,13 +49,15 @@ export const SituationalAwarenessMap: React.FC = () => {
 
       {/* Actual MapLibre Component */}
       <div className={styles.mapContainerInner}>
-        <MapView 
-          incidents={incidents}
-          resources={resources}
-          vehicles={vehicles}
-          shelters={shelters}
-          layerFilters={layerFilters}
-        />
+        <ErrorBoundary name="Live Situational Map" fallback={<div style={{ padding: '40px', textAlign: 'center', color: '#FAF8F3', background: '#123224', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '8px' }}><h3>Map temporarily unavailable</h3><p style={{ fontSize: '13px', opacity: 0.8 }}>The geographic GIS basemap module failed to render.</p></div>}>
+          <MapView 
+            incidents={incidents}
+            resources={resources}
+            vehicles={vehicles}
+            shelters={shelters}
+            layerFilters={layerFilters}
+          />
+        </ErrorBoundary>
       </div>
 
       {/* Operational Overlays Container (Right side list overlays) */}

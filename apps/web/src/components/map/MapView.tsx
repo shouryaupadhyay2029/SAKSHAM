@@ -109,20 +109,32 @@ export const MapView: React.FC<MapViewProps> = ({
       maxZoom: 18
     });
 
-    console.log("[SAKSHAM] FINAL MAP STYLE:", map.getStyle());
-    console.log("[SAKSHAM] MAP SOURCES:", map.getStyle().sources);
+    try {
+      const style = map.getStyle();
+      if (style) {
+        console.log("[SAKSHAM] FINAL MAP STYLE:", style);
+        if (style.sources) {
+          console.log("[SAKSHAM] MAP SOURCES:", style.sources);
+        }
+      }
+    } catch (e) {
+      console.warn("[SAKSHAM] Map style not yet initialized for sync logging");
+    }
 
     map.on("load", () => {
       console.log("[SAKSHAM] MAP LOAD SUCCESS");
       try {
-        console.log(
-          "[SAKSHAM] SOURCES AFTER LOAD:",
-          Object.entries(map.getStyle().sources).map(([id, source]: any) => ({
-            id,
-            type: source.type,
-            tiles: source.tiles
-          }))
-        );
+        const style = map.getStyle();
+        if (style && style.sources) {
+          console.log(
+            "[SAKSHAM] SOURCES AFTER LOAD:",
+            Object.entries(style.sources).map(([id, source]: any) => ({
+              id,
+              type: source?.type,
+              tiles: source?.tiles
+            }))
+          );
+        }
         console.log(
           "[SAKSHAM] BASE MAP LAYER:",
           map.getLayer("base-map")
