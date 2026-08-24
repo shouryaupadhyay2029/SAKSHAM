@@ -81,7 +81,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
     const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
     const mapStyle: any = apiKey 
-      ? `https://api.maptiler.com/maps/streets-v4/style.json?key=${apiKey}` 
+      ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}` 
       : {
           version: 8,
           sources: {
