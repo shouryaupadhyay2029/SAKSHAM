@@ -73,9 +73,28 @@ export const AddressPicker: React.FC<AddressPickerProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const mapStyle = apiKey
+    const mapStyle: any = apiKey
       ? `https://api.maptiler.com/maps/streets-v4/style.json?key=${apiKey}`
-      : 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+      : {
+          version: 8,
+          sources: {
+            'carto-raster': {
+              type: 'raster',
+              tiles: [
+                'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+              ],
+              tileSize: 256,
+              attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
+            }
+          },
+          layers: [
+            {
+              id: 'carto-raster',
+              type: 'raster',
+              source: 'carto-raster'
+            }
+          ]
+        };
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
