@@ -55,12 +55,16 @@ class DispatchService:
             
         if self.incident_repo:
             incident = self.incident_repo.get_by_id(incident_id)
-            if incident and incident.region.strip().lower() != region_lower:
-                raise SakshamException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    code="FORBIDDEN",
-                    message=f"Access denied. Operational record belongs to region '{incident.region}' which is outside your jurisdiction '{officer.region}'."
-                )
+            if incident:
+                incident_region_lower = incident.region.strip().lower()
+                if region_lower == "delhi ncr" and "delhi" in incident_region_lower:
+                    return
+                if incident_region_lower != region_lower:
+                    raise SakshamException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        code="FORBIDDEN",
+                        message=f"Access denied. Operational record belongs to region '{incident.region}' which is outside your jurisdiction '{officer.region}'."
+                    )
 
     def recommend_vehicles(self, allocation_id: str) -> List[VehicleRecommendation]:
         alloc = self.allocation_repo.get_by_id(allocation_id)
