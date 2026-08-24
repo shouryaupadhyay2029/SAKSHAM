@@ -123,35 +123,18 @@ export const Report: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Affected District Zone *</label>
-                    <select 
-                      className={styles.select}
-                      value={formData.zone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, zone: e.target.value }))}
-                    >
-                      <option value="Central Delhi">Central Delhi</option>
-                      <option value="East Delhi">East Delhi (Yamuna Banks)</option>
-                      <option value="West Delhi">West Delhi</option>
-                      <option value="North Delhi">North Delhi</option>
-                      <option value="South Delhi">South Delhi</option>
-                    </select>
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Primary Urgent Need *</label>
-                    <select 
-                      className={styles.select}
-                      value={formData.need}
-                      onChange={(e) => setFormData(prev => ({ ...prev, need: e.target.value }))}
-                    >
-                      <option value="Rations & Drinking Water">Rations & Drinking Water</option>
-                      <option value="Medical Assistance / First Aid">Medical Assistance / First Aid</option>
-                      <option value="Structural Evacuation / Rescue Boat">Structural Evacuation / Rescue Boat</option>
-                      <option value="Blankets & Temporary Bedding">Blankets & Temporary Bedding</option>
-                    </select>
-                  </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Primary Urgent Need *</label>
+                  <select 
+                    className={styles.select}
+                    value={formData.need}
+                    onChange={(e) => setFormData(prev => ({ ...prev, need: e.target.value }))}
+                  >
+                    <option value="Rations & Drinking Water">Rations & Drinking Water</option>
+                    <option value="Medical Assistance / First Aid">Medical Assistance / First Aid</option>
+                    <option value="Structural Evacuation / Rescue Boat">Structural Evacuation / Rescue Boat</option>
+                    <option value="Blankets & Temporary Bedding">Blankets & Temporary Bedding</option>
+                  </select>
                 </div>
 
                 <div className={styles.formGroup}>

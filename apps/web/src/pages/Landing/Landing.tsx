@@ -1046,40 +1046,21 @@ export const Landing: React.FC = () => {
                         disabled={isSubmitting}
                       />
                     </div>
-                    <div className={styles.formRow}>
-                      <div className={styles.formGroup}>
-                        <label htmlFor="zone">Affected Zone</label>
-                        <div className={styles.selectWrapper}>
-                          <select
-                            id="zone"
-                            value={sosForm.zone}
-                            onChange={(e) => setSosForm({ ...sosForm, zone: e.target.value })}
-                            disabled={isSubmitting}
-                          >
-                            <option value="East Delhi">East Delhi</option>
-                            <option value="West Delhi">West Delhi</option>
-                            <option value="North Delhi">North Delhi</option>
-                            <option value="South Delhi">South Delhi</option>
-                            <option value="Central Delhi">Central Delhi</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className={styles.formGroup}>
-                        <label htmlFor="need">Primary Need</label>
-                        <div className={styles.selectWrapper}>
-                          <select
-                            id="need"
-                            value={sosForm.need}
-                            onChange={(e) => setSosForm({ ...sosForm, need: e.target.value })}
-                            disabled={isSubmitting}
-                          >
-                            <option value="Drinking Water">Drinking Water</option>
-                            <option value="Dry Ration Packets">Dry Ration Packets</option>
-                            <option value="Medical Assistance">Medical Assistance</option>
-                            <option value="Emergency Tents">Emergency Tents</option>
-                            <option value="Rescue Boat Dispatch">Rescue Boat Dispatch</option>
-                          </select>
-                        </div>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="need">Primary Need</label>
+                      <div className={styles.selectWrapper}>
+                        <select
+                          id="need"
+                          value={sosForm.need}
+                          onChange={(e) => setSosForm({ ...sosForm, need: e.target.value })}
+                          disabled={isSubmitting}
+                        >
+                          <option value="Drinking Water">Drinking Water</option>
+                          <option value="Dry Ration Packets">Dry Ration Packets</option>
+                          <option value="Medical Assistance">Medical Assistance</option>
+                          <option value="Emergency Tents">Emergency Tents</option>
+                          <option value="Rescue Boat Dispatch">Rescue Boat Dispatch</option>
+                        </select>
                       </div>
                     </div>
                     <div className={styles.formGroup}>
