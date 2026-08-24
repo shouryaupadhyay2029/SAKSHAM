@@ -36,8 +36,11 @@ class SqlAlchemyVehicleRepository(VehicleRepositoryInterface):
         return [VehicleResponse.model_validate(model_to_dict_safe(v)) for v in vehicles]
 
     def create(self, vehicle: VehicleCreate) -> VehicleResponse:
+        count = self.db.query(VehicleModel).count()
+        ref_id = f"VEH-{vehicle.type[:2].upper()}-{count + 301:03d}"
+
         db_obj = VehicleModel(
-            vehicleId=vehicle.vehicleId,
+            vehicleId=ref_id,
             name=vehicle.name,
             type=vehicle.type,
             capacity=vehicle.capacity,
@@ -48,7 +51,7 @@ class SqlAlchemyVehicleRepository(VehicleRepositoryInterface):
             operatorName=vehicle.operatorName,
             contactRadio=vehicle.contactRadio,
             currentMission=vehicle.currentMission,
-            status=vehicle.status.value if vehicle.status else "AVAILABLE"
+            status="AVAILABLE"
         )
         self.db.add(db_obj)
         self.db.commit()
