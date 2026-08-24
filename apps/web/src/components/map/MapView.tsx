@@ -79,10 +79,7 @@ export const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
-    const mapStyle: any = apiKey 
-      ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}` 
-      : {
+    const mapStyle: any = {
           version: 8,
           sources: {
             'carto-raster': {

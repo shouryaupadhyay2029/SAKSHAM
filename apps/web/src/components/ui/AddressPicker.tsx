@@ -73,9 +73,7 @@ export const AddressPicker: React.FC<AddressPickerProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const mapStyle: any = apiKey
-      ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}`
-      : {
+    const mapStyle: any = {
           version: 8,
           sources: {
             'carto-raster': {
