@@ -8,6 +8,7 @@ import type { Vehicle } from '../../types/vehicle';
 import type { Shelter } from '../../types/shelter';
 import { useOperationalState } from '../../context/OperationalStateContext';
 import { calculateRoute } from '../../services/routingService';
+import type { RouteCandidate } from '../../services/routingService';
 import styles from './MapView.module.css';
 
 interface MapViewProps {
@@ -509,7 +510,7 @@ export const MapView: React.FC<MapViewProps> = ({
             { lat: vehicle.destination.lat, lng: vehicle.destination.lng }
           );
           coordinates = routeResult.selectedRoute.geometry.coordinates;
-          alternativeGeometries = routeResult.alternatives.map(a => a.geometry.coordinates);
+          alternativeGeometries = routeResult.alternatives.map((a: RouteCandidate) => a.geometry.coordinates);
         } catch (err) {
           console.warn('[ROUTING FALLBACK] Failed to load OSRM geometry, using straight line:', err);
         }
