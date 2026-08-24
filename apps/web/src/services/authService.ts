@@ -16,7 +16,17 @@ import { ROLE_PERMISSIONS } from '../types/auth';
 const SESSION_KEY = 'saksham_auth_session';
 export const TOKEN_KEY = 'saksham_auth_token';
 
-const FASTAPI_BASE_URL = import.meta.env.VITE_FASTAPI_URL || import.meta.env.VITE_API_URL || '/api/v1';
+const getFastapiBaseUrl = () => {
+  const fastapiUrl = import.meta.env.VITE_FASTAPI_URL;
+  if (fastapiUrl) return fastapiUrl;
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) {
+    return apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
+  }
+  return '/api/v1';
+};
+
+const FASTAPI_BASE_URL = getFastapiBaseUrl();
 
 // ─── Demo user seed store fallback ───────────────────────────────────────────
 interface DemoCredential {

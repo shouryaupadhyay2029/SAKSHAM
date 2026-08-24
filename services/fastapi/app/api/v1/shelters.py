@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, status
 from typing import List, Optional
 from app.schemas.shelter import ShelterResponse, ShelterCreate, ShelterUpdate
 from app.domain.shelter.service import ShelterService
-from app.api.dependencies import get_shelter_service
+from app.api.dependencies import get_shelter_service, get_current_officer
+from app.core.models import OfficerModel
 from app.realtime.connection_manager import connection_manager
 from app.realtime.publisher import EventPublisher
 from app.realtime.events import EventType, RealtimeEvent
@@ -19,7 +20,11 @@ async def list_shelters(
     return service.list_shelters(status=status, region=region)
 
 @router.post("", response_model=ShelterResponse, status_code=status.HTTP_201_CREATED, summary="Create a new shelter")
-async def create_shelter(shelter: ShelterCreate, service: ShelterService = Depends(get_shelter_service)):
+async def create_shelter(
+    shelter: ShelterCreate,
+    service: ShelterService = Depends(get_shelter_service),
+    current_officer: OfficerModel = Depends(get_current_officer)
+):
     return service.create_shelter(shelter)
 
 @router.get("/{shelter_id}", response_model=ShelterResponse, summary="Get shelter details by ID or Reference")
@@ -30,7 +35,8 @@ async def get_shelter(shelter_id: str, service: ShelterService = Depends(get_she
 async def update_shelter(
     shelter_id: str,
     update_data: ShelterUpdate,
-    service: ShelterService = Depends(get_shelter_service)
+    service: ShelterService = Depends(get_shelter_service),
+    current_officer: OfficerModel = Depends(get_current_officer)
 ):
     updated = service.update_shelter(shelter_id, update_data)
     try:

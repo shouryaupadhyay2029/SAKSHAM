@@ -691,7 +691,14 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
 
           // Perform route deviation check
           if (mission.routeGeometry) {
-            const apiBaseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+            const getContextApiBaseUrl = () => {
+              const url = import.meta.env.VITE_API_URL;
+              if (url) {
+                return url.endsWith('/api') ? url : `${url}/api`;
+              }
+              return '/api/v1';
+            };
+            const apiBaseUrl = getContextApiBaseUrl();
             const devRes = await fetch(`${apiBaseUrl}/routing/check-deviation`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

@@ -52,8 +52,11 @@ def test_shorter_duration_wins_travel_time_factor():
     fast_factors = res.selected_route.decision_factors if res.selected_route.id == "route-fast" else res.alternatives[0].decision_factors
     slow_factors = res.alternatives[0].decision_factors if res.selected_route.id == "route-fast" else res.selected_route.decision_factors
     
+    # Ratio-based normalization: score = (min_duration / candidate_duration) * 100
+    # fast: 450/450 * 100 = 100.0
+    # slow: 450/900 * 100 = 50.0
     assert fast_factors["travel_time_score"] == 100.0
-    assert slow_factors["travel_time_score"] == 0.0
+    assert slow_factors["travel_time_score"] == 50.0   # ratio-based: half duration → half score
     assert res.selected_route.id == "route-fast"
 
 def test_severity_policy_weight_assignment():

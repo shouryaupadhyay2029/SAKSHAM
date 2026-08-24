@@ -183,7 +183,7 @@ def test_wrong_region_creation(tokens):
     db = SessionLocal()
     try:
         # Create incident in West Delhi
-        incident = db.query(IncidentModel).filter(IncidentModel.incidentId == "INC-2026-081").first()
+        incident = db.query(IncidentModel).filter(IncidentModel.incidentId == "INC-2026-999").first()
         incident.region = "West Delhi"
         db.commit()
 

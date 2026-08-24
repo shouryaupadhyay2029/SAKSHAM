@@ -106,7 +106,14 @@ class GoogleBackendTranslationProvider implements TranslationProvider {
     // 3. Perform fetch request to backend translation endpoint
     const promise = (async (): Promise<TranslationResult> => {
       try {
-        const baseUrl = import.meta.env.VITE_API_URL || '';
+        const getTranslationApiBaseUrl = () => {
+          const url = import.meta.env.VITE_API_URL;
+          if (url) {
+            return url.endsWith('/api') ? url : `${url}/api`;
+          }
+          return '';
+        };
+        const baseUrl = getTranslationApiBaseUrl();
         const fetchUrl = baseUrl.endsWith('/api/v1') 
           ? `${baseUrl}/translation/translate` 
           : `${baseUrl || 'http://localhost:8000'}/api/v1/translation/translate`;

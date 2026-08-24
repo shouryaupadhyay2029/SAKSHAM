@@ -118,7 +118,7 @@ class SqlAlchemyDispatchRepository(DispatchRepositoryInterface):
             actualDeparture=dispatch.plannedDeparture,
             quantity=quantity,
             priority=priority,
-            status="DISPATCHED",
+            status="PLANNED",
             notes=dispatch.notes,
             latitude=lat_coord,
             longitude=lng_coord,

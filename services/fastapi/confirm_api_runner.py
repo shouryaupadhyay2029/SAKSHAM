@@ -48,7 +48,7 @@ dem_res = requests.post("http://127.0.0.1:8000/api/v1/demands", json={
     "unit": "L",
     "affectedPeople": 100,
     "priority": "HIGH"
-})
+}, headers=headers)
 assert dem_res.status_code == 201, f"Failed to create demand: {dem_res.text}"
 dem_id = dem_res.json()["id"]
 dem_ref = dem_res.json()["requestId"]

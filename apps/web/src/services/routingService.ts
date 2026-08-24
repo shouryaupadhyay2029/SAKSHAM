@@ -58,7 +58,14 @@ export async function calculateRoute(
     throw new Error('DESTINATION COORDINATES UNAVAILABLE');
   }
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+  const getRoutingApiBaseUrl = () => {
+    const url = import.meta.env.VITE_API_URL;
+    if (url) {
+      return url.endsWith('/api') ? url : `${url}/api`;
+    }
+    return '/api/v1';
+  };
+  const apiBaseUrl = getRoutingApiBaseUrl();
   const res = await fetch(`${apiBaseUrl}/routing/route`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -128,7 +135,14 @@ export async function checkRouteDeviation(
   vehicleLng: number,
   thresholdMeters: number = 150.0
 ): Promise<DeviationCheckResult> {
-  const apiBaseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+  const getRoutingApiBaseUrl = () => {
+    const url = import.meta.env.VITE_API_URL;
+    if (url) {
+      return url.endsWith('/api') ? url : `${url}/api`;
+    }
+    return '/api/v1';
+  };
+  const apiBaseUrl = getRoutingApiBaseUrl();
   const res = await fetch(`${apiBaseUrl}/routing/check-deviation`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

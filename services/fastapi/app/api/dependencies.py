@@ -44,6 +44,13 @@ def get_current_officer(token: str = Depends(oauth2_scheme), db: Session = Depen
             message="Token payload is missing subject identifier."
         )
         
+    if payload.get("role") == "CIVILIAN":
+        raise SakshamException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="FORBIDDEN",
+            message="Officer authorization required for this operation."
+        )
+        
     officer = db.query(OfficerModel).filter(OfficerModel.id == officer_id).first()
     if not officer:
         raise SakshamException(

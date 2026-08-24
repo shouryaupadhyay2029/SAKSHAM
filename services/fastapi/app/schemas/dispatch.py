@@ -41,7 +41,7 @@ class DispatchBase(BaseModel):
     routeGeometry: Optional[Dict[str, Any]] = None
     routeScore: Optional[float] = None
     routeDecisionReason: Optional[str] = None
-    routeDecisionFactors: Optional[Dict[str, float]] = None
+    routeDecisionFactors: Optional[Dict[str, Any]] = None
     routeAlternatives: Optional[List[Dict[str, Any]]] = None
     routeCalculatedAt: Optional[datetime] = None
     routeDeviationStatus: Optional[str] = None

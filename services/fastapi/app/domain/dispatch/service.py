@@ -189,7 +189,7 @@ class DispatchService:
             try:
                 from app.utils.osrm import get_road_route_with_alternatives
                 from app.utils.route_scoring import RouteCandidate as ScoringCandidate, score_routes
-                import datetime
+
 
                 osrm_res = await get_road_route_with_alternatives(
                     vehicle.currentLatitude, vehicle.currentLongitude,
