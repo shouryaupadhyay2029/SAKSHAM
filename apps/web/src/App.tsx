@@ -143,10 +143,13 @@ export const App: React.FC = () => {
       <AuthProvider>
         <OperationalStateProvider>
           <SmoothScrollProvider>
-            {showBoot && <BootScreen onComplete={handleBootComplete} />}
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
+            {showBoot ? (
+              <BootScreen onComplete={handleBootComplete} />
+            ) : (
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            )}
           </SmoothScrollProvider>
         </OperationalStateProvider>
       </AuthProvider>
