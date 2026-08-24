@@ -165,7 +165,8 @@ export const Landing: React.FC = () => {
 
     safeSet(`.${styles.rightMapCol}`, { opacity: 0, y: 22, scale: 0.985 });
 
-    const ctx = gsap.context(() => {
+    const runAnimations = () => {
+      return gsap.context(() => {
       const tl = gsap.timeline({ delay: 0.1 });
 
       // 1. Navigation bar enters first
@@ -502,8 +503,28 @@ export const Landing: React.FC = () => {
       }
 
     }, landingRef);
+    };
 
-    return () => ctx.revert();
+    const isBooting = !sessionStorage.getItem('saksham_boot_seen');
+    let animCtx: any = null;
+
+    if (isBooting) {
+      const interval = setInterval(() => {
+        if (sessionStorage.getItem('saksham_boot_seen') === 'true') {
+          clearInterval(interval);
+          animCtx = runAnimations();
+        }
+      }, 100);
+      return () => {
+        clearInterval(interval);
+        if (animCtx) animCtx.revert();
+      };
+    } else {
+      animCtx = runAnimations();
+      return () => {
+        if (animCtx) animCtx.revert();
+      };
+    }
   }, []);
 
   // Get dynamic numbers for later stats strip
