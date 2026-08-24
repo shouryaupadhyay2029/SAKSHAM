@@ -912,7 +912,7 @@ export const Dispatch: React.FC = () => {
                           <span style={{ color: '#2563EB', fontWeight: 'bold' }}>★ SELECTED RECOMMENDED PATH</span>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '4px', color: '#aaa' }}>
                             <div>Distance: {activeMission.distanceKm || '8.4'} km</div>
-                            <div>Duration: {activeMission.etaMinutes || '19'} min</div>
+                            <div>Duration: {activeMission.durationSeconds ? `${Math.floor(activeMission.durationSeconds / 60)}m ${Math.round(activeMission.durationSeconds % 60)}s` : `${activeMission.etaMinutes || '19'} min`}</div>
                             <div>Composite Score: <strong>{activeMission.routeScore || 100}</strong></div>
                           </div>
                         </div>
@@ -922,7 +922,7 @@ export const Dispatch: React.FC = () => {
                             <span style={{ color: '#fff', fontWeight: 'bold' }}>ALTERNATIVE PATH: {alt.id || `osrm-alt-${idx}`}</span>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '4px', color: '#aaa' }}>
                               <div>Distance: {(alt.distanceMeters / 1000).toFixed(1)} km</div>
-                              <div>Duration: {Math.round(alt.durationSeconds / 60)} min</div>
+                              <div>Duration: {alt.durationSeconds ? `${Math.floor(alt.durationSeconds / 60)}m ${Math.round(alt.durationSeconds % 60)}s` : `${Math.round(alt.durationSeconds / 60)} min`}</div>
                               <div>Composite Score: <strong>{alt.routeScore || 85}</strong></div>
                             </div>
                             <div style={{ fontSize: '9px', color: '#EF4444', marginTop: '4px', fontStyle: 'italic' }}>

@@ -18,6 +18,7 @@ export interface DispatchMission {
   quantity: number;
   unit: string;
   etaMinutes: number;
+  durationSeconds?: number;
   operatorName: string;
   speedKmh: number;
   distanceKm: number;
@@ -325,6 +326,7 @@ export function normalizeDispatchToMission(
     quantity: backendDsp.quantity || demand?.quantity || 100,
     unit: demand?.unit || 'Units',
     etaMinutes,
+    durationSeconds: backendDsp.routeDurationSeconds,
     operatorName: backendDsp.assignedOfficer || 'Sgt. Amit Sharma',
     speedKmh: backendDsp.status === 'COMPLETED' ? 0 : 50,
     distanceKm,

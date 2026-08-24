@@ -70,10 +70,10 @@ def _geometry_directness(geometry: dict, distance_meters: float) -> float:
 
 def _normalize_inverse(value: float, all_values: List[float]) -> float:
     min_v = min(all_values)
-    max_v = max(all_values)
-    if max_v == min_v:
+    if not value or min_v <= 0:
         return 100.0
-    score = (max_v - value) / (max_v - min_v) * 100.0
+    # Use ratio-based scaling (e.g. 10% longer time results in ~90% score, not 0%)
+    score = (min_v / value) * 100.0
     return round(max(0.0, min(100.0, score)), 2)
 
 def score_routes(

@@ -79,26 +79,27 @@ export const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const mapStyle: any = {
-      version: 8,
-      sources: {
-        "base-map": {
-          type: "raster",
-          tiles: [
-            "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          ],
-          tileSize: 256,
-          attribution: "© OpenStreetMap contributors"
-        }
-      },
-      layers: [
-        {
-          id: "base-map",
-          type: "raster",
-          source: "base-map"
-        }
-      ]
-    };
+    const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
+    const mapStyle: any = apiKey
+      ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}`
+      : {
+          version: 8,
+          sources: {
+            "base-map": {
+              type: "raster",
+              tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+              tileSize: 256,
+              attribution: "© OpenStreetMap contributors"
+            }
+          },
+          layers: [
+            {
+              id: "base-map",
+              type: "raster",
+              source: "base-map"
+            }
+          ]
+        };
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
