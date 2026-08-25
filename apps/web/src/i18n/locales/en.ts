@@ -223,7 +223,7 @@ export const en = {
   matching: {
     title: "AI-Powered Resource Matcher",
     subtitle: "Automated optimal allocation of supplies based on proximity and urgency",
-    runMatcher: "Execute AI Matching Engine",
+    runMatcher: "Execute Demand Matching Engine",
     matchScore: "Match Quality Score",
     recommendedSource: "Recommended Resource Depot",
     allocatedQuantity: "Allocated Supply Quantity",
@@ -233,7 +233,7 @@ export const en = {
     approvalSuccess: "Allocation approved. Dispatch order generated.",
     noMatches: "No pending demands requiring automated matching.",
     demandsPendingMatch: "Pending Demands Awaiting Allocation",
-    aiMatchConfidence: "AI Match Confidence",
+    aiMatchConfidence: "Demand Match Confidence",
     depotProximity: "Proximity & Stock Availability",
     confirmAllocation: "Confirm & Authorize Dispatch",
   },
