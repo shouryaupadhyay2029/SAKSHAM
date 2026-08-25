@@ -103,6 +103,13 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
   const [submitted, setSubmitted] = useState(false);
   const [submittedAssessment, setSubmittedAssessment] = useState<any>(null);
 
+  // Correlation & Clustering states
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
+  const [unlinkReason, setUnlinkReason] = useState('');
+  const [selectedUnlinkReportId, setSelectedUnlinkReportId] = useState('');
+  const [localIncident, setLocalIncident] = useState<any>(incident);
+
   const incidentUuid = (incident as any).uuid || incident.id;
 
   // Role permissions check
@@ -140,6 +147,12 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
 
   const loadAssessmentData = async () => {
     try {
+      // Re-fetch master/primary incident details to get parent/child report relationship updates
+      const incRes = await apiClient.getIncidentById(incidentUuid);
+      if (incRes.data) {
+        setLocalIncident(incRes.data);
+      }
+
       // Load existing assessment if any
       const asmRes = await apiClient.getIncidentAssessments(incidentUuid);
       if (Array.isArray(asmRes.data) && asmRes.data.length > 0) {
@@ -163,6 +176,14 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
       const offRes = await apiClient.getAvailableOfficers();
       if (Array.isArray(offRes.data)) {
         setAvailableOfficers(offRes.data);
+      }
+
+      // Load correlation candidates
+      if (isAuthorizedOfficer) {
+        const candRes = await apiClient.getRelatedCandidates(incidentUuid);
+        if (Array.isArray(candRes.data)) {
+          setCandidates(candRes.data);
+        }
       }
     } catch {
       // Non-critical fallback
@@ -257,6 +278,50 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
       }
     } catch (err: any) {
       setSubmitError(err.message || 'Failed to simulate field status update.');
+    }
+  };
+
+  // Correlation & Clustering handlers
+  const handleToggleSelectCandidate = (candId: string) => {
+    setSelectedCandidateIds(prev =>
+      prev.includes(candId) ? prev.filter(id => id !== candId) : [...prev, candId]
+    );
+  };
+
+  const handleLinkSelectedCandidates = async () => {
+    if (selectedCandidateIds.length === 0) return;
+    try {
+      setSubmitError(null);
+      await apiClient.linkReports(incidentUuid, selectedCandidateIds);
+      setSelectedCandidateIds([]);
+      loadAssessmentData();
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to link selected reports.');
+    }
+  };
+
+  const handleUnlinkReport = async () => {
+    if (!selectedUnlinkReportId || !unlinkReason.trim()) return;
+    try {
+      setSubmitError(null);
+      await apiClient.unlinkReport(incidentUuid, selectedUnlinkReportId, unlinkReason.trim());
+      setSelectedUnlinkReportId('');
+      setUnlinkReason('');
+      loadAssessmentData();
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to unlink report.');
+    }
+  };
+
+  const handleKeepSeparate = async () => {
+    const candidateIds = candidates.map(c => c.report.id);
+    if (candidateIds.length === 0) return;
+    try {
+      setSubmitError(null);
+      await apiClient.keepSeparate(incidentUuid, candidateIds);
+      loadAssessmentData();
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to record check: keep separate.');
     }
   };
 
@@ -634,7 +699,147 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
 
             <div className={styles.divider} />
 
-            {/* ── Section 2: Contact History Log ── */}
+            {/* ── Section: Report Correlation & Clustering ── */}
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>
+                <Activity size={14} />
+                REPORT CORRELATION & CLUSTERING
+              </h2>
+
+              {/* Master Cluster Status */}
+              {localIncident.childReports && localIncident.childReports.length > 0 ? (
+                <div style={{ marginBottom: '18px', padding: '14px', background: 'rgba(96, 165, 250, 0.08)', borderRadius: '10px', border: '1px solid rgba(96, 165, 250, 0.2)' }}>
+                  <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#60A5FA' }}>
+                    Operational Incident Cluster: {localIncident.childReports.length + 1} Reports Associated
+                  </p>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: 'rgba(250, 248, 243, 0.55)' }}>
+                    Aggregating situational data from multiple civilian report locations.
+                  </p>
+
+                  <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 10px', background: 'rgba(250, 248, 243, 0.04)', borderRadius: '6px', fontSize: '12px' }}>
+                      <span><strong>{localIncident.incidentId}</strong> (Primary Operational Incident)</span>
+                      <span style={{ color: '#10B981', fontWeight: 600 }}>PRIMARY</span>
+                    </div>
+
+                    {localIncident.childReports.map((child: any) => (
+                      <div key={child.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px 10px', background: 'rgba(250, 248, 243, 0.02)', borderRadius: '6px', border: '1px solid rgba(250, 248, 243, 0.05)', fontSize: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span><strong>{child.incidentId}</strong> &middot; {child.type} &middot; {child.location}</span>
+                          {isAuthorizedOfficer && (
+                            <button
+                              type="button"
+                              className={styles.subFormCancelBtn}
+                              style={{ padding: '2px 8px', fontSize: '10px', height: '22px' }}
+                              onClick={() => { setSelectedUnlinkReportId(child.id); setUnlinkReason(''); }}
+                            >
+                              UNLINK
+                            </button>
+                          )}
+                        </div>
+
+                        {selectedUnlinkReportId === child.id && (
+                          <div style={{ marginTop: '6px', padding: '10px', background: 'rgba(220, 38, 38, 0.08)', border: '1px solid rgba(220, 38, 38, 0.2)', borderRadius: '6px' }}>
+                            <label className={styles.formLabel} style={{ fontSize: '10px', display: 'block', marginBottom: '4px' }}>
+                              Reason to Unlink <span style={{ color: '#EF4444' }}>*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className={styles.textInput}
+                              placeholder="Describe why this report is separate..."
+                              value={unlinkReason}
+                              onChange={e => setUnlinkReason(e.target.value)}
+                            />
+                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                              <button
+                                className={styles.subFormSaveBtn}
+                                style={{ backgroundColor: '#DC2626', fontSize: '10px', padding: '4px 10px' }}
+                                disabled={!unlinkReason.trim()}
+                                onClick={handleUnlinkReport}
+                              >
+                                CONFIRM UNLINK
+                              </button>
+                              <button
+                                className={styles.subFormCancelBtn}
+                                style={{ fontSize: '10px', padding: '4px 10px' }}
+                                onClick={() => setSelectedUnlinkReportId('')}
+                              >
+                                CANCEL
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p style={{ fontSize: '12px', color: 'rgba(250, 248, 243, 0.45)', margin: '0 0 14px 0' }}>
+                  No secondary reports are currently linked to this operational incident.
+                </p>
+              )}
+
+              {/* Potential correlation suggestions */}
+              {isAuthorizedOfficer && candidates.length > 0 && (
+                <div style={{ padding: '14px', background: 'rgba(234, 179, 8, 0.06)', borderRadius: '10px', border: '1px solid rgba(234, 179, 8, 0.15)' }}>
+                  <h4 style={{ margin: 0, fontSize: '12px', color: '#FBBF24', letterSpacing: '0.05em' }}>
+                    POTENTIALLY RELATED REPORTS ({candidates.length})
+                  </h4>
+                  <p style={{ margin: '4px 0 10px 0', fontSize: '11px', color: 'rgba(250, 248, 243, 0.55)', lineHeight: 1.4 }}>
+                    SAKSHAM uses deterministic spatial, temporal and incident-type correlation to identify potentially related reports.
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px', marginBottom: '12px' }}>
+                    {candidates.map((cand: any) => (
+                      <div key={cand.report.id} style={{ display: 'flex', gap: '8px', padding: '8px', background: 'rgba(250, 248, 243, 0.03)', borderRadius: '6px', border: '1px solid rgba(250, 248, 243, 0.05)' }}>
+                        <input
+                          type="checkbox"
+                          style={{ marginTop: '2px' }}
+                          checked={selectedCandidateIds.includes(cand.report.id)}
+                          onChange={() => handleToggleSelectCandidate(cand.report.id)}
+                        />
+                        <div style={{ flex: 1, fontSize: '11px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                            <span>{cand.report.incidentId} &middot; {cand.report.type}</span>
+                            <span style={{ color: cand.correlationLabel === 'HIGH' ? '#34D399' : '#FBBF24' }}>
+                              Score: {cand.score} ({cand.correlationLabel})
+                            </span>
+                          </div>
+                          <div style={{ color: 'rgba(250, 248, 243, 0.6)', marginTop: '2px' }}>
+                            📍 {cand.distanceMeters} m &middot; 🕐 {cand.timeDifferenceMinutes} min apart
+                          </div>
+                          <div style={{ color: 'rgba(250, 248, 243, 0.45)', fontStyle: 'italic', marginTop: '2px' }}>
+                            "{cand.report.description}"
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className={styles.subFormSaveBtn}
+                      disabled={selectedCandidateIds.length === 0}
+                      onClick={handleLinkSelectedCandidates}
+                    >
+                      LINK SELECTED REPORTS
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.subFormCancelBtn}
+                      onClick={handleKeepSeparate}
+                    >
+                      KEEP SEPARATE
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <div className={styles.divider} />
+
+            {/* ── Section 3: Contact History Log ── */}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>
                 <MessageSquare size={14} />
@@ -829,8 +1034,22 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
                 </div>
                 <div className={styles.summaryRow}>
                   <span>Corroborating reports</span>
-                  <span>{corroborationCount !== null ? `✓ ${corroborationCount} report(s) nearby` : '✕ None'}</span>
+                  <span>
+                    {localIncident.childReports && localIncident.childReports.length > 0
+                      ? `✓ ${localIncident.childReports.length + 1} reports received`
+                      : corroborationCount !== null && corroborationCount > 0
+                        ? `✓ ${corroborationCount} reports nearby`
+                        : '✕ None'}
+                  </span>
                 </div>
+                {localIncident.childReports && localIncident.childReports.length > 0 && (
+                  <div className={styles.summaryRow}>
+                    <span>Affected reporting areas</span>
+                    <span>
+                      ✓ {Array.from(new Set([localIncident.location, ...localIncident.childReports.map((r: any) => r.location)])).length} unique area(s)
+                    </span>
+                  </div>
+                )}
                 <div className={styles.summaryRow}>
                   <span>Field verification</span>
                   <span>

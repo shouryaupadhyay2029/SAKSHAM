@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../db/db.js';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
+import { calculateHaversineDistance } from '../utils/distance.js';
 import { Severity, IncidentStatus, DemandPriority, DemandStatus, ResourceStatus, VehicleStatus, ShelterStatus, DispatchStatus, AllocationStatus, DeliveryStatus } from '@prisma/client';
 
 const router = Router();
@@ -177,6 +178,7 @@ router.get('/incidents', asyncHandler(async (req, res) => {
       orderBy: { reportedAt: 'desc' },
       include: {
         demands: true,
+        childReports: true,
       },
     }),
     prisma.incident.count({ where }),
@@ -205,6 +207,8 @@ router.get('/incidents/:id', asyncHandler(async (req, res) => {
     where: isUuid ? { id } : { incidentId: id },
     include: {
       demands: true,
+      childReports: true,
+      parentIncident: true,
       timelines: {
         orderBy: { timestamp: 'desc' },
         include: {
@@ -707,7 +711,292 @@ router.patch('/field-verifications/:id', requireOfficerAuth, asyncHandler(async 
     }
   });
 
+  await prisma.incidentTimeline.create({
+    data: {
+      incidentId: verification.incidentId,
+      eventType: `FIELD_VERIFICATION_${body.status}`,
+      message: timelineMsg,
+      actorId: officer.id,
+      metadata: { status: body.status, decision: body.decision, observation: body.observation }
+    }
+  });
+
   res.json({ data: updated });
+}));
+
+
+/* ==========================================
+   MULTI-REPORT INCIDENT CORRELATION & CLUSTERING
+   ========================================== */
+
+const CLUSTER_CONFIG = {
+  RADIUS_METERS: 1000,
+  TIME_WINDOW_MINUTES: 30,
+  WEIGHTS: {
+    SPATIAL: 40,
+    TEMPORAL: 30,
+    TYPE: 20,
+    DESCRIPTION: 10
+  }
+};
+
+const linkReportsSchema = z.object({
+  reportIds: z.array(z.string().uuid()),
+});
+
+const unlinkReportSchema = z.object({
+  reportId: z.string().uuid(),
+  reason: z.string().min(1, 'A reason is required to unlink a report'),
+});
+
+const keepSeparateSchema = z.object({
+  reportIds: z.array(z.string().uuid()),
+});
+
+// Helper to calculate simple keyword overlap for description score
+function getDescriptionSimilarityScore(desc1: string, desc2: string): number {
+  const words1 = new Set(desc1.toLowerCase().split(/\W+/).filter(w => w.length >= 4));
+  const words2 = new Set(desc2.toLowerCase().split(/\W+/).filter(w => w.length >= 4));
+  let overlapCount = 0;
+  for (const w of words1) {
+    if (words2.has(w)) overlapCount++;
+  }
+  return overlapCount >= 2 ? CLUSTER_CONFIG.WEIGHTS.DESCRIPTION : 0;
+}
+
+// GET /api/incidents/:id/candidates — detect potentially related reports
+router.get('/incidents/:id/candidates', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const primaryIncident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!primaryIncident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  // Find all other active, unlinked incidents that occurred around the same time and space
+  const allIncidents = await prisma.incident.findMany({
+    where: {
+      id: { not: primaryIncident.id },
+      parentIncidentId: null, // only link unlinked ones
+      status: { not: 'RESOLVED' } // ignore already resolved ones
+    }
+  });
+
+  const candidates = [];
+
+  for (const other of allIncidents) {
+    // 1. Spatial proximity check
+    const distanceKm = calculateHaversineDistance(
+      primaryIncident.latitude,
+      primaryIncident.longitude,
+      other.latitude,
+      other.longitude
+    );
+    const distanceMeters = distanceKm * 1000;
+
+    // Filter spatial limit
+    if (distanceMeters > CLUSTER_CONFIG.RADIUS_METERS) continue;
+
+    // 2. Temporal window check
+    const timeDiffMs = Math.abs(new Date(primaryIncident.reportedAt).getTime() - new Date(other.reportedAt).getTime());
+    const timeDiffMinutes = timeDiffMs / 60000;
+
+    // Filter temporal limit
+    if (timeDiffMinutes > CLUSTER_CONFIG.TIME_WINDOW_MINUTES) continue;
+
+    // 3. Compute score components
+    const spatialScore = CLUSTER_CONFIG.WEIGHTS.SPATIAL * (1 - (distanceMeters / CLUSTER_CONFIG.RADIUS_METERS));
+    const temporalScore = CLUSTER_CONFIG.WEIGHTS.TEMPORAL * (1 - (timeDiffMinutes / CLUSTER_CONFIG.TIME_WINDOW_MINUTES));
+
+    let typeScore = 0;
+    if (primaryIncident.type === other.type) {
+      typeScore = CLUSTER_CONFIG.WEIGHTS.TYPE;
+    } else if (
+      (primaryIncident.type === 'FIRE' && other.type === 'MEDICAL_EMERGENCY') ||
+      (primaryIncident.type === 'MEDICAL_EMERGENCY' && other.type === 'FIRE')
+    ) {
+      typeScore = CLUSTER_CONFIG.WEIGHTS.TYPE * 0.5; // related
+    } else {
+      // Different types: do not recommend unless they are highly spatial/temporal
+      continue;
+    }
+
+    const descScore = getDescriptionSimilarityScore(primaryIncident.description, other.description);
+    const totalScore = Math.round(spatialScore + temporalScore + typeScore + descScore);
+
+    let correlationLabel: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW';
+    if (totalScore >= 60) correlationLabel = 'HIGH';
+    else if (totalScore >= 35) correlationLabel = 'MEDIUM';
+
+    candidates.push({
+      report: other,
+      distanceMeters: Math.round(distanceMeters),
+      timeDifferenceMinutes: Math.round(timeDiffMinutes),
+      score: totalScore,
+      correlationLabel
+    });
+  }
+
+  // Sort candidates by score descending
+  candidates.sort((a, b) => b.score - a.score);
+
+  res.json({ data: candidates });
+}));
+
+// POST /api/incidents/:id/link — link selected candidate reports to this operational incident
+router.post('/incidents/:id/link', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const officer = (req as any).officer;
+  const body = linkReportsSchema.parse(req.body);
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const primaryIncident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!primaryIncident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  // Link inside transaction
+  const result = await prisma.$transaction(async (tx) => {
+    const reports = await tx.incident.findMany({
+      where: { id: { in: body.reportIds }, parentIncidentId: null }
+    });
+
+    if (reports.length === 0) {
+      throw new Error('No valid unlinked candidate reports found matching the IDs.');
+    }
+
+    const reportLabels = reports.map(r => r.incidentId).join(', ');
+
+    // Update parentIncidentId
+    await tx.incident.updateMany({
+      where: { id: { in: reports.map(r => r.id) } },
+      data: { parentIncidentId: primaryIncident.id }
+    });
+
+    // Write timeline on master
+    await tx.incidentTimeline.create({
+      data: {
+        incidentId: primaryIncident.id,
+        eventType: 'REPORTS_LINKED',
+        message: `Officer ${officer.name} linked ${reports.length} report(s) as corroborative evidence: ${reportLabels}`,
+        actorId: officer.id,
+        metadata: { reportIds: body.reportIds, reportLabels }
+      }
+    });
+
+    // Write timeline on each child
+    for (const report of reports) {
+      await tx.incidentTimeline.create({
+        data: {
+          incidentId: report.id,
+          eventType: 'LINKED_TO_MASTER',
+          message: `Linked to operational incident ${primaryIncident.incidentId} by Officer ${officer.name}`,
+          actorId: officer.id,
+          metadata: { masterIncidentId: primaryIncident.id, masterLabel: primaryIncident.incidentId }
+        }
+      });
+    }
+
+    return { linkedCount: reports.length, reportLabels };
+  });
+
+  res.json({
+    data: {
+      message: `Successfully linked ${result.linkedCount} reports (${result.reportLabels}) to ${primaryIncident.incidentId}.`
+    }
+  });
+}));
+
+// POST /api/incidents/:id/unlink — unlink a corroborative report
+router.post('/incidents/:id/unlink', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const officer = (req as any).officer;
+  const body = unlinkReportSchema.parse(req.body);
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const primaryIncident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!primaryIncident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  const childReport = await prisma.incident.findUnique({ where: { id: body.reportId } });
+  if (!childReport || childReport.parentIncidentId !== primaryIncident.id) {
+    return res.status(400).json({ error: { message: 'Report is not linked to this operational incident.' } });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Clear parentIncidentId
+    await tx.incident.update({
+      where: { id: childReport.id },
+      data: { parentIncidentId: null }
+    });
+
+    // Write timeline on master
+    await tx.incidentTimeline.create({
+      data: {
+        incidentId: primaryIncident.id,
+        eventType: 'REPORT_UNLINKED',
+        message: `Officer ${officer.name} unlinked report ${childReport.incidentId}. Reason: "${body.reason}"`,
+        actorId: officer.id,
+        metadata: { reportId: childReport.id, label: childReport.incidentId, reason: body.reason }
+      }
+    });
+
+    // Write timeline on child
+    await tx.incidentTimeline.create({
+      data: {
+        incidentId: childReport.id,
+        eventType: 'UNLINKED_FROM_MASTER',
+        message: `Unlinked from operational incident ${primaryIncident.incidentId} by Officer ${officer.name}. Reason: "${body.reason}"`,
+        actorId: officer.id,
+        metadata: { masterIncidentId: primaryIncident.id, masterLabel: primaryIncident.incidentId, reason: body.reason }
+      }
+    });
+  });
+
+  res.json({
+    data: {
+      message: `Report ${childReport.incidentId} successfully unlinked.`
+    }
+  });
+}));
+
+// POST /api/incidents/:id/keep-separate — mark candidate reports as checked and separate
+router.post('/incidents/:id/keep-separate', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const officer = (req as any).officer;
+  const body = keepSeparateSchema.parse(req.body);
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const primaryIncident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!primaryIncident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  const reports = await prisma.incident.findMany({
+    where: { id: { in: body.reportIds } }
+  });
+  const reportLabels = reports.map(r => r.incidentId).join(', ');
+
+  await prisma.incidentTimeline.create({
+    data: {
+      incidentId: primaryIncident.id,
+      eventType: 'CORRELATION_KEPT_SEPARATE',
+      message: `Officer ${officer.name} reviewed potential correlation with reports (${reportLabels}) and marked them separate.`,
+      actorId: officer.id,
+      metadata: { reportIds: body.reportIds, reportLabels }
+    }
+  });
+
+  res.json({ data: { message: 'Review recorded: marked separate.' } });
 }));
 
 

@@ -107,6 +107,31 @@ export const apiClient = {
     });
   },
 
+  async getRelatedCandidates(id: string) {
+    return fetchJson<any[]>(`/incidents/${id}/candidates`);
+  },
+
+  async linkReports(id: string, reportIds: string[]) {
+    return fetchJson<any>(`/incidents/${id}/link`, {
+      method: 'POST',
+      body: JSON.stringify({ reportIds }),
+    });
+  },
+
+  async unlinkReport(id: string, reportId: string, reason: string) {
+    return fetchJson<any>(`/incidents/${id}/unlink`, {
+      method: 'POST',
+      body: JSON.stringify({ reportId, reason }),
+    });
+  },
+
+  async keepSeparate(id: string, reportIds: string[]) {
+    return fetchJson<any>(`/incidents/${id}/keep-separate`, {
+      method: 'POST',
+      body: JSON.stringify({ reportIds }),
+    });
+  },
+
   // ── Demands ──
   async getDemands(params?: { status?: string; priority?: string; incidentId?: string; limit?: number; offset?: number }) {
     const query = new URLSearchParams();

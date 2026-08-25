@@ -79,7 +79,7 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!mapContainerRef.current) return;
 
     const apiKey = import.meta.env.VITE_MAPTILER_API_KEY || "itWmaIIvDdX6bC6L0Onn";
-    const mapStyle = `https://api.maptiler.com/maps/openstreetmap/style.json?key=${apiKey}`;
+    const mapStyle = `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}`;
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
@@ -106,8 +106,8 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!map) return;
     const apiKey = import.meta.env.VITE_MAPTILER_API_KEY || "itWmaIIvDdX6bC6L0Onn";
     const styleUrl = mapMode === 'STREETS'
-      ? `https://api.maptiler.com/maps/openstreetmap/style.json?key=${apiKey}`
-      : `https://api.maptiler.com/maps/darkmatter/style.json?key=${apiKey}`;
+      ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${apiKey}`
+      : `https://api.maptiler.com/maps/basic-v2-dark/style.json?key=${apiKey}`;
     map.setStyle(styleUrl);
   }, [mapMode]);
 
@@ -211,19 +211,25 @@ export const MapView: React.FC<MapViewProps> = ({
         el.className = styles.markerContainer;
 
         const visual = document.createElement('div');
-        visual.className = `${styles.markerVisual} ${
-          incident.severity === 'CRITICAL'
-            ? styles.markerCritical
-            : incident.severity === 'HIGH'
-              ? styles.markerHigh
-              : styles.markerMedium
-        }`;
+        if (incident.parentIncidentId) {
+          visual.className = `${styles.markerVisual} ${styles.markerChild}`;
+        } else {
+          visual.className = `${styles.markerVisual} ${
+            incident.severity === 'CRITICAL'
+              ? styles.markerCritical
+              : incident.severity === 'HIGH'
+                ? styles.markerHigh
+                : styles.markerMedium
+          }`;
+        }
         visual.setAttribute('data-incident-id', incident.id);
         el.appendChild(visual);
 
-        const dot = document.createElement('div');
-        dot.className = styles.markerDot;
-        visual.appendChild(dot);
+        if (!incident.parentIncidentId) {
+          const dot = document.createElement('div');
+          dot.className = styles.markerDot;
+          visual.appendChild(dot);
+        }
 
         const popup = new maplibregl.Popup({ offset: 15, closeButton: false })
           .setHTML(`
@@ -669,6 +675,70 @@ export const MapView: React.FC<MapViewProps> = ({
       });
     };
   }, [vehicles, layerFilters.routes, showAlternatives, missions]);
+
+  // ── Draw cluster lines connecting child reports to master ──────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const sourceId = 'cluster-lines-source';
+    const layerId = 'cluster-lines-layer';
+
+    const drawClusterLines = () => {
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+      if (!selectedIncident || !selectedIncident.childReports || selectedIncident.childReports.length === 0) return;
+
+      const features = selectedIncident.childReports.map((child: any) => {
+        return {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [selectedIncident.coordinates.lng, selectedIncident.coordinates.lat],
+              [child.coordinates?.lng || child.longitude || 77.2090, child.coordinates?.lat || child.latitude || 28.6139]
+            ]
+          }
+        };
+      });
+
+      map.addSource(sourceId, {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features
+        }
+      });
+
+      map.addLayer({
+        id: layerId,
+        type: 'line',
+        source: sourceId,
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': '#FBBF24', // Amber color for correlation lines
+          'line-width': 2.5,
+          'line-dasharray': [3, 2],
+          'line-opacity': 0.85
+        }
+      });
+    };
+
+    if (map.isStyleLoaded()) {
+      drawClusterLines();
+    } else {
+      map.on('style.load', drawClusterLines);
+    }
+
+    return () => {
+      try {
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+      } catch (_) {}
+    };
+  }, [selectedIncident]);
 
   const renderDetailPanel = () => {
     if (!activeSelection) return null;

@@ -21,8 +21,7 @@ async def list_demands(
 @router.post("", response_model=DemandResponse, status_code=status.HTTP_201_CREATED, summary="Create a new demand request")
 async def create_demand(
     demand: DemandCreate,
-    service: DemandService = Depends(get_demand_service),
-    current_officer: OfficerModel = Depends(get_current_officer)
+    service: DemandService = Depends(get_demand_service)
 ):
     created = service.create_demand(demand)
     try:

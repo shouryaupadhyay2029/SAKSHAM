@@ -158,7 +158,9 @@ export function normalizeIncident(backendInc: any): Incident {
       lng: backendInc.longitude
     },
     time: reportedStr || createdStr || new Date().toISOString(),
-    status: backendInc.status,
+    status: (backendInc.status === 'AWAITING_RESPONSE' || backendInc.status === 'AWAITING_MATCH') 
+      ? 'PRIORITIZED' 
+      : (backendInc.status === 'MATCHED' ? 'RESOURCE_MATCHED' : backendInc.status),
     assignedTeam: backendInc.assignedUnit || 'UNASSIGNED',
     description: backendInc.description,
     reporterName: backendInc.reporterName || 'Field Reporter',
@@ -183,6 +185,7 @@ export function normalizeIncident(backendInc: any): Incident {
 export function normalizeResource(backendRes: any): ResourceItem {
   return {
     id: backendRes.resourceId || backendRes.id,
+    uuid: backendRes.id,
     name: backendRes.materialName,
     category: backendRes.category,
     quantity: backendRes.availableQuantity,
@@ -234,6 +237,7 @@ export function normalizeDemand(backendDem: any, incidents?: Incident[]): Demand
   }
   return {
     id: backendDem.requestId || backendDem.id,
+    uuid: backendDem.id,
     incidentId: incId,
     zoneName: backendDem.affectedZone,
     coordinates: coords,
@@ -1093,9 +1097,8 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     }
 
     // --- Step 1: Capture previous state for rollback ---
-    let previousIncidents: typeof incidents = [];
+    const previousIncidents = incidents;
     setIncidents(prev => {
-      previousIncidents = prev;
       return prev.map(inc => {
         if (inc.id !== incidentId) return inc;
         const currentTimeline = inc.timeline || [];
@@ -1132,17 +1135,33 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
       'CANCELLED': 'CANCELLED'
     };
     const backendStatus = statusMapFrontendToBackend[status] || status;
-    
+
+    // Resolve the DB UUID — incidents use INC-2026-xxx as display ID, but the
+    // backend PATCH endpoint requires the actual PostgreSQL UUID stored in `uuid`.
+    const incidentObj = previousIncidents.find(i => i.id === incidentId);
+    const backendId = (incidentObj as any)?.uuid;
+
+    // If no UUID exists the incident was created locally (SOS/fallback) and hasn't
+    // been persisted to the DB yet — keep the optimistic update and return silently.
+    if (!backendId) {
+      console.warn(`[INCIDENT STATUS] No DB UUID for ${incidentId} — optimistic local update only (incident not yet persisted).`);
+      return;
+    }
+
     try {
-      await apiClient.updateIncident(incidentId, { status: backendStatus });
+      await apiClient.updateIncident(backendId, { status: backendStatus });
       console.log(`[INCIDENT STATUS PERSISTENCE] ✅ ${incidentId} → ${backendStatus} persisted in PostgreSQL.`);
     } catch (err: any) {
-      // 401 = demo/offline mode: no valid JWT, so backend can't auth.
-      // Keep the optimistic UI update (don't roll back) — the state is shown correctly
-      // in the UI even without DB persistence in demo sessions.
+      // 401 = demo/offline mode: no valid JWT → keep optimistic update, don't roll back.
       if (err && err.status === 401) {
         console.warn(`[INCIDENT STATUS] Demo mode — backend auth required. UI updated locally only.`);
-        return; // Don't throw — let the optimistic update stand
+        return;
+      }
+      // 404 = incident exists in local state but not yet in DB (race condition on SOS saves)
+      // → keep the optimistic update, don't show an error to the user.
+      if (err && err.status === 404) {
+        console.warn(`[INCIDENT STATUS] Incident ${incidentId} not found in DB yet — optimistic update kept.`);
+        return;
       }
       // All other errors (409 invalid transition, 403 wrong role, network failures)
       // → roll back the optimistic UI change and re-throw so the component can show an error banner.
@@ -1154,12 +1173,12 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
 
 
 
+
   const setIncidentPriority = async (incidentId: string, severity: Severity): Promise<void> => {
     const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
     
-    let previousIncidents: typeof incidents = [];
+    const previousIncidents = incidents;
     setIncidents(prev => {
-      previousIncidents = prev;
       return prev.map(inc => {
         if (inc.id !== incidentId) return inc;
         
@@ -1179,9 +1198,15 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     });
 
     try {
-      await apiClient.updateIncident(incidentId, { 
+      const incidentObj = previousIncidents.find(i => i.id === incidentId);
+      const backendId = (incidentObj as any)?.uuid;
+      if (!backendId) {
+        console.warn(`[INCIDENT PRIORITY] No DB UUID for ${incidentId} — optimistic local update only.`);
+        return;
+      }
+      await apiClient.updateIncident(backendId, { 
         severity: severity, 
-        status: 'AWAITING_MATCH' // 'PRIORITIZED' maps to 'AWAITING_MATCH' on the backend
+        status: 'AWAITING_MATCH'
       });
       console.log(`[INCIDENT PRIORITY PERSISTENCE] ✅ ${incidentId} set to ${severity} (PRIORITIZED) in PostgreSQL.`);
     } catch (err: any) {
@@ -1189,11 +1214,17 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
         console.warn(`[INCIDENT PRIORITY] Demo mode — backend auth required. UI updated locally only.`);
         return;
       }
+      if (err && err.status === 404) {
+        console.warn(`[INCIDENT PRIORITY] Incident ${incidentId} not found in DB yet — optimistic update kept.`);
+        return;
+      }
       console.error(`[INCIDENT PRIORITY PERSISTENCE ERROR] ❌ Failed to persist priority for ${incidentId}:`, err);
       setIncidents(previousIncidents);
       throw err;
     }
   };
+
+
 
 
   const updateVehicleStatus = (vehicleId: string, status: VehicleStatus) => {
@@ -1250,8 +1281,19 @@ export const OperationalStateProvider: React.FC<{ children: React.ReactNode }> =
     resourceId: string,
     quantity: number
   ): Promise<string> => {
+    // Resolve database UUIDs for both demand and resource
+    const demandObj = requests.find(r => r.id === demandId);
+    const dbDemandId = (demandObj as any)?.uuid || demandId;
+
+    const resourceObj = resources.find(r => r.id === resourceId);
+    const dbResourceId = (resourceObj as any)?.uuid || resourceId;
+
     try {
-      const res = await apiClient.confirmAllocation({ demandId, resourceId, quantity });
+      const res = await apiClient.confirmAllocation({ 
+        demandId: dbDemandId, 
+        resourceId: dbResourceId, 
+        quantity 
+      });
       const { allocation, incident, demand, resource } = res.data;
 
       const normInc = normalizeIncident(incident);

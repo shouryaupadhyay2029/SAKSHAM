@@ -144,6 +144,10 @@ model Incident {
   reporterPhone   String?
   reporterEmail   String?
 
+  parentIncidentId  String?   @db.Uuid
+  parentIncident    Incident? @relation("IncidentCorrelation", fields: [parentIncidentId], references: [id], onDelete: SetNull)
+  childReports      Incident[] @relation("IncidentCorrelation")
+
   timelines           IncidentTimeline[]
   demands             DemandRequest[]
   notifications       Notification[]

@@ -134,7 +134,9 @@ export const OperationsLayout: React.FC = () => {
                     severity: incData.severity ?? item.severity,
                     location: incData.location ?? item.location,
                     description: incData.description ?? item.description,
-                    status: incData.status ?? item.status,
+                    status: ((incData.status === 'AWAITING_RESPONSE' || incData.status === 'AWAITING_MATCH') 
+                      ? 'PRIORITIZED' 
+                      : (incData.status === 'MATCHED' ? 'RESOURCE_MATCHED' : incData.status)) ?? item.status,
                     updatedAt: new Date().toISOString(),
                   }
                 : item
@@ -148,18 +150,21 @@ export const OperationsLayout: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['incidents'] });
         const incData = event.data;
         if (incData && incData.id) {
+          const mappedStatus = (incData.status === 'AWAITING_RESPONSE' || incData.status === 'AWAITING_MATCH') 
+            ? 'PRIORITIZED' 
+            : (incData.status === 'MATCHED' ? 'RESOURCE_MATCHED' : incData.status);
           setIncidents((prev) =>
             prev.map((item) =>
               item.id === String(incData.id) || (item as any).uuid === String(incData.id) || item.id === incData.incidentId
                 ? {
                     ...item,
-                    status: incData.status,
+                    status: mappedStatus,
                     updatedAt: new Date().toISOString(),
                   }
                 : item
             )
           );
-          addToast('INFO', `INCIDENT STATUS: ${incData.incidentId || incData.id} is now ${incData.status}`);
+          addToast('INFO', `INCIDENT STATUS: ${incData.incidentId || incData.id} is now ${mappedStatus}`);
         }
         break;
       }

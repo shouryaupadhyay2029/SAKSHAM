@@ -84,8 +84,8 @@ async def confirm_allocation(
             message="Incident associated with this demand request not found."
         )
 
-    # 3. Verify incident status is prioritized (AWAITING_MATCH)
-    if incident_obj.status != IncidentStatus.AWAITING_MATCH:
+    # 3. Verify incident status is prioritized (AWAITING_MATCH / AWAITING_RESPONSE)
+    if incident_obj.status not in [IncidentStatus.AWAITING_MATCH, "AWAITING_RESPONSE"]:
         raise SakshamException(
             status_code=status.HTTP_409_CONFLICT,
             code="INVALID_STATE_TRANSITION",
@@ -150,8 +150,8 @@ async def confirm_allocation(
         # Update demand status
         demand_obj.status = DemandStatus.ALLOCATED
 
-        # Update incident status to MATCHED (RESOURCE MATCHED)
-        incident_obj.status = IncidentStatus.MATCHED
+        # Update incident status to AWAITING_RESPONSE (equivalent to RESOURCE MATCHED)
+        incident_obj.status = "AWAITING_RESPONSE"
         incident_obj.updatedAt = datetime.utcnow()
 
         db.commit()

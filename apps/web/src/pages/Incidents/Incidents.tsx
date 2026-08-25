@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { 
   Search, Plus, MapPin, 
   Shield, Check, 
-  AlertCircle, X, Send, ChevronRight, AlertTriangle
+  AlertCircle, X, Send, ChevronRight, AlertTriangle,
+  Phone, MessageSquare, User
 } from 'lucide-react';
 import { useOperationalState } from '../../context/OperationalStateContext';
+import { useAuth } from '../../context/AuthContext';
 import { MapView } from '../../components/map/MapView';
 import type { Severity } from '../../types/common';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +30,9 @@ export const Incidents: React.FC = () => {
     incidents, resources, vehicles, shelters,
     addManualIncident, updateIncidentStatus, setIncidentPriority
   } = useOperationalState();
+
+  const { isAuthenticated, hasRole } = useAuth();
+  const isOfficer = isAuthenticated && (hasRole('OPERATOR') || hasRole('REGIONAL_AUTHORITY') || hasRole('ADMIN'));
 
   console.log('[INCIDENT DEBUG] incidents received by page:', incidents);
   console.log('[INCIDENT DEBUG] incidents count:', incidents.length);
@@ -333,7 +338,7 @@ export const Incidents: React.FC = () => {
                           </span>
                         </td>
                         <td className="tech-code">
-                          {new Date(inc.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                          {new Date(inc.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}
                         </td>
                         <td className={styles.impactCol}>{inc.peopleAffected ?? inc.displacedCount ?? '—'}</td>
                         <td>
@@ -422,127 +427,143 @@ export const Incidents: React.FC = () => {
                   {t('common.view')} →
                 </Link>
 
-                {selectedIncident.status === 'REPORTED' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <button
-                      id="btn-verify-incident"
-                      className={styles.primaryActionBtn}
-                      disabled={verifyLoading}
-                      onClick={() => {
-                        setVerifyError(null);
-                        handleVerifyIncident(selectedIncident.id);
-                      }}
-                    >
-                      {verifyLoading ? 'VERIFYING…' : t('status.VERIFIED')}
-                    </button>
-                    {verifyError && (
-                      <span style={{ color: '#EF4444', fontSize: '11px', lineHeight: 1.4 }}>
-                        ⚠ {verifyError}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {selectedIncident.status === 'VERIFIED' && activeSubAction !== 'PRIORITY' && (
-                  <button className={styles.primaryActionBtn} onClick={() => setActiveSubAction('PRIORITY')}>
-                    {t('common.priority')}
-                  </button>
-                )}
-
-                {selectedIncident.status === 'VERIFIED' && activeSubAction === 'PRIORITY' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 800, color: 'rgba(250, 248, 243, 0.6)', letterSpacing: '0.05em' }}>
-                      ASSIGN SEVERITY LEVEL:
-                    </span>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => (
+                {/* ── OFFICER-ONLY ACTIONS ── */}
+                {isOfficer ? (
+                  <>
+                    {selectedIncident.status === 'REPORTED' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <button
-                          key={sev}
+                          id="btn-verify-incident"
                           className={styles.primaryActionBtn}
-                          style={{
-                            backgroundColor: sev === 'CRITICAL' ? '#EF4444' : sev === 'HIGH' ? '#F97316' : sev === 'MEDIUM' ? '#EAB308' : '#10B981',
-                            padding: '8px 10px',
-                            fontSize: '11px',
-                            fontWeight: 'bold',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
                           disabled={verifyLoading}
-                          onClick={async () => {
+                          onClick={() => {
                             setVerifyError(null);
-                            setVerifyLoading(true);
-                            try {
-                              await setIncidentPriority(selectedIncident.id, sev as Severity);
-                              setActiveSubAction('NONE');
-                            } catch (err: any) {
-                              setVerifyError('Failed to assign priority. Please check backend.');
-                            } finally {
-                              setVerifyLoading(false);
-                            }
+                            handleVerifyIncident(selectedIncident.id);
                           }}
                         >
-                          ● {sev}
+                          {verifyLoading ? 'VERIFYING…' : t('status.VERIFIED')}
                         </button>
-                      ))}
-                    </div>
-                    <button
-                      className={styles.primaryActionBtn}
-                      style={{ backgroundColor: 'rgba(250,248,243,0.1)', color: '#FAF8F3', border: '1px solid rgba(250,248,243,0.2)' }}
-                      onClick={() => setActiveSubAction('NONE')}
-                    >
-                      CANCEL
-                    </button>
-                  </div>
-                )}
+                        {verifyError && (
+                          <span style={{ color: '#EF4444', fontSize: '11px', lineHeight: 1.4 }}>
+                            ⚠ {verifyError}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
-                {selectedIncident.status === 'PRIORITIZED' && (
-                  <button 
-                    className={styles.primaryActionBtn} 
-                    onClick={() => updateIncidentStatus(selectedIncident.id, 'RESOURCE_MATCHED')}
-                  >
-                    {t('matching.runMatcher')}
-                  </button>
-                )}
-
-                {selectedIncident.status === 'RESOURCE_MATCHED' && (
-                  <button 
-                    className={styles.primaryActionBtn}
-                    onClick={() => {
-                      const avail = vehicles.find(v => v.status === 'AVAILABLE');
-                      if (avail) {
-                        updateIncidentStatus(selectedIncident.id, 'DISPATCHED');
-                      } else {
-                        updateIncidentStatus(selectedIncident.id, 'DISPATCHED');
-                      }
-                    }}
-                  >
-                    {t('dashboard.dispatchFleet')}
-                  </button>
-                )}
-
-                {(selectedIncident.status === 'DISPATCHED' || selectedIncident.status === 'UNDER_RESPONSE') && (
-                  <div className={styles.actionRowGroup}>
-                    {selectedIncident.status === 'DISPATCHED' && (
-                      <button 
-                        className={styles.primaryActionBtn} 
-                        onClick={() => updateIncidentStatus(selectedIncident.id, 'UNDER_RESPONSE')}
-                      >
-                        {t('status.UNDER_RESPONSE')}
+                    {selectedIncident.status === 'VERIFIED' && activeSubAction !== 'PRIORITY' && (
+                      <button className={styles.primaryActionBtn} onClick={() => setActiveSubAction('PRIORITY')}>
+                        {t('common.priority')}
                       </button>
                     )}
-                    <button 
-                      className={`${styles.primaryActionBtn} ${styles.actionSuccess}`}
-                      onClick={() => updateIncidentStatus(selectedIncident.id, 'RESOLVED')}
-                    >
-                      {t('status.RESOLVED')}
-                    </button>
-                  </div>
-                )}
 
-                {selectedIncident.status === 'RESOLVED' && (
-                  <div className={styles.resolvedBanner}>
-                    <Shield size={12} /> {t('status.RESOLVED')}
+                    {selectedIncident.status === 'VERIFIED' && activeSubAction === 'PRIORITY' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: 'rgba(250, 248, 243, 0.6)', letterSpacing: '0.05em' }}>
+                          ASSIGN SEVERITY LEVEL:
+                        </span>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                          {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => (
+                            <button
+                              key={sev}
+                              className={styles.primaryActionBtn}
+                              style={{
+                                backgroundColor: sev === 'CRITICAL' ? '#EF4444' : sev === 'HIGH' ? '#F97316' : sev === 'MEDIUM' ? '#EAB308' : '#10B981',
+                                padding: '8px 10px',
+                                fontSize: '11px',
+                                fontWeight: 'bold',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => {
+                                // Close the panel immediately — optimistic update is instant
+                                setActiveSubAction('NONE');
+                                // Fire-and-forget backend persist (errors handled silently inside)
+                                setIncidentPriority(selectedIncident.id, sev as Severity).catch(() => {});
+                              }}
+                            >
+                              ● {sev}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          className={styles.primaryActionBtn}
+                          style={{ backgroundColor: 'rgba(250,248,243,0.1)', color: '#FAF8F3', border: '1px solid rgba(250,248,243,0.2)' }}
+                          onClick={() => setActiveSubAction('NONE')}
+                        >
+                          CANCEL
+                        </button>
+                      </div>
+                    )}
+
+                    {selectedIncident.status === 'PRIORITIZED' && (
+                      <button 
+                        className={styles.primaryActionBtn} 
+                        onClick={() => updateIncidentStatus(selectedIncident.id, 'RESOURCE_MATCHED')}
+                      >
+                        {t('matching.runMatcher')}
+                      </button>
+                    )}
+
+                    {selectedIncident.status === 'RESOURCE_MATCHED' && (
+                      <button 
+                        className={styles.primaryActionBtn}
+                        onClick={() => {
+                          const avail = vehicles.find(v => v.status === 'AVAILABLE');
+                          if (avail) {
+                            updateIncidentStatus(selectedIncident.id, 'DISPATCHED');
+                          } else {
+                            updateIncidentStatus(selectedIncident.id, 'DISPATCHED');
+                          }
+                        }}
+                      >
+                        {t('dashboard.dispatchFleet')}
+                      </button>
+                    )}
+
+                    {(selectedIncident.status === 'DISPATCHED' || selectedIncident.status === 'UNDER_RESPONSE') && (
+                      <div className={styles.actionRowGroup}>
+                        {selectedIncident.status === 'DISPATCHED' && (
+                          <button 
+                            className={styles.primaryActionBtn} 
+                            onClick={() => updateIncidentStatus(selectedIncident.id, 'UNDER_RESPONSE')}
+                          >
+                            {t('status.UNDER_RESPONSE')}
+                          </button>
+                        )}
+                        <button 
+                          className={`${styles.primaryActionBtn} ${styles.actionSuccess}`}
+                          onClick={() => updateIncidentStatus(selectedIncident.id, 'RESOLVED')}
+                        >
+                          {t('status.RESOLVED')}
+                        </button>
+                      </div>
+                    )}
+
+                    {selectedIncident.status === 'RESOLVED' && (
+                      <div className={styles.resolvedBanner}>
+                        <Shield size={12} /> {t('status.RESOLVED')}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Civilian / unauthenticated: show lock notice */
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 12px',
+                    background: 'rgba(250, 248, 243, 0.06)',
+                    border: '1px solid rgba(250, 248, 243, 0.12)',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    color: 'rgba(250, 248, 243, 0.5)',
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                  }}>
+                    <Shield size={12} style={{ flexShrink: 0 }} />
+                    OFFICER LOGIN REQUIRED
                   </div>
                 )}
               </div>
@@ -574,7 +595,7 @@ export const Incidents: React.FC = () => {
                 <div className={styles.gridData}>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>{t('incidents.reported')}</span>
-                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{new Date(selectedIncident.reportedAt || selectedIncident.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                    <span className="tech-code" style={{ color: '#FAF8F3' }}>{new Date(selectedIncident.reportedAt || selectedIncident.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}</span>
                   </div>
                   <div className={styles.gridRow}>
                     <span className={styles.gridLabel}>{t('incidents.impact')}</span>
@@ -592,6 +613,87 @@ export const Incidents: React.FC = () => {
                 <h4 className={styles.sectionTitle}>{t('common.description')}</h4>
                 <DynamicText text={selectedIncident.description} className={styles.situationText} as="p" />
               </div>
+
+              {/* Reporter Contact Card */}
+              {(selectedIncident.reporterName || selectedIncident.reporterContact || selectedIncident.reporterPhone) && (
+                <div className={styles.detailsGrid}>
+                  <h4 className={styles.sectionTitle} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <User size={12} style={{ color: '#E86F16' }} /> REPORTER CONTACT
+                  </h4>
+                  <div className={styles.gridData}>
+                    {selectedIncident.reporterName && (
+                      <div className={styles.gridRow}>
+                        <span className={styles.gridLabel}>Name</span>
+                        <span style={{ color: '#FAF8F3', fontWeight: 600 }}>{selectedIncident.reporterName}</span>
+                      </div>
+                    )}
+                    {(selectedIncident.reporterPhone || selectedIncident.reporterContact) && (
+                      <div className={styles.gridRow}>
+                        <span className={styles.gridLabel}>Phone</span>
+                        <span className="tech-code" style={{ color: '#FAF8F3' }}>
+                          {(() => {
+                            const ph = selectedIncident.reporterPhone || selectedIncident.reporterContact || '';
+                            return ph.length >= 7 ? ph.slice(0, 3) + ' ****' + ph.slice(-3) : ph || '—';
+                          })()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Action buttons */}
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                    <a
+                      href={`tel:${selectedIncident.reporterPhone || selectedIncident.reporterContact || ''}`}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '8px 12px',
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        borderRadius: '6px',
+                        color: '#10B981',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.28)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)')}
+                    >
+                      <Phone size={11} /> CALL
+                    </a>
+                    <a
+                      href={`sms:${selectedIncident.reporterPhone || selectedIncident.reporterContact || ''}`}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        padding: '8px 12px',
+                        background: 'rgba(234, 179, 8, 0.15)',
+                        border: '1px solid rgba(234, 179, 8, 0.4)',
+                        borderRadius: '6px',
+                        color: '#EAB308',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(234, 179, 8, 0.28)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(234, 179, 8, 0.15)')}
+                    >
+                      <MessageSquare size={11} /> SMS
+                    </a>
+                  </div>
+                </div>
+              )}
 
             </div>
           ) : (

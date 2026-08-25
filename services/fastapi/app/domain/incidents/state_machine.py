@@ -2,8 +2,9 @@ from app.schemas.incident import IncidentStatus
 
 VALID_INCIDENT_TRANSITIONS = {
     IncidentStatus.REPORTED: [IncidentStatus.VERIFIED, IncidentStatus.CANCELLED],
-    IncidentStatus.VERIFIED: [IncidentStatus.AWAITING_MATCH, IncidentStatus.CANCELLED],
+    IncidentStatus.VERIFIED: [IncidentStatus.AWAITING_MATCH, IncidentStatus.AWAITING_RESPONSE, IncidentStatus.CANCELLED],
     IncidentStatus.AWAITING_MATCH: [IncidentStatus.MATCHED, IncidentStatus.CANCELLED],
+    IncidentStatus.AWAITING_RESPONSE: [IncidentStatus.MATCHED, IncidentStatus.CANCELLED],
     IncidentStatus.MATCHED: [IncidentStatus.DISPATCHED, IncidentStatus.CANCELLED],
     IncidentStatus.DISPATCHED: [IncidentStatus.UNDER_RESPONSE, IncidentStatus.CANCELLED],
     IncidentStatus.UNDER_RESPONSE: [IncidentStatus.RESOLVED, IncidentStatus.CANCELLED],

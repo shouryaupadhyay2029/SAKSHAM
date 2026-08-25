@@ -13,6 +13,18 @@ def is_valid_uuid(val: str) -> bool:
     except ValueError:
         return False
 
+DB_STATUS_MAP = {
+    "AWAITING_MATCH": "AWAITING_RESPONSE",
+    "AWAITING_RESPONSE": "AWAITING_RESPONSE",
+    "MATCHED": "AWAITING_RESPONSE",
+    "DISPATCHED": "UNDER_RESPONSE",
+    "UNDER_RESPONSE": "UNDER_RESPONSE",
+    "RESOLVED": "RESOLVED",
+    "REPORTED": "REPORTED",
+    "VERIFIED": "VERIFIED",
+    "CANCELLED": "RESOLVED"
+}
+
 class SqlAlchemyIncidentRepository(IncidentRepositoryInterface):
     def __init__(self, db: Session):
         self.db = db
@@ -38,6 +50,11 @@ class SqlAlchemyIncidentRepository(IncidentRepositoryInterface):
     def create(self, incident: IncidentCreate) -> IncidentResponse:
         count = self.db.query(IncidentModel).count()
         ref_id = f"INC-2026-{count + 1:03d}"
+        
+        status_val = getattr(incident, "status", None)
+        status_str = status_val.value if status_val else "REPORTED"
+        db_status = DB_STATUS_MAP.get(status_str, "REPORTED")
+
         db_obj = IncidentModel(
             incidentId=ref_id,
             type=incident.type,
@@ -48,7 +65,7 @@ class SqlAlchemyIncidentRepository(IncidentRepositoryInterface):
             longitude=incident.longitude,
             region=incident.region,
             severity=incident.severity.value,
-            status=getattr(incident, "status", None).value if (hasattr(incident, "status") and incident.status) else "REPORTED",
+            status=db_status,
             affectedPeople=incident.affectedPeople or 0,
             displacedPeople=incident.displacedPeople or 0,
             assignedUnit=incident.assignedUnit
@@ -70,7 +87,11 @@ class SqlAlchemyIncidentRepository(IncidentRepositoryInterface):
         update_dict = update_data.model_dump(exclude_unset=True)
         for key, value in update_dict.items():
             if value is not None:
-                if hasattr(value, "value"):
+                if key == "status":
+                    status_str = value.value if hasattr(value, "value") else str(value)
+                    db_status = DB_STATUS_MAP.get(status_str, "REPORTED")
+                    setattr(db_obj, key, db_status)
+                elif hasattr(value, "value"):
                     setattr(db_obj, key, value.value)
                 else:
                     setattr(db_obj, key, value)

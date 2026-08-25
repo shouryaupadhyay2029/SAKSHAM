@@ -425,3 +425,10 @@
   from { transform: translateX(20px); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
+
+.markerChild {
+  background-color: #FBBF24 !important;
+  width: 14px !important;
+  height: 14px !important;
+  box-shadow: 0 0 6px #FBBF24;
+}

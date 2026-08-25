@@ -16,6 +16,7 @@ export type RequestStatus =
 
 export interface DemandRequest {
   id: string;
+  uuid?: string;
   incidentId?: string;
   zoneName: string;
   coordinates: Coordinates;

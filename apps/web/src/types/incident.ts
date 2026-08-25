@@ -53,4 +53,9 @@ export interface Incident {
   requiredResources?: RequiredResource[];
   assignedVehicle?: string;
   timeline?: TimelineEntry[];
+
+  // Correlation clustering properties
+  parentIncidentId?: string | null;
+  parentIncident?: Incident | null;
+  childReports?: Incident[];
 }

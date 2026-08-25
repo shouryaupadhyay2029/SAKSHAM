@@ -14,6 +14,7 @@ export type ResourceStatus = 'AVAILABLE' | 'LOW' | 'RESERVED' | 'IN_TRANSIT' | '
 
 export interface ResourceItem {
   id: string;
+  uuid?: string;
   name: string;
   category: ResourceCategory;
   quantity: number;             // Currently available stock
