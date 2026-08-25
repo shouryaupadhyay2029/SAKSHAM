@@ -22,6 +22,8 @@ enum Severity {
 
 enum IncidentStatus {
   REPORTED
+  NEEDS_INFORMATION
+  REJECTED
   VERIFIED
   AWAITING_RESPONSE
   UNDER_RESPONSE
@@ -110,9 +112,10 @@ model Officer {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  timelines   IncidentTimeline[]
-  allocations Allocation[]
-  dispatches  Dispatch[]
+  timelines    IncidentTimeline[]
+  allocations  Allocation[]
+  dispatches   Dispatch[]
+  assessments  IncidentAssessment[]
 }
 
 model Incident {
@@ -137,6 +140,7 @@ model Incident {
   timelines     IncidentTimeline[]
   demands       DemandRequest[]
   notifications Notification[]
+  assessments   IncidentAssessment[]
 }
 
 model IncidentTimeline {
@@ -153,6 +157,29 @@ model IncidentTimeline {
   actor    Officer? @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([incidentId])
+}
+
+// Persists the officer's formal assessment decision for an incident.
+// One incident can have multiple assessments (e.g. re-assessment after NEEDS_INFORMATION).
+model IncidentAssessment {
+  id                   String   @id @default(uuid()) @db.Uuid
+  incidentId           String   @db.Uuid
+  officerId            String   @db.Uuid
+  decision             String   // CONFIRMED | NEEDS_INFORMATION | REJECTED
+  assessmentNote       String
+  verificationMethods  String[] // e.g. ["REPORTER_CONTACTED", "LOCATION_REVIEWED"]
+  priorityAssessment   String?  // LOW | MEDIUM | HIGH | CRITICAL — officer's assessed priority
+  rejectionReason      String?  // required when decision = REJECTED
+  infoRequestReason    String?  // required when decision = NEEDS_INFORMATION
+  corroborationCount   Int?     // nearby incidents at time of assessment (0 is valid)
+  timestamp            DateTime @default(now())
+  createdAt            DateTime @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  officer  Officer  @relation(fields: [officerId], references: [id], onDelete: Restrict)
+
+  @@index([incidentId])
+  @@index([officerId])
 }
 
 model DemandRequest {

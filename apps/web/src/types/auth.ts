@@ -6,6 +6,7 @@ export type Role = 'CIVILIAN' | 'OPERATOR' | 'REGIONAL_AUTHORITY' | 'ADMIN';
 export type Permission =
   | 'VIEW_INCIDENTS'
   | 'CREATE_DEMAND'
+  | 'ASSESS_INCIDENT'    // Perform officer incident assessment
   | 'MATCH_RESOURCES'
   | 'DISPATCH_RESOURCE'
   | 'VERIFY_DELIVERY'
@@ -32,6 +33,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   OPERATOR: [
     'VIEW_INCIDENTS',
     'CREATE_DEMAND',
+    'ASSESS_INCIDENT',
     'MATCH_RESOURCES',
     'DISPATCH_RESOURCE',
     'VERIFY_DELIVERY',
@@ -41,6 +43,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   REGIONAL_AUTHORITY: [
     'VIEW_INCIDENTS',
     'CREATE_DEMAND',
+    'ASSESS_INCIDENT',
     'MATCH_RESOURCES',
     'DISPATCH_RESOURCE',
     'VERIFY_DELIVERY',
@@ -52,6 +55,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ADMIN: [
     'VIEW_INCIDENTS',
     'CREATE_DEMAND',
+    'ASSESS_INCIDENT',
     'MATCH_RESOURCES',
     'DISPATCH_RESOURCE',
     'VERIFY_DELIVERY',

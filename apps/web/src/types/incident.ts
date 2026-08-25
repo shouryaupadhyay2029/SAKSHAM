@@ -4,6 +4,8 @@ export type IncidentType = 'FLOOD' | 'FIRE' | 'EARTHQUAKE' | 'MEDICAL_EMERGENCY'
 
 export type IncidentStatus = 
   | 'REPORTED' 
+  | 'NEEDS_INFORMATION'   // Officer requested more info — not dispatchable
+  | 'REJECTED'            // Officer rejected the report
   | 'VERIFIED' 
   | 'PRIORITIZED' 
   | 'RESOURCE_MATCHED' 

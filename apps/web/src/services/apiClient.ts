@@ -233,6 +233,25 @@ export const apiClient = {
     });
   },
 
+  // ── Incident Assessment (Officer-only, requires JWT) ──
+  async assessIncident(incidentId: string, payload: {
+    decision: 'CONFIRMED' | 'NEEDS_INFORMATION' | 'REJECTED';
+    assessmentNote: string;
+    verificationMethods: string[];
+    priorityAssessment?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    rejectionReason?: string;
+    infoRequestReason?: string;
+  }) {
+    return fetchJson<any>(`/incidents/${incidentId}/assess`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getIncidentAssessments(incidentId: string) {
+    return fetchJson<any[]>(`/incidents/${incidentId}/assessment`);
+  },
+
   // ── Matching & Allocations ──
   async getMatchingRecommendations(demandId: string) {
     return fetchJson<any>(`/matching/demands/${demandId}/recommendations`);

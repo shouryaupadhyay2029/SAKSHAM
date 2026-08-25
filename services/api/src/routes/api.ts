@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../db/db.js';
 import { z } from 'zod';
+import jwt from 'jsonwebtoken';
 import { Severity, IncidentStatus, DemandPriority, DemandStatus, ResourceStatus, VehicleStatus, ShelterStatus, DispatchStatus, AllocationStatus, DeliveryStatus } from '@prisma/client';
 
 const router = Router();
@@ -11,6 +12,78 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
     fn(req, res, next).catch(next);
   };
 };
+
+// ─── JWT Auth Middleware ──────────────────────────────────────────────────────
+// Verifies the Bearer token in the Authorization header, looks up the Officer
+// in the database, and attaches the officer record to req.officer.
+// Returns 401 if no/invalid token, 403 if the Officer record doesn't exist.
+const JWT_SECRET = process.env.JWT_SECRET || 'saksham-jwt-secret-2026';
+
+async function requireOfficerAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({
+      error: { code: 'UNAUTHENTICATED', message: 'Authorization token is required for this operation.' }
+    });
+    return;
+  }
+
+  const token = authHeader.slice(7);
+
+  // Handle demo tokens (used in offline/fallback mode)
+  const isDemoToken = token.startsWith('demo-token-');
+  if (isDemoToken) {
+    const roleFromToken = token.replace('demo-token-', '').toUpperCase();
+    // Demo tokens are only valid for officer roles
+    if (roleFromToken === 'CIVILIAN') {
+      res.status(403).json({
+        error: { code: 'FORBIDDEN', message: 'Only officers can perform incident assessments.' }
+      });
+      return;
+    }
+    // Map to first officer in DB for demo purposes
+    const demoOfficer = await prisma.officer.findFirst();
+    if (!demoOfficer) {
+      res.status(403).json({
+        error: { code: 'FORBIDDEN', message: 'No officer accounts found in the system.' }
+      });
+      return;
+    }
+    (req as any).officer = demoOfficer;
+    next();
+    return;
+  }
+
+  // Verify real JWT
+  let payload: any;
+  try {
+    payload = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    res.status(401).json({
+      error: { code: 'TOKEN_INVALID', message: 'Authorization token is invalid or expired.' }
+    });
+    return;
+  }
+
+  const officerId = payload.sub || payload.id || payload.officerId;
+  if (!officerId) {
+    res.status(401).json({
+      error: { code: 'TOKEN_INVALID', message: 'Token payload is missing officer identifier.' }
+    });
+    return;
+  }
+
+  const officer = await prisma.officer.findUnique({ where: { id: officerId } });
+  if (!officer) {
+    res.status(403).json({
+      error: { code: 'FORBIDDEN', message: 'Officer account not found or has been deactivated.' }
+    });
+    return;
+  }
+
+  (req as any).officer = officer;
+  next();
+}
 
 /* ==========================================
    INCIDENT ROUTING & SCHEMAS
@@ -188,8 +261,199 @@ router.patch('/incidents/:id/status', asyncHandler(async (req, res) => {
 
 
 /* ==========================================
-   DEMANDS ROUTING & SCHEMAS
+   INCIDENT ASSESSMENT WORKFLOW
    ========================================== */
+
+// Valid state transitions for assessment decisions
+const ASSESSMENT_VALID_FROM_STATES: IncidentStatus[] = ['REPORTED', 'NEEDS_INFORMATION'];
+
+const assessmentSchema = z.object({
+  decision: z.enum(['CONFIRMED', 'NEEDS_INFORMATION', 'REJECTED']),
+  assessmentNote: z.string().min(1, 'Assessment note is required.').max(2000),
+  verificationMethods: z.array(z.string()).default([]),
+  priorityAssessment: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
+  rejectionReason: z.string().optional(),
+  infoRequestReason: z.string().optional(),
+});
+
+// GET /api/incidents/:id/assessment — returns the latest assessment record for an incident
+router.get('/incidents/:id/assessment', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  const incident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!incident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  const assessments = await prisma.incidentAssessment.findMany({
+    where: { incidentId: incident.id },
+    orderBy: { timestamp: 'desc' },
+    include: {
+      officer: {
+        select: { id: true, name: true, email: true, role: true, region: true }
+      }
+    }
+  });
+
+  res.json({ data: assessments });
+}));
+
+// GET /api/incidents/:id/timeline — returns timeline events from the database
+router.get('/incidents/:id/timeline', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  const incident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!incident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  const timeline = await prisma.incidentTimeline.findMany({
+    where: { incidentId: incident.id },
+    orderBy: { timestamp: 'asc' },
+    include: {
+      actor: {
+        select: { id: true, name: true, role: true }
+      }
+    }
+  });
+
+  res.json({ data: timeline });
+}));
+
+// POST /api/incidents/:id/assess — officer assessment decision (REQUIRES AUTH)
+router.post('/incidents/:id/assess', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const officer = (req as any).officer;
+
+  // Parse and validate request body
+  const body = assessmentSchema.parse(req.body);
+
+  // Decision-specific validation
+  if (body.decision === 'REJECTED' && !body.rejectionReason?.trim()) {
+    return res.status(400).json({
+      error: { code: 'VALIDATION_ERROR', message: 'A rejection reason is required when rejecting an incident.' }
+    });
+  }
+  if (body.decision === 'NEEDS_INFORMATION' && !body.infoRequestReason?.trim()) {
+    return res.status(400).json({
+      error: { code: 'VALIDATION_ERROR', message: 'An information request reason is required.' }
+    });
+  }
+
+  // Find the incident
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const incident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!incident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  // Validate state machine: assessment only valid from REPORTED or NEEDS_INFORMATION
+  if (!ASSESSMENT_VALID_FROM_STATES.includes(incident.status)) {
+    return res.status(409).json({
+      error: {
+        code: 'INVALID_LIFECYCLE_TRANSITION',
+        message: `Cannot assess an incident in the '${incident.status}' state. Assessment is only valid for incidents in REPORTED or NEEDS_INFORMATION state.`
+      }
+    });
+  }
+
+  // Calculate corroboration: incidents within ~500m (approximately 0.0045 degrees lat/lng)
+  const LAT_DELTA = 0.0045;
+  const LNG_DELTA = 0.0045;
+  const corroborationCount = await prisma.incident.count({
+    where: {
+      id: { not: incident.id },
+      status: { notIn: ['RESOLVED', 'REJECTED'] },
+      latitude: { gte: incident.latitude - LAT_DELTA, lte: incident.latitude + LAT_DELTA },
+      longitude: { gte: incident.longitude - LNG_DELTA, lte: incident.longitude + LNG_DELTA },
+    }
+  });
+
+  // Map decision to new incident status
+  const statusMap: Record<string, IncidentStatus> = {
+    CONFIRMED: IncidentStatus.VERIFIED,
+    NEEDS_INFORMATION: IncidentStatus.NEEDS_INFORMATION,
+    REJECTED: IncidentStatus.REJECTED,
+  };
+  const newStatus = statusMap[body.decision];
+
+  // Run all DB operations in a transaction for atomicity
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. Persist the assessment record
+    const assessment = await tx.incidentAssessment.create({
+      data: {
+        incidentId: incident.id,
+        officerId: officer.id,
+        decision: body.decision,
+        assessmentNote: body.assessmentNote,
+        verificationMethods: body.verificationMethods,
+        priorityAssessment: body.priorityAssessment || null,
+        rejectionReason: body.rejectionReason || null,
+        infoRequestReason: body.infoRequestReason || null,
+        corroborationCount,
+      },
+      include: {
+        officer: { select: { id: true, name: true, email: true, role: true } }
+      }
+    });
+
+    // 2. Update incident status
+    const updatedIncident = await tx.incident.update({
+      where: { id: incident.id },
+      data: { status: newStatus },
+    });
+
+    // 3. Write auditable timeline event
+    const timelineMessages: Record<string, string> = {
+      CONFIRMED: `Incident confirmed and verified by ${officer.name} (${officer.role}). Assessment: "${body.assessmentNote.slice(0, 100)}${body.assessmentNote.length > 100 ? '...' : ''}". Methods: ${body.verificationMethods.join(', ') || 'None specified'}.`,
+      NEEDS_INFORMATION: `Additional information requested by ${officer.name} (${officer.role}). Reason: "${body.infoRequestReason}".`,
+      REJECTED: `Incident rejected by ${officer.name} (${officer.role}). Reason: "${body.rejectionReason}". Note: "${body.assessmentNote.slice(0, 100)}".`,
+    };
+
+    await tx.incidentTimeline.create({
+      data: {
+        incidentId: incident.id,
+        eventType: `ASSESSMENT_${body.decision}`,
+        message: timelineMessages[body.decision],
+        actorId: officer.id,
+        metadata: {
+          decision: body.decision,
+          officerId: officer.id,
+          officerName: officer.name,
+          officerRole: officer.role,
+          assessmentNote: body.assessmentNote,
+          verificationMethods: body.verificationMethods,
+          priorityAssessment: body.priorityAssessment || null,
+          rejectionReason: body.rejectionReason || null,
+          infoRequestReason: body.infoRequestReason || null,
+          corroborationCount,
+          previousStatus: incident.status,
+          newStatus,
+        },
+      },
+    });
+
+    return { assessment, incident: updatedIncident };
+  });
+
+  res.status(201).json({
+    data: {
+      assessment: result.assessment,
+      incident: result.incident,
+      message: `Incident assessment recorded. Status transitioned from ${incident.status} to ${newStatus}.`,
+    }
+  });
+}));
+
+
 
 const demandCreateSchema = z.object({
   incidentId: z.string().uuid('Valid Incident UUID required'),

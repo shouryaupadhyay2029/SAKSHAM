@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { useOperationalState } from '../../context/OperationalStateContext';
@@ -8,7 +8,8 @@ import GradientBackground from '../../components/ui/noisy-gradient-backgrounds';
 import { ArrowRight } from 'lucide-react';
 import styles from './IncidentWorkspace.module.css';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
-
+import { IncidentAssessmentPanel } from './IncidentAssessmentPanel';
+import apiClient from '../../services/apiClient';
 
 export const IncidentWorkspace: React.FC = () => {
   const { incidentId } = useParams<{ incidentId: string }>();
@@ -29,16 +30,43 @@ export const IncidentWorkspace: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // --- Assessment panel state ---
+  const [showAssessmentPanel, setShowAssessmentPanel] = useState(false);
+  const [assessmentRecord, setAssessmentRecord] = useState<any | null>(null);
+  const [backendTimeline, setBackendTimeline] = useState<any[]>([]);
+
   // Find selected incident
   const incident = useMemo(() => {
     return incidents.find(i => i.id === incidentId) || null;
   }, [incidents, incidentId]);
 
+  // Get the backend UUID for API calls
+  const incidentUuid = incident ? ((incident as any).uuid || incident.id) : null;
+
+  // Load assessment record and real timeline from backend
+  const loadAssessmentData = useCallback(async () => {
+    if (!incidentUuid) return;
+    try {
+      const [asmRes, tlRes] = await Promise.all([
+        apiClient.getIncidentAssessments(incidentUuid),
+        apiClient.getIncidentTimeline(incidentUuid),
+      ]);
+      if (Array.isArray(asmRes.data) && asmRes.data.length > 0) {
+        setAssessmentRecord(asmRes.data[0]); // most recent assessment
+      }
+      if (Array.isArray(tlRes.data)) {
+        setBackendTimeline(tlRes.data);
+      }
+    } catch {
+      // Non-critical: fall back to local timeline
+    }
+  }, [incidentUuid]);
+
+  useEffect(() => {
+    loadAssessmentData();
+  }, [loadAssessmentData]);
+
   // --- Awaited lifecycle action wrapper ---
-  // All incident status transitions go through this function so that:
-  // 1. The button shows a loading state
-  // 2. Backend failures are shown inline (not swallowed silently)
-  // 3. Optimistic UI is rolled back on failure (handled inside updateIncidentStatus)
   const handleLifecycleAction = async (targetStatus: string) => {
     setActionLoading(true);
     setActionError(null);
@@ -51,6 +79,7 @@ export const IncidentWorkspace: React.FC = () => {
       setActionLoading(false);
     }
   };
+
 
   // GSAP animation refs
   const pageRef = useRef<HTMLDivElement>(null);
@@ -138,23 +167,26 @@ export const IncidentWorkspace: React.FC = () => {
     };
   }, [incidentRequests]);
 
-  // Primary action button — correctly maps frontend status labels to backend transitions.
-  //
-  // Backend state machine (exact enum values):
-  //   REPORTED → VERIFIED → AWAITING_MATCH → MATCHED → DISPATCHED → UNDER_RESPONSE → RESOLVED
-  //
-  // Frontend display labels:
-  //   REPORTED → VERIFIED → PRIORITIZED → RESOURCE_MATCHED → DISPATCHED → UNDER_RESPONSE → RESOLVED
-  //
-  // updateIncidentStatus() handles the frontend→backend enum translation internally.
+  // Primary action — maps incident status to next step.
+  // REPORTED/NEEDS_INFORMATION → open AssessmentPanel (never one-click verify)
+  // REJECTED → null (terminal, no further actions)
+  // VERIFIED+ → standard operational flow
   const primaryAction = useMemo(() => {
     switch (incident.status) {
       case 'REPORTED':
         return {
-          label: 'VERIFY INCIDENT',
-          targetStatus: 'VERIFIED',
-          style: {}
+          label: 'ASSESS INCIDENT',
+          isAssessment: true,
+          style: { background: 'linear-gradient(135deg, #7C3AED, #4F46E5)' }
         };
+      case 'NEEDS_INFORMATION':
+        return {
+          label: 'RE-ASSESS INCIDENT',
+          isAssessment: true,
+          style: { background: 'linear-gradient(135deg, #92400E, #B45309)' }
+        };
+      case 'REJECTED':
+        return null; // Terminal — no next action
       case 'VERIFIED':
         return {
           label: 'PRIORITIZE & ASSESS NEEDS',
@@ -164,7 +196,7 @@ export const IncidentWorkspace: React.FC = () => {
       case 'PRIORITIZED':
         return {
           label: 'MATCH RESOURCES',
-          targetStatus: null, // navigates to matching page, not a status update
+          targetStatus: null,
           navigate: () => {
             const req = incidentRequests[0] || requests.find(r => r.incidentId === incident.id);
             navigate(req ? `/operations/matching?requestId=${req.id}` : '/operations/matching');
@@ -174,7 +206,7 @@ export const IncidentWorkspace: React.FC = () => {
       case 'RESOURCE_MATCHED':
         return {
           label: 'DISPATCH RESOURCE',
-          targetStatus: null, // navigates to dispatch page, not a status update
+          targetStatus: null,
           navigate: () => {
             const req = incidentRequests[0] || requests.find(r => r.incidentId === incident.id);
             navigate(req ? `/operations/dispatch?allocationId=${req.id}` : '/operations/dispatch');
@@ -208,6 +240,7 @@ export const IncidentWorkspace: React.FC = () => {
     }
   }, [incident.status, incidentRequests, requests, navigate, incident.id, incidentClosureCheck]);
 
+
   const severityColors: Record<string, string> = {
     CRITICAL: '#DC2626',
     HIGH: '#E86F16',
@@ -240,6 +273,23 @@ export const IncidentWorkspace: React.FC = () => {
     <div ref={pageRef} className={styles.container}>
       <GradientBackground />
 
+      {/* Assessment Panel overlay — shown when officer clicks ASSESS INCIDENT */}
+      {showAssessmentPanel && incident && (
+        <IncidentAssessmentPanel
+          incident={incident}
+          onClose={() => setShowAssessmentPanel(false)}
+          onAssessmentComplete={(updatedInc: any) => {
+            setShowAssessmentPanel(false);
+            // Reload assessment + timeline data from backend
+            setTimeout(() => loadAssessmentData(), 500);
+            // Trigger status refresh in context
+            if (updatedInc?.status) {
+              updateIncidentStatus(incident.id, updatedInc.status as any).catch(() => {});
+            }
+          }}
+        />
+      )}
+
       <header ref={heroRef} className={`${styles.hero} shaderHeaderWrapper`}>
         <ShaderBackground className="absolute inset-0" />
         <div className={styles.heroLeft}>
@@ -262,7 +312,19 @@ export const IncidentWorkspace: React.FC = () => {
             >
               {incident.severity} THREAT
             </span>
-            <span className={styles.statusBadge}>
+            <span
+              className={styles.statusBadge}
+              style={{
+                backgroundColor: incident.status === 'REJECTED' ? 'rgba(239,68,68,0.15)' :
+                  incident.status === 'NEEDS_INFORMATION' ? 'rgba(234,179,8,0.12)' : undefined,
+                color: incident.status === 'REJECTED' ? '#FCA5A5' :
+                  incident.status === 'NEEDS_INFORMATION' ? '#FBBF24' : undefined,
+                borderColor: incident.status === 'REJECTED' ? 'rgba(239,68,68,0.3)' :
+                  incident.status === 'NEEDS_INFORMATION' ? 'rgba(234,179,8,0.3)' : undefined,
+              }}
+            >
+              {incident.status === 'REJECTED' && '✕ '}
+              {incident.status === 'NEEDS_INFORMATION' && '⚠ '}
               {incident.status.replace(/_/g, ' ')}
             </span>
           </div>
@@ -273,14 +335,52 @@ export const IncidentWorkspace: React.FC = () => {
         </div>
       </header>
 
+
       {/* ── 2. Primary Next-Step Action Banner ── */}
-      {primaryAction && (
+      {/* REJECTED: terminal state notice */}
+      {incident.status === 'REJECTED' && (
+        <section ref={actionRef} className={styles.actionBanner} style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+          <div className={styles.actionBannerText}>
+            <h3 style={{ color: '#FCA5A5' }}>✕ INCIDENT REJECTED</h3>
+            <p style={{ color: 'rgba(252,165,165,0.7)' }}>
+              {assessmentRecord
+                ? `Rejected by ${assessmentRecord.officer?.name || 'an officer'}. Reason: "${assessmentRecord.rejectionReason || 'No reason provided'}".`
+                : 'This incident has been reviewed and rejected by an authorizing officer. No dispatch actions are possible.'}
+            </p>
+          </div>
+        </section>
+      )}
+      {/* NEEDS_INFORMATION: show re-assess option */}
+      {incident.status === 'NEEDS_INFORMATION' && (
+        <section ref={actionRef} className={styles.actionBanner} style={{ background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.2)' }}>
+          <div className={styles.actionBannerText}>
+            <h3 style={{ color: '#FBBF24' }}>⚠ MORE INFORMATION REQUESTED</h3>
+            <p style={{ color: 'rgba(251,191,36,0.7)' }}>
+              {assessmentRecord?.infoRequestReason
+                ? `Reason: "${assessmentRecord.infoRequestReason}". Re-assess once information is received.`
+                : 'An officer has requested more information before this incident can be verified and dispatched.'}
+            </p>
+          </div>
+          <div className={styles.actionBtnGroup}>
+            <button
+              id="btn-lifecycle-reassess"
+              className={styles.primaryActionBtn}
+              style={{ background: 'linear-gradient(135deg, #92400E, #B45309)' }}
+              onClick={() => setShowAssessmentPanel(true)}
+            >
+              RE-ASSESS INCIDENT <ArrowRight size={13} />
+            </button>
+          </div>
+        </section>
+      )}
+      {/* Standard flow actions */}
+      {primaryAction && incident.status !== 'REJECTED' && incident.status !== 'NEEDS_INFORMATION' && (
         <section ref={actionRef} className={styles.actionBanner}>
           <div className={styles.actionBannerText}>
             <h3>RECOMMENDED LOGISTICS ACTION</h3>
             <p>
               {incident.status === 'REPORTED'
-                ? 'Confirm incident validity and advance to the VERIFIED stage.'
+                ? 'This incident requires a formal officer assessment before it can be verified and dispatched.'
                 : incident.status === 'VERIFIED'
                   ? 'Assign severity and resource priorities before matching logistics.'
                   : incident.status === 'PRIORITIZED'
@@ -298,14 +398,16 @@ export const IncidentWorkspace: React.FC = () => {
             <button
               id="btn-lifecycle-primary"
               className={styles.primaryActionBtn}
-              style={primaryAction.style}
+              style={(primaryAction as any).style}
               disabled={actionLoading}
               onClick={() => {
                 setActionError(null);
-                if (primaryAction.targetStatus) {
-                  handleLifecycleAction(primaryAction.targetStatus);
-                } else if (primaryAction.navigate) {
-                  primaryAction.navigate();
+                if ((primaryAction as any).isAssessment) {
+                  setShowAssessmentPanel(true);
+                } else if ((primaryAction as any).targetStatus) {
+                  handleLifecycleAction((primaryAction as any).targetStatus);
+                } else if ((primaryAction as any).navigate) {
+                  (primaryAction as any).navigate();
                 }
               }}
             >
@@ -341,6 +443,7 @@ export const IncidentWorkspace: React.FC = () => {
           )}
         </section>
       )}
+
 
       {/* ── 3. Dual-Column Operational Case File Workspace ── */}
       <main className={styles.workspaceGrid}>
@@ -461,6 +564,60 @@ export const IncidentWorkspace: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Assessment Audit Record — shown for assessed incidents */}
+          {assessmentRecord && (
+            <div className={styles.card} style={{
+              border: assessmentRecord.decision === 'CONFIRMED' ? '1px solid rgba(16,185,129,0.25)' :
+                assessmentRecord.decision === 'REJECTED' ? '1px solid rgba(239,68,68,0.25)' :
+                '1px solid rgba(234,179,8,0.25)'
+            }}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle} style={{
+                  color: assessmentRecord.decision === 'CONFIRMED' ? '#34D399' :
+                    assessmentRecord.decision === 'REJECTED' ? '#FCA5A5' : '#FBBF24'
+                }}>
+                  {assessmentRecord.decision === 'CONFIRMED' ? '✓ INCIDENT CONFIRMED' :
+                   assessmentRecord.decision === 'REJECTED' ? '✕ INCIDENT REJECTED' :
+                   '⚠ AWAITING MORE INFO'}
+                </h2>
+                <span className={styles.sectionSubtitle}>OFFICER ASSESSMENT RECORD</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <span style={{ color: 'rgba(250,248,243,0.45)', minWidth: '90px', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>OFFICER</span>
+                  <span style={{ color: '#FAF8F3', fontWeight: 600 }}>{assessmentRecord.officer?.name || 'Unknown'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <span style={{ color: 'rgba(250,248,243,0.45)', minWidth: '90px', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>ROLE</span>
+                  <span style={{ color: '#FAF8F3' }}>{assessmentRecord.officer?.role || '—'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <span style={{ color: 'rgba(250,248,243,0.45)', minWidth: '90px', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>TIMESTAMP</span>
+                  <span style={{ color: '#FAF8F3' }}>
+                    {new Date(assessmentRecord.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <span style={{ color: 'rgba(250,248,243,0.45)', minWidth: '90px', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>NOTE</span>
+                  <span style={{ color: 'rgba(250,248,243,0.8)', fontStyle: 'italic' }}>"{assessmentRecord.assessmentNote}"</span>
+                </div>
+                {assessmentRecord.corroborationCount !== null && assessmentRecord.corroborationCount !== undefined && (
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <span style={{ color: 'rgba(250,248,243,0.45)', minWidth: '90px', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>NEARBY</span>
+                    <span style={{ color: '#FAF8F3' }}>{assessmentRecord.corroborationCount} corroborating report{assessmentRecord.corroborationCount !== 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {assessmentRecord.rejectionReason && (
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <span style={{ color: 'rgba(250,248,243,0.45)', minWidth: '90px', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>REASON</span>
+                    <span style={{ color: '#FCA5A5' }}>{assessmentRecord.rejectionReason}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
 
           {/* Resource Needs */}
           <div className={styles.card}>
@@ -586,14 +743,36 @@ export const IncidentWorkspace: React.FC = () => {
             </div>
           </div>
 
-          {/* Incident Chronological Timeline */}
+          {/* Incident Chronological Timeline - uses backend data when available */}
           <div className={styles.card}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>RESPONSE CHRONOLOGY</h2>
               <span className={styles.sectionSubtitle}>TIMELINE LOG</span>
             </div>
             <div className={styles.timelineFeed}>
-              {incident.timeline && incident.timeline.length > 0 ? (
+              {backendTimeline.length > 0 ? (
+                // Render real backend timeline events (newest first)
+                [...backendTimeline].reverse().map((entry, idx) => (
+                  <div key={entry.id || idx} className={styles.timelineEvent}>
+                    <div className={`${styles.timelineDot} ${idx === 0 ? styles.timelineDotActive : ''}`} />
+                    <span className={styles.eventTime}>
+                      {new Date(entry.timestamp).toLocaleTimeString('en-IN', {
+                        hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
+                      })}
+                    </span>
+                    <div className={styles.eventContent}>
+                      <h4 className={styles.eventTitle}>{entry.eventType?.replace(/_/g, ' ')}</h4>
+                      <p className={styles.eventDesc}>{entry.message}</p>
+                      {entry.actor && (
+                        <p style={{ fontSize: '10px', color: 'rgba(250,248,243,0.3)', marginTop: '2px' }}>
+                          — {entry.actor.name} ({entry.actor.role})
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : incident.timeline && incident.timeline.length > 0 ? (
+                // Fallback to static frontend timeline
                 incident.timeline.map((entry, idx) => (
                   <div key={idx} className={styles.timelineEvent}>
                     <div className={`${styles.timelineDot} ${idx === 0 ? styles.timelineDotActive : ''}`} />
@@ -605,7 +784,7 @@ export const IncidentWorkspace: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <p className={styles.eventDesc}>Timeline is loading...</p>
+                <p className={styles.eventDesc}>No logs registered.</p>
               )}
             </div>
             <form onSubmit={handleAddTimelineLog} className={styles.timelineLogForm}>

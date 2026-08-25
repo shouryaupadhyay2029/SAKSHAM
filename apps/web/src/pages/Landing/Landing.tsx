@@ -9,7 +9,6 @@ import { LanguageSwitcher } from '../../components/LanguageSwitcher/LanguageSwit
 import { GradientBackground } from '../../components/ui/noisy-gradient-backgrounds';
 import { ShaderBackground } from '../../components/ui/ShaderBackground';
 
-import { useTranslation } from 'react-i18next';
 gsap.registerPlugin(ScrollTrigger);
 import {
   ShieldAlert,
@@ -23,7 +22,6 @@ import {
 import styles from './Landing.module.css';
 
 export const Landing: React.FC = () => {
-  const { t } = useTranslation();
   const { incidents, vehicles, shelters, addIncidentFromSOS } = useOperationalState();
   const [sosSubmitted, setSosSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -169,342 +167,342 @@ export const Landing: React.FC = () => {
 
     const runAnimations = () => {
       return gsap.context(() => {
-      const tl = gsap.timeline({ delay: 0.1 });
+        const tl = gsap.timeline({ delay: 0.1 });
 
-      // 1. Navigation bar enters first
-      if (headerEl) {
-        tl.to(headerEl, {
-          opacity: 1,
-          y: 0,
-          duration: 0.55,
-          ease: 'power2.out'
-        });
-      }
-
-      // 2. Eyebrow Text enters
-      tl.to(`.${styles.eyebrowText}`, {
-        opacity: 1,
-        y: 0,
-        duration: 0.5,
-        ease: 'power2.out'
-      }, '-=0.4');
-
-      // Reveal watermark in back
-      tl.to('.parallax-back', {
-        opacity: 0.05,
-        duration: 0.6,
-        ease: 'power2.out'
-      }, '-=0.4');
-
-      // 3. Main Headline rise-up reveals line-by-line
-      const headingLines = gsap.utils.toArray(`.${styles.headingLine}`);
-      if (headingLines.length >= 2) {
-        tl.to(headingLines[0] as any, {
-          opacity: 1,
-          y: '0%',
-          duration: 0.95,
-          ease: 'power3.out'
-        }, '-=0.35');
-
-        tl.to(headingLines[1] as any, {
-          opacity: 1,
-          y: '0%',
-          duration: 0.95,
-          ease: 'power3.out'
-        }, '-=0.85');
-      }
-
-      // 4. Description support text reveal
-      tl.to(`.${styles.editorialDesc}`, {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        ease: 'power2.out'
-      }, '-=0.55');
-
-      // 5. Map panel reveal
-      tl.to(`.${styles.rightMapCol}`, {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 1.0,
-        ease: 'power3.out'
-      }, '-=1.2');
-
-      // 6. CTA reveal
-      tl.to(`.${styles.heroCta}`, {
-        opacity: 1,
-        y: 0,
-        duration: 0.5,
-        ease: 'power2.out'
-      }, '-=0.45');
-
-      // 7. Capability rail reveal
-      tl.to(`.${styles.heroCapabilityRail}`, {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        ease: 'power2.out'
-      }, '-=0.3');
-
-      // 9. Parallax scroll-driven depth triggers (Level 2 Ambient / interaction motion)
-      gsap.to('.parallax-back', {
-        y: -90,
-        scrollTrigger: {
-          trigger: `.${styles.parallaxHeaderContainer}`,
-          start: 'top 25%',
-          end: 'bottom top',
-          scrub: true
+        // 1. Navigation bar enters first
+        if (headerEl) {
+          tl.to(headerEl, {
+            opacity: 1,
+            y: 0,
+            duration: 0.55,
+            ease: 'power2.out'
+          });
         }
-      });
-      gsap.to('.parallax-mid', {
-        y: -40,
-        scrollTrigger: {
-          trigger: `.${styles.parallaxHeaderContainer}`,
-          start: 'top 25%',
-          end: 'bottom top',
-          scrub: true
-        }
-      });
-      gsap.to('.parallax-front', {
-        y: -20,
-        scrollTrigger: {
-          trigger: `.${styles.parallaxHeaderContainer}`,
-          start: 'top 25%',
-          end: 'bottom top',
-          scrub: true
-        }
-      });
 
-      // 10. SAKSHAM ECOSYSTEM (Section A) reveals
-      gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionSub}`,
-        { opacity: 0, y: 20 },
-        {
-          opacity: 1,
-          y: 0,
-          scrollTrigger: {
-            trigger: `.${styles.networkFlowSection}`,
-            start: 'top 80%',
-            once: true
-          }
-        }
-      );
-
-      gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionTitle}`,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          scrollTrigger: {
-            trigger: `.${styles.networkFlowSection}`,
-            start: 'top 75%',
-            once: true
-          }
-        }
-      );
-
-      gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionDesc}`,
-        { opacity: 0, y: 16 },
-        {
-          opacity: 1,
-          y: 0,
-          scrollTrigger: {
-            trigger: `.${styles.networkFlowSection}`,
-            start: 'top 70%',
-            once: true
-          }
-        }
-      );
-
-      // Ecosystem Sequential diagram activation (scrubbed)
-      const nodes = gsap.utils.toArray(`.${styles.networkDiagram} .${styles.diagramNode}`);
-      const diagramLines = gsap.utils.toArray(`.${styles.networkDiagram} .${styles.diagramLine}`);
-      const isMobile = window.innerWidth <= 768;
-
-      gsap.set(nodes, { opacity: 0.35 });
-      gsap.set(diagramLines.map((l: any) => l.querySelector(`.${styles.diagramLineInner}`)), {
-        scaleX: isMobile ? 1 : 0,
-        scaleY: isMobile ? 0 : 1,
-        transformOrigin: isMobile ? 'top' : 'left'
-      });
-
-      const ecosystemTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: `.${styles.networkDiagram}`,
-          start: 'top 75%',
-          end: 'bottom 45%',
-          scrub: 0.5
-        }
-      });
-
-      ecosystemTl
-        .to(nodes[0] as any, { opacity: 1, duration: 0.2 })
-        .to((nodes[0] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2')
-        .set((diagramLines[0] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 1 })
-        .to((diagramLines[0] as any).querySelector(`.${styles.diagramLineInner}`), { scaleX: 1, scaleY: 1, duration: 0.4 })
-        .to((diagramLines[0] as any).querySelector(`.${styles.diagramLineSignal}`), {
-          left: isMobile ? '50%' : '100%',
-          top: isMobile ? '100%' : '50%',
-          duration: 0.4,
-          ease: 'power1.inOut'
-        }, '-=0.4')
-        .set((diagramLines[0] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 0 })
-
-        .to(nodes[1] as any, { opacity: 1, duration: 0.2 })
-        .to((nodes[1] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2')
-        .set((diagramLines[1] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 1 })
-        .to((diagramLines[1] as any).querySelector(`.${styles.diagramLineInner}`), { scaleX: 1, scaleY: 1, duration: 0.4 })
-        .to((diagramLines[1] as any).querySelector(`.${styles.diagramLineSignal}`), {
-          left: isMobile ? '50%' : '100%',
-          top: isMobile ? '100%' : '50%',
-          duration: 0.4,
-          ease: 'power1.inOut'
-        }, '-=0.4')
-        .set((diagramLines[1] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 0 })
-
-        .to(nodes[2] as any, { opacity: 1, duration: 0.2 })
-        .to((nodes[2] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2')
-        .set((diagramLines[2] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 1 })
-        .to((diagramLines[2] as any).querySelector(`.${styles.diagramLineInner}`), { scaleX: 1, scaleY: 1, duration: 0.4 })
-        .to((diagramLines[2] as any).querySelector(`.${styles.diagramLineSignal}`), {
-          left: isMobile ? '50%' : '100%',
-          top: isMobile ? '100%' : '50%',
-          duration: 0.4,
-          ease: 'power1.inOut'
-        }, '-=0.4')
-        .set((diagramLines[2] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 0 })
-
-        .to(nodes[3] as any, { opacity: 1, duration: 0.2 })
-        .to((nodes[3] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2');
-
-
-      // 11. OPERATIONAL RUNTIME (Section B) reveals
-      gsap.fromTo(`.${styles.workflowSection} .${styles.sectionSub}`,
-        { opacity: 0, y: 20 },
-        {
-          opacity: 1,
-          y: 0,
-          scrollTrigger: {
-            trigger: `.${styles.workflowSection}`,
-            start: 'top 80%',
-            once: true
-          }
-        }
-      );
-      gsap.fromTo(`.${styles.workflowSection} .${styles.sectionTitle}`,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          scrollTrigger: {
-            trigger: `.${styles.workflowSection}`,
-            start: 'top 75%',
-            once: true
-          }
-        }
-      );
-
-      // Staggered card entry
-      const stepCards = gsap.utils.toArray(`.${styles.stepsGrid} .${styles.stepCard}`);
-      gsap.fromTo(stepCards,
-        { opacity: 0, y: 35, scale: 0.985 },
-        {
-          opacity: 0.65, // starts at slightly muted opacity as planned
-          y: 0,
-          scale: 1,
-          duration: 0.85,
-          stagger: 0.12,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: `.${styles.stepsGrid}`,
-            start: 'top 78%',
-            once: true
-          }
-        }
-      );
-
-      // Active card viewport focus observer
-      stepCards.forEach((card: any) => {
-        ScrollTrigger.create({
-          trigger: card,
-          start: 'top 55%',
-          end: 'bottom 45%',
-          onEnter: () => card.classList.add(styles.stepCardActive),
-          onLeave: () => card.classList.remove(styles.stepCardActive),
-          onEnterBack: () => card.classList.add(styles.stepCardActive),
-          onLeaveBack: () => card.classList.remove(styles.stepCardActive),
-        });
-      });
-
-      // 12. Telemetry Radar Section (Building Resilient Communities) entrance
-      const radarTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: '#telemetry-radar',
-          start: 'top 75%',
-          once: true
-        }
-      });
-
-      radarTl
-        .to('.radar-eyebrow', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' })
-
-        .to(gsap.utils.toArray(`.${styles.radarHeadingLine}`) as any[], {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          stagger: 0.12,
-          ease: 'power3.out'
-        }, '-=0.35')
-
-        .to('.radar-description', { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, '-=0.55')
-        .to('.radar-card-container', { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' }, '-=0.45');
-
-
-
-      // 13. Civilian SOS Section (Section 6) entrance
-      const sosTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: '#sos-section',
-          start: 'top 78%',
-          once: true
-        }
-      });
-
-      sosTl
-        .to('.sos-eyebrow', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' })
-
-        .to(gsap.utils.toArray(`.${styles.sosHeadingLine}`) as any[], {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          stagger: 0.12,
-          ease: 'power3.out'
-        }, '-=0.35')
-
-        .to('.sos-description', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' }, '-=0.55')
-
-        .to(gsap.utils.toArray('.sos-reassurance-item') as any[], {
+        // 2. Eyebrow Text enters
+        tl.to(`.${styles.eyebrowText}`, {
           opacity: 1,
           y: 0,
           duration: 0.5,
-          stagger: 0.14,
           ease: 'power2.out'
-        }, '-=0.35')
+        }, '-=0.4');
 
-        .to('.sos-form-card-container', { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' }, '-=0.55');
+        // Reveal watermark in back
+        tl.to('.parallax-back', {
+          opacity: 0.05,
+          duration: 0.6,
+          ease: 'power2.out'
+        }, '-=0.4');
 
+        // 3. Main Headline rise-up reveals line-by-line
+        const headingLines = gsap.utils.toArray(`.${styles.headingLine}`);
+        if (headingLines.length >= 2) {
+          tl.to(headingLines[0] as any, {
+            opacity: 1,
+            y: '0%',
+            duration: 0.95,
+            ease: 'power3.out'
+          }, '-=0.35');
 
+          tl.to(headingLines[1] as any, {
+            opacity: 1,
+            y: '0%',
+            duration: 0.95,
+            ease: 'power3.out'
+          }, '-=0.85');
+        }
 
-      // Premium Layered Stacking Scroll System (non-destructive local sticky animations)
-      // Apply only to desktop/large tablet screens to ensure mobile/touch scroll accessibility
-      if (window.innerWidth > 768) {
-        const layers = gsap.utils.toArray(`.${styles.stackedLayer}`) as HTMLElement[];
-        layers.forEach((layer, i) => {
-          layer.style.zIndex = `${(i + 1) * 10}`;
+        // 4. Description support text reveal
+        tl.to(`.${styles.editorialDesc}`, {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: 'power2.out'
+        }, '-=0.55');
+
+        // 5. Map panel reveal
+        tl.to(`.${styles.rightMapCol}`, {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 1.0,
+          ease: 'power3.out'
+        }, '-=1.2');
+
+        // 6. CTA reveal
+        tl.to(`.${styles.heroCta}`, {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          ease: 'power2.out'
+        }, '-=0.45');
+
+        // 7. Capability rail reveal
+        tl.to(`.${styles.heroCapabilityRail}`, {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: 'power2.out'
+        }, '-=0.3');
+
+        // 9. Parallax scroll-driven depth triggers (Level 2 Ambient / interaction motion)
+        gsap.to('.parallax-back', {
+          y: -90,
+          scrollTrigger: {
+            trigger: `.${styles.parallaxHeaderContainer}`,
+            start: 'top 25%',
+            end: 'bottom top',
+            scrub: true
+          }
         });
-      }
+        gsap.to('.parallax-mid', {
+          y: -40,
+          scrollTrigger: {
+            trigger: `.${styles.parallaxHeaderContainer}`,
+            start: 'top 25%',
+            end: 'bottom top',
+            scrub: true
+          }
+        });
+        gsap.to('.parallax-front', {
+          y: -20,
+          scrollTrigger: {
+            trigger: `.${styles.parallaxHeaderContainer}`,
+            start: 'top 25%',
+            end: 'bottom top',
+            scrub: true
+          }
+        });
 
-    }, landingRef);
+        // 10. SAKSHAM ECOSYSTEM (Section A) reveals
+        gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionSub}`,
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            scrollTrigger: {
+              trigger: `.${styles.networkFlowSection}`,
+              start: 'top 80%',
+              once: true
+            }
+          }
+        );
+
+        gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionTitle}`,
+          { opacity: 0, y: 40 },
+          {
+            opacity: 1,
+            y: 0,
+            scrollTrigger: {
+              trigger: `.${styles.networkFlowSection}`,
+              start: 'top 75%',
+              once: true
+            }
+          }
+        );
+
+        gsap.fromTo(`.${styles.networkFlowSection} .${styles.sectionDesc}`,
+          { opacity: 0, y: 16 },
+          {
+            opacity: 1,
+            y: 0,
+            scrollTrigger: {
+              trigger: `.${styles.networkFlowSection}`,
+              start: 'top 70%',
+              once: true
+            }
+          }
+        );
+
+        // Ecosystem Sequential diagram activation (scrubbed)
+        const nodes = gsap.utils.toArray(`.${styles.networkDiagram} .${styles.diagramNode}`);
+        const diagramLines = gsap.utils.toArray(`.${styles.networkDiagram} .${styles.diagramLine}`);
+        const isMobile = window.innerWidth <= 768;
+
+        gsap.set(nodes, { opacity: 0.35 });
+        gsap.set(diagramLines.map((l: any) => l.querySelector(`.${styles.diagramLineInner}`)), {
+          scaleX: isMobile ? 1 : 0,
+          scaleY: isMobile ? 0 : 1,
+          transformOrigin: isMobile ? 'top' : 'left'
+        });
+
+        const ecosystemTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: `.${styles.networkDiagram}`,
+            start: 'top 75%',
+            end: 'bottom 45%',
+            scrub: 0.5
+          }
+        });
+
+        ecosystemTl
+          .to(nodes[0] as any, { opacity: 1, duration: 0.2 })
+          .to((nodes[0] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2')
+          .set((diagramLines[0] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 1 })
+          .to((diagramLines[0] as any).querySelector(`.${styles.diagramLineInner}`), { scaleX: 1, scaleY: 1, duration: 0.4 })
+          .to((diagramLines[0] as any).querySelector(`.${styles.diagramLineSignal}`), {
+            left: isMobile ? '50%' : '100%',
+            top: isMobile ? '100%' : '50%',
+            duration: 0.4,
+            ease: 'power1.inOut'
+          }, '-=0.4')
+          .set((diagramLines[0] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 0 })
+
+          .to(nodes[1] as any, { opacity: 1, duration: 0.2 })
+          .to((nodes[1] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2')
+          .set((diagramLines[1] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 1 })
+          .to((diagramLines[1] as any).querySelector(`.${styles.diagramLineInner}`), { scaleX: 1, scaleY: 1, duration: 0.4 })
+          .to((diagramLines[1] as any).querySelector(`.${styles.diagramLineSignal}`), {
+            left: isMobile ? '50%' : '100%',
+            top: isMobile ? '100%' : '50%',
+            duration: 0.4,
+            ease: 'power1.inOut'
+          }, '-=0.4')
+          .set((diagramLines[1] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 0 })
+
+          .to(nodes[2] as any, { opacity: 1, duration: 0.2 })
+          .to((nodes[2] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2')
+          .set((diagramLines[2] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 1 })
+          .to((diagramLines[2] as any).querySelector(`.${styles.diagramLineInner}`), { scaleX: 1, scaleY: 1, duration: 0.4 })
+          .to((diagramLines[2] as any).querySelector(`.${styles.diagramLineSignal}`), {
+            left: isMobile ? '50%' : '100%',
+            top: isMobile ? '100%' : '50%',
+            duration: 0.4,
+            ease: 'power1.inOut'
+          }, '-=0.4')
+          .set((diagramLines[2] as any).querySelector(`.${styles.diagramLineSignal}`), { opacity: 0 })
+
+          .to(nodes[3] as any, { opacity: 1, duration: 0.2 })
+          .to((nodes[3] as any).querySelector(`.${styles.nodeIcon}`), { scale: 1.08, borderColor: '#F47C20', color: '#F47C20', duration: 0.2 }, '-=0.2');
+
+
+        // 11. OPERATIONAL RUNTIME (Section B) reveals
+        gsap.fromTo(`.${styles.workflowSection} .${styles.sectionSub}`,
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            scrollTrigger: {
+              trigger: `.${styles.workflowSection}`,
+              start: 'top 80%',
+              once: true
+            }
+          }
+        );
+        gsap.fromTo(`.${styles.workflowSection} .${styles.sectionTitle}`,
+          { opacity: 0, y: 40 },
+          {
+            opacity: 1,
+            y: 0,
+            scrollTrigger: {
+              trigger: `.${styles.workflowSection}`,
+              start: 'top 75%',
+              once: true
+            }
+          }
+        );
+
+        // Staggered card entry
+        const stepCards = gsap.utils.toArray(`.${styles.stepsGrid} .${styles.stepCard}`);
+        gsap.fromTo(stepCards,
+          { opacity: 0, y: 35, scale: 0.985 },
+          {
+            opacity: 0.65, // starts at slightly muted opacity as planned
+            y: 0,
+            scale: 1,
+            duration: 0.85,
+            stagger: 0.12,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: `.${styles.stepsGrid}`,
+              start: 'top 78%',
+              once: true
+            }
+          }
+        );
+
+        // Active card viewport focus observer
+        stepCards.forEach((card: any) => {
+          ScrollTrigger.create({
+            trigger: card,
+            start: 'top 55%',
+            end: 'bottom 45%',
+            onEnter: () => card.classList.add(styles.stepCardActive),
+            onLeave: () => card.classList.remove(styles.stepCardActive),
+            onEnterBack: () => card.classList.add(styles.stepCardActive),
+            onLeaveBack: () => card.classList.remove(styles.stepCardActive),
+          });
+        });
+
+        // 12. Telemetry Radar Section (Building Resilient Communities) entrance
+        const radarTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: '#telemetry-radar',
+            start: 'top 75%',
+            once: true
+          }
+        });
+
+        radarTl
+          .to('.radar-eyebrow', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' })
+
+          .to(gsap.utils.toArray(`.${styles.radarHeadingLine}`) as any[], {
+            opacity: 1,
+            y: 0,
+            duration: 0.9,
+            stagger: 0.12,
+            ease: 'power3.out'
+          }, '-=0.35')
+
+          .to('.radar-description', { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, '-=0.55')
+          .to('.radar-card-container', { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' }, '-=0.45');
+
+
+
+        // 13. Civilian SOS Section (Section 6) entrance
+        const sosTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: '#sos-section',
+            start: 'top 78%',
+            once: true
+          }
+        });
+
+        sosTl
+          .to('.sos-eyebrow', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' })
+
+          .to(gsap.utils.toArray(`.${styles.sosHeadingLine}`) as any[], {
+            opacity: 1,
+            y: 0,
+            duration: 0.9,
+            stagger: 0.12,
+            ease: 'power3.out'
+          }, '-=0.35')
+
+          .to('.sos-description', { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' }, '-=0.55')
+
+          .to(gsap.utils.toArray('.sos-reassurance-item') as any[], {
+            opacity: 1,
+            y: 0,
+            duration: 0.5,
+            stagger: 0.14,
+            ease: 'power2.out'
+          }, '-=0.35')
+
+          .to('.sos-form-card-container', { opacity: 1, y: 0, duration: 0.75, ease: 'power3.out' }, '-=0.55');
+
+
+
+        // Premium Layered Stacking Scroll System (non-destructive local sticky animations)
+        // Apply only to desktop/large tablet screens to ensure mobile/touch scroll accessibility
+        if (window.innerWidth > 768) {
+          const layers = gsap.utils.toArray(`.${styles.stackedLayer}`) as HTMLElement[];
+          layers.forEach((layer, i) => {
+            layer.style.zIndex = `${(i + 1) * 10}`;
+          });
+        }
+
+      }, landingRef);
     };
 
     const delayTime = 200; // short settle delay after boot screen ends
@@ -575,7 +573,7 @@ export const Landing: React.FC = () => {
                 {/* Eyebrow row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px', position: 'relative', zIndex: 20 }} className="parallax-front">
                   <span className={styles.eyebrowText} style={{ marginBottom: 0 }}>
-                    <span className={styles.eyebrowDot} />● {t('landing.liveSituationalAwareness')}
+                    <span className={styles.eyebrowDot} />● LIVE SITUATIONAL AWARENESS
                   </span>
                   <LanguageSwitcher variant="navbar" />
                 </div>
@@ -584,19 +582,19 @@ export const Landing: React.FC = () => {
                 <h1 className={`${styles.editorialHeading} parallax-mid`}>
                   <span className={styles.headingLineMask}>
                     <span className={styles.headingLine} style={{ color: '#FAF8F3' }}>
-                      {t('landing.heroTitleLine1')}
+                      From the first signal
                     </span>
                   </span>
                   <span className={styles.headingLineMask}>
                     <span className={`${styles.headingLine} ${styles.accentOrangeText}`}>
-                      {t('landing.heroTitleLine2')}
+                      to the right response.
                     </span>
                   </span>
                 </h1>
               </div>
 
               <p className={`${styles.editorialDesc} ${styles.editorialDescDark}`}>
-                {t('landing.heroDesc')}
+                SAKSHAM connects incidents, risk signals, available resources, and field operations into one coordinated response picture.
               </p>
 
               {/* Redesigned Response Chain Component */}
@@ -608,8 +606,8 @@ export const Landing: React.FC = () => {
                     <div className={styles.stageIndicator} />
                     <div className={styles.stageContent}>
                       <span className={styles.stageNumber}>01</span>
-                      <span className={styles.stageLabel}>{t('landing.stage1Label')}</span>
-                      <p className={styles.stageDesc}>{t('landing.stage1Desc')}</p>
+                      <span className={styles.stageLabel}>SIGNAL</span>
+                      <p className={styles.stageDesc}>What is happening?</p>
                     </div>
                   </div>
 
@@ -622,8 +620,8 @@ export const Landing: React.FC = () => {
                     <div className={styles.stageIndicator} />
                     <div className={styles.stageContent}>
                       <span className={styles.stageNumber}>02</span>
-                      <span className={styles.stageLabel}>{t('landing.stage2Label')}</span>
-                      <p className={styles.stageDesc}>{t('landing.stage2Desc')}</p>
+                      <span className={styles.stageLabel}>ASSESS</span>
+                      <p className={styles.stageDesc}>What matters now?</p>
                     </div>
                   </div>
 
@@ -636,8 +634,8 @@ export const Landing: React.FC = () => {
                     <div className={styles.stageIndicator} />
                     <div className={styles.stageContent}>
                       <span className={styles.stageNumber}>03</span>
-                      <span className={styles.stageLabel}>{t('landing.stage3Label')}</span>
-                      <p className={styles.stageDesc}>{t('landing.stage3Desc')}</p>
+                      <span className={styles.stageLabel}>MATCH</span>
+                      <p className={styles.stageDesc}>What can respond?</p>
                     </div>
                   </div>
 
@@ -650,8 +648,8 @@ export const Landing: React.FC = () => {
                     <div className={styles.stageIndicator} />
                     <div className={styles.stageContent}>
                       <span className={styles.stageNumber}>04</span>
-                      <span className={styles.stageLabel}>{t('landing.stage4Label')}</span>
-                      <p className={styles.stageDesc}>{t('landing.stage4Desc')}</p>
+                      <span className={styles.stageLabel}>ACT</span>
+                      <p className={styles.stageDesc}>Who moves next?</p>
                     </div>
                   </div>
 
@@ -671,7 +669,7 @@ export const Landing: React.FC = () => {
                   aria-label="Scroll to Situational Awareness Guidebook"
                 >
                   <span className={styles.guideInfoIcon}>ⓘ</span>
-                  <span>{t('landing.guidebookLink')}</span>
+                  <span>Situational Awareness Guidebook →</span>
                 </button>
               </div>
             </div>
@@ -690,11 +688,11 @@ export const Landing: React.FC = () => {
                   }`}>
                   <span className={styles.annotationDot} />
                   <span className={styles.annotationText}>
-                    {mapPhase === 'MONITOR' && t('common.loading').toUpperCase()}
-                    {mapPhase === 'INCIDENT' && t('realtimeToasts.incidentReported', { title: '' }).replace(': ', '').toUpperCase()}
-                    {mapPhase === 'PRIORITY' && t('status.PRIORITIZED').toUpperCase()}
-                    {mapPhase === 'RESPONSE' && t('status.UNDER_RESPONSE').toUpperCase()}
-                    {mapPhase === 'RETURN' && t('dashboard.liveStatus').toUpperCase()}
+                    {mapPhase === 'MONITOR' && 'MONITORING'}
+                    {mapPhase === 'INCIDENT' && 'INCIDENT DETECTED'}
+                    {mapPhase === 'PRIORITY' && 'PRIORITY ASSESSED'}
+                    {mapPhase === 'RESPONSE' && 'RESPONDING'}
+                    {mapPhase === 'RETURN' && 'LIVE MONITORING'}
                   </span>
                 </div>
               </div>
@@ -713,17 +711,17 @@ export const Landing: React.FC = () => {
 
         <div className={styles.networkFlowContent}>
           <div className={styles.networkHeader}>
-            <span className={styles.sectionSub}>{t('landing.ecoEyebrow')}</span>
-            <h2 className={styles.sectionTitle}>{t('landing.ecoTitle')}</h2>
+            <span className={styles.sectionSub}>SAKSHAM ECOSYSTEM</span>
+            <h2 className={styles.sectionTitle}>One Response Network. Everything Connected.</h2>
             <p className={styles.sectionDesc}>
-              {t('landing.ecoDesc')}
+              SAKSHAM bridges the gap between field updates, inventory registries, and routing models to deliver speed and clarity.
             </p>
           </div>
 
           <div className={styles.networkDiagram}>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><ShieldAlert size={20} /></div>
-              <span>{t('landing.nodeIncidents')}</span>
+              <span>Incidents</span>
             </div>
             <div className={styles.diagramLine}>
               <div className={styles.diagramLineInner} />
@@ -731,7 +729,7 @@ export const Landing: React.FC = () => {
             </div>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><Layers size={20} /></div>
-              <span>{t('landing.nodeDemand')}</span>
+              <span>Demand</span>
             </div>
             <div className={styles.diagramLine}>
               <div className={styles.diagramLineInner} />
@@ -739,7 +737,7 @@ export const Landing: React.FC = () => {
             </div>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><Link2 size={20} /></div>
-              <span>{t('landing.nodeResources')}</span>
+              <span>Resources</span>
             </div>
             <div className={styles.diagramLine}>
               <div className={styles.diagramLineInner} />
@@ -747,7 +745,7 @@ export const Landing: React.FC = () => {
             </div>
             <div className={styles.diagramNode}>
               <div className={styles.nodeIcon}><Truck size={20} /></div>
-              <span>{t('landing.nodeRoutes')}</span>
+              <span>Routes</span>
             </div>
           </div>
         </div>
@@ -757,40 +755,40 @@ export const Landing: React.FC = () => {
       <section id="how-it-works" className={`${styles.workflowSection} textureCream ${styles.stackedLayer}`}>
         <div className={styles.sectionContainer}>
           <div className={styles.networkHeader}>
-            <span className={styles.sectionSub}>{t('landing.workflowEyebrow')}</span>
-            <h2 className={styles.sectionTitle}>{t('landing.workflowTitle')}</h2>
+            <span className={styles.sectionSub}>OPERATIONAL RUNTIME</span>
+            <h2 className={styles.sectionTitle}>From Distress to Relief in Six Steps</h2>
           </div>
 
           <div className={styles.stepsGrid}>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>01</div>
-              <h4>{t('landing.step1Title')}</h4>
-              <p>{t('landing.step1Desc')}</p>
+              <h4>Incident Reported</h4>
+              <p>Civilians or field officers file coordinates and urgency specs.</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>02</div>
-              <h4>{t('landing.step2Title')}</h4>
-              <p>{t('landing.step2Desc')}</p>
+              <h4>Verified &amp; Analyzed</h4>
+              <p>Central desk prioritizes incidents based on local risk values.</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>03</div>
-              <h4>{t('landing.step3Title')}</h4>
-              <p>{t('landing.step3Desc')}</p>
+              <h4>Resources Matched</h4>
+              <p>The routing engine reserves supplies from the nearest active depot.</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>04</div>
-              <h4>{t('landing.step4Title')}</h4>
-              <p>{t('landing.step4Desc')}</p>
+              <h4>Units Deployed</h4>
+              <p>Vehicles receive live GPS navigation maps to direct deliveries.</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>05</div>
-              <h4>{t('landing.step5Title')}</h4>
-              <p>{t('landing.step5Desc')}</p>
+              <h4>On-Ground Response</h4>
+              <p>Responders arrive at destination, updating status live on map.</p>
             </div>
             <div className={styles.stepCard}>
               <div className={styles.stepNum}>06</div>
-              <h4>{t('landing.step6Title')}</h4>
-              <p>{t('landing.step6Desc')}</p>
+              <h4>Relief Delivered</h4>
+              <p>Supplies are verified as handed over, resolving the incident node.</p>
             </div>
           </div>
         </div>
@@ -813,17 +811,17 @@ export const Landing: React.FC = () => {
         <div className={styles.sectionContainer}>
           <div className={styles.radarLayoutGrid}>
             <div className={styles.radarText}>
-              <span className={`${styles.badgeText} radar-eyebrow`}>{t('landing.radarEyebrow')}</span>
+              <span className={`${styles.badgeText} radar-eyebrow`}>[ ● LIVE ] RESPONSE MATRIX</span>
               <h2 className={styles.radarHeading}>
                 <span className={styles.radarHeadingLineMask}>
-                  <span className={`${styles.radarHeadingLine} reveal-block`} data-reveal-color="#F47C20">{t('landing.radarTitleLine1')}</span>
+                  <span className={`${styles.radarHeadingLine} reveal-block`} data-reveal-color="#F47C20">Building Resilient</span>
                 </span>
                 <span className={styles.radarHeadingLineMask}>
-                  <span className={`${styles.radarHeadingLine} reveal-block`} data-reveal-color="#F47C20">{t('landing.radarTitleLine2')}</span>
+                  <span className={`${styles.radarHeadingLine} reveal-block`} data-reveal-color="#F47C20">Communities.</span>
                 </span>
               </h2>
               <p className={`${styles.radarDesc} radar-description`}>
-                {t('landing.radarDesc')}
+                Our telemetry radar and incident routing loops coordinate relief depots and fleet deployment protocols synchronously.
               </p>
             </div>
 
@@ -835,9 +833,9 @@ export const Landing: React.FC = () => {
                 <div className={styles.radarHeader}>
                   <div className={styles.liveIndicator}>
                     <span className={styles.liveDot} />
-                    <span>{t('landing.radarScopeTitle')}</span>
+                    <span>HQ LIVE TELEMETRY (DELHI)</span>
                   </div>
-                  <span className={styles.techText}>{t('landing.radarScopeNode')}</span>
+                  <span className={styles.techText}>NODE: DL-CP-01</span>
                 </div>
                 <div className={styles.radarBody}>
                   <div className={styles.radarScope}>
@@ -900,22 +898,22 @@ export const Landing: React.FC = () => {
           {/* Moved stats strip here */}
           <div className={styles.indicatorBar}>
             <div className={styles.indicatorItem}>
-              <span className={styles.indLabel}>{t('landing.metricsActiveIncidents')}</span>
+              <span className={styles.indLabel}>ACTIVE INCIDENTS</span>
               <span className={`${styles.indVal} ${styles.textCritical} tech-code`}>{String(activeIncidentsCount).padStart(2, '0')}</span>
             </div>
             <div className={styles.indicatorDivider} />
             <div className={styles.indicatorItem}>
-              <span className={styles.indLabel}>{t('landing.metricsDepotsStatus')}</span>
-              <span className={`${styles.indVal} ${styles.textSuccess} tech-code`}>{t('common.active').toUpperCase()}</span>
+              <span className={styles.indLabel}>RELIEF DEPOTS STATUS</span>
+              <span className={`${styles.indVal} ${styles.textSuccess} tech-code`}>ONLINE</span>
             </div>
             <div className={styles.indicatorDivider} />
             <div className={styles.indicatorItem}>
-              <span className={styles.indLabel}>{t('landing.metricsVehiclesMission')}</span>
+              <span className={styles.indLabel}>VEHICLES ON-MISSION</span>
               <span className={`${styles.indVal} ${styles.textPrimary} tech-code`}>{String(dispatchedVehiclesCount || 6).padStart(2, '0')}</span>
             </div>
             <div className={styles.indicatorDivider} />
             <div className={styles.indicatorItem}>
-              <span className={styles.indLabel}>{t('landing.metricsSheltersAvailable')}</span>
+              <span className={styles.indLabel}>SHELTER SPACES AVAIL.</span>
               <span className={`${styles.indVal} tech-code`}>354</span>
             </div>
           </div>
@@ -923,18 +921,18 @@ export const Landing: React.FC = () => {
           <div className={styles.metricsGrid}>
             <div className={styles.metricCard}>
               <div className={styles.metricValue}>12m</div>
-              <h4>{t('landing.metricCard1Title')}</h4>
-              <p>{t('landing.metricCard1Desc')}</p>
+              <h4>Average Dispatch Time</h4>
+              <p>Emergency trucks are loaded, routed, and rolling in under 12 minutes.</p>
             </div>
             <div className={styles.metricCard}>
               <div className={styles.metricValue}>99%</div>
-              <h4>{t('landing.metricCard2Title')}</h4>
-              <p>{t('landing.metricCard2Desc')}</p>
+              <h4>Demand-Supply Match</h4>
+              <p>Almost zero wastage in relief materials due to coordinate-based allocations.</p>
             </div>
             <div className={styles.metricCard}>
               <div className={styles.metricValue}>15k+</div>
-              <h4>{t('landing.metricCard3Title')}</h4>
-              <p>{t('landing.metricCard3Desc')}</p>
+              <h4>Civilians Assisted</h4>
+              <p>Lives supported with food, water, shelter, and active medical rescues.</p>
             </div>
           </div>
         </div>
@@ -956,26 +954,26 @@ export const Landing: React.FC = () => {
         <div className={styles.sectionContainer}>
           <div className={styles.sosGrid}>
             <div className={styles.sosContent}>
-              <span className={`${styles.sectionSub} sos-eyebrow`}>{t('landing.sosEyebrow')}</span>
+              <span className={`${styles.sectionSub} sos-eyebrow`}>CIVILIAN EMERGENCY PORTAL ● PRIORITY CHANNEL</span>
               <h2 className={styles.sectionTitle}>
                 <span className={styles.sosHeadingLineMask}>
-                  <span className={`${styles.sosHeadingLine} reveal-block`} data-reveal-color="#F47C20">{t('landing.sosTitleLine1')}</span>
+                  <span className={`${styles.sosHeadingLine} reveal-block`} data-reveal-color="#F47C20">Need Assistance?</span>
                 </span>
                 <span className={styles.sosHeadingLineMask}>
-                  <span className={`${styles.sosHeadingLine} reveal-block`} data-reveal-color="#F47C20">{t('landing.sosTitleLine2')}</span>
+                  <span className={`${styles.sosHeadingLine} reveal-block`} data-reveal-color="#F47C20">File an SOS Request</span>
                 </span>
               </h2>
               <p className={`${styles.sosText} sos-description`}>
-                {t('landing.sosDesc')}
+                Are you an affected civilian, NGO worker, or volunteer? Submit your zone demand immediately. SAKSHAM's matching engine pairs incoming requests with the nearest available depot.
               </p>
               <div className={styles.sosBenefits}>
                 <div className={`${styles.sosBenefitItem} sos-reassurance-item`}>
                   <span className={styles.reassuranceBullet}>◉</span>
-                  <span>{t('landing.sosBenefit1')}</span>
+                  <span>Immediate notification to Delhi NDRF Control Room</span>
                 </div>
                 <div className={`${styles.sosBenefitItem} sos-reassurance-item`}>
                   <span className={styles.reassuranceBullet}>◉</span>
-                  <span>{t('landing.sosBenefit2')}</span>
+                  <span>Automated tracking ID generated on submission</span>
                 </div>
               </div>
             </div>
@@ -992,40 +990,40 @@ export const Landing: React.FC = () => {
                 {sosSubmitted ? (
                   <div className={styles.formSuccess}>
                     <FileCheck size={48} className={styles.successIcon} />
-                    <h3>{t('landing.successTitle')}</h3>
-                    <p>{t('landing.successDesc')}</p>
+                    <h3>SOS Request Registered</h3>
+                    <p>Your emergency demand has been logged into the SAKSHAM Command Center.</p>
                     <div className={styles.successBadge}>
-                      <span>{t('landing.successStatusLabel')}</span>
-                      <strong className={styles.textPrimary}>{t('landing.successStatusVal')}</strong>
+                      <span>STATUS:</span>
+                      <strong className={styles.textPrimary}>RESPONSE NETWORK NOTIFIED</strong>
                     </div>
                     <div className={styles.successTicket}>
-                      <span>{t('landing.successIdLabel')}</span>
+                      <span>REQUEST ID:</span>
                       <strong>{ticketId}</strong>
                     </div>
                     <button
                       onClick={() => setSosSubmitted(false)}
                       className={styles.resetBtn}
                     >
-                      {t('landing.successResetBtn')}
+                      File Another Request
                     </button>
                   </div>
                 ) : (
                   <form onSubmit={handleSosSubmit} className={styles.form}>
                     <div className={styles.formHeader}>
                       <div className={styles.formHeaderTitle}>
-                        <span>{t('landing.formHeader')}</span>
-                        <span>{t('landing.formSub')}</span>
+                        <span>EMERGENCY REQUEST</span>
+                        <span>SAKSHAM CIVILIAN CHANNEL</span>
                       </div>
                       <div className={styles.formHeaderStatus}>
                         <span className={styles.formLiveDot} />
-                        <span>{t('landing.formSecure')}</span>
+                        <span>SECURE INTAKE</span>
                       </div>
                     </div>
 
                     <div className={styles.formDivider} />
 
                     <div className={styles.formGroup}>
-                      <label htmlFor="name">{t('landing.formNameLabel')}</label>
+                      <label htmlFor="name">Reporter Full Name</label>
                       <input
                         id="name"
                         type="text"
@@ -1037,7 +1035,7 @@ export const Landing: React.FC = () => {
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="phone">{t('landing.formPhoneLabel')}</label>
+                      <label htmlFor="phone">Contact Number</label>
                       <input
                         id="phone"
                         type="tel"
@@ -1049,7 +1047,7 @@ export const Landing: React.FC = () => {
                       />
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="need">{t('landing.formNeedLabel')}</label>
+                      <label htmlFor="need">Primary Need</label>
                       <div className={styles.selectWrapper}>
                         <select
                           id="need"
@@ -1066,27 +1064,27 @@ export const Landing: React.FC = () => {
                       </div>
                     </div>
                     <div className={styles.formGroup}>
-                      <label htmlFor="details">{t('landing.formDetailsLabel')}</label>
+                      <label htmlFor="details">Situation Details</label>
                       <textarea
                         id="details"
                         rows={3}
-                        placeholder={t('landing.formDetailsPlaceholder')}
+                        placeholder="Describe the number of people affected and current safety levels..."
                         value={sosForm.details}
                         onChange={(e) => setSosForm({ ...sosForm, details: e.target.value })}
                         required
                         disabled={isSubmitting}
                       />
-                      <span className={styles.fieldHelper}>{t('landing.formDetailsPlaceholder')}</span>
+                      <span className={styles.fieldHelper}>Describe who needs help, what happened, and current safety conditions.</span>
                     </div>
                     <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
                       {isSubmitting ? (
                         <>
-                          {t('common.loading')}
+                          Submitting SOS Request...
                           <span className={styles.buttonSpinner} />
                         </>
                       ) : (
                         <>
-                          {t('landing.formSubmitBtn')}
+                          Submit Emergency SOS
                           <Send size={15} />
                         </>
                       )}
@@ -1103,10 +1101,10 @@ export const Landing: React.FC = () => {
       <section className={`${styles.ctaSection} textureForest ${styles.stackedLayer}`}>
         <div className={styles.sectionContainer}>
           <div className={styles.ctaWrapper}>
-            <h2>{t('landing.accessConsole')}</h2>
-            <p>{t('landing.heroDesc')}</p>
+            <h2>Ready to Respond.</h2>
+            <p>Access live GIS maps, dispatch logs, active alert filters, and coordinates registries.</p>
             <Link to="/operations/command-center" className={styles.ctaButton}>
-              {t('landing.exploreConsole')}
+              Go to Command Center
               <ArrowRight size={18} />
             </Link>
           </div>
