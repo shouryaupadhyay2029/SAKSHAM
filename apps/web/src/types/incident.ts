@@ -40,6 +40,8 @@ export interface Incident {
   description: string;
   reporterName: string;
   reporterContact: string;
+  reporterPhone?: string;
+  reporterEmail?: string;
   casualtiesCount?: number;
   displacedCount?: number;
   

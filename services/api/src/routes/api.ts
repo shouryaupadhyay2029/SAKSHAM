@@ -102,6 +102,9 @@ const incidentCreateSchema = z.object({
   affectedPeople: z.number().int().nonnegative().optional(),
   displacedPeople: z.number().int().nonnegative().optional(),
   assignedUnit: z.string().optional(),
+  reporterName: z.string().optional(),
+  reporterPhone: z.string().optional(),
+  reporterEmail: z.string().optional(),
 });
 
 const incidentUpdateSchema = incidentCreateSchema.partial();
@@ -110,9 +113,41 @@ const incidentStatusSchema = z.object({
   status: z.nativeEnum(IncidentStatus),
 });
 
+async function isOfficerUser(req: Request): Promise<boolean> {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+  const token = authHeader.slice(7);
+  if (token.startsWith('demo-token-')) {
+    const role = token.replace('demo-token-', '').toUpperCase();
+    return role !== 'CIVILIAN';
+  }
+  try {
+    const payload: any = jwt.verify(token, JWT_SECRET);
+    const officerId = payload.sub || payload.id || payload.officerId;
+    if (!officerId) return false;
+    const officer = await prisma.officer.findUnique({ where: { id: officerId } });
+    return !!officer;
+  } catch {
+    return false;
+  }
+}
+
+function maskIncidentContacts(incident: any, isOfficer: boolean) {
+  if (isOfficer) return incident;
+  return {
+    ...incident,
+    reporterPhone: incident.reporterPhone ? '+91 XXXXX XXXXX' : 'Phone unavailable',
+    reporterEmail: incident.reporterEmail ? 'r***@example.com' : 'Email unavailable',
+    reporterName: incident.reporterName ? (incident.reporterName.split(' ')[0] + ' ***') : 'Civilian (unauthenticated)',
+  };
+}
+
 // GET /api/incidents (with filter & search)
 router.get('/incidents', asyncHandler(async (req, res) => {
   const { status, severity, search, region, limit = '50', offset = '0' } = req.query;
+  const isOfficer = await isOfficerUser(req);
 
   const where: any = {};
 
@@ -147,8 +182,10 @@ router.get('/incidents', asyncHandler(async (req, res) => {
     prisma.incident.count({ where }),
   ]);
 
+  const maskedIncidents = incidents.map(inc => maskIncidentContacts(inc, isOfficer));
+
   res.json({
-    data: incidents,
+    data: maskedIncidents,
     meta: {
       total,
       limit: parseInt(limit as string),
@@ -160,6 +197,7 @@ router.get('/incidents', asyncHandler(async (req, res) => {
 // GET /api/incidents/:id (Can be UUID or human-readable incidentId)
 router.get('/incidents/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const isOfficer = await isOfficerUser(req);
 
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
@@ -169,6 +207,11 @@ router.get('/incidents/:id', asyncHandler(async (req, res) => {
       demands: true,
       timelines: {
         orderBy: { timestamp: 'desc' },
+        include: {
+          actor: {
+            select: { id: true, name: true, role: true }
+          }
+        }
       },
     },
   });
@@ -177,7 +220,7 @@ router.get('/incidents/:id', asyncHandler(async (req, res) => {
     return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
   }
 
-  res.json({ data: incident });
+  res.json({ data: maskIncidentContacts(incident, isOfficer) });
 }));
 
 // POST /api/incidents
@@ -451,6 +494,220 @@ router.post('/incidents/:id/assess', requireOfficerAuth, asyncHandler(async (req
       message: `Incident assessment recorded. Status transitioned from ${incident.status} to ${newStatus}.`,
     }
   });
+}));
+
+/* ==========================================
+   INCIDENT CONTACT & FIELD VERIFICATION EXTENSION
+   ========================================== */
+
+const contactLogSchema = z.object({
+  method: z.enum(['PHONE', 'SMS', 'EMAIL', 'OTHER']),
+  outcome: z.enum(['CONNECTED', 'NO_ANSWER', 'BUSY', 'INVALID_NUMBER', 'SENT', 'FAILED', 'OTHER']),
+  note: z.string().max(1000).default(''),
+});
+
+const fieldVerificationSchema = z.object({
+  assignedOfficerId: z.string().uuid('Valid Officer UUID required'),
+});
+
+const fieldVerificationUpdateSchema = z.object({
+  status: z.enum(['REQUESTED', 'ASSIGNED', 'EN_ROUTE', 'ARRIVED', 'COMPLETED', 'CANCELLED']),
+  observation: z.string().optional(),
+  decision: z.enum(['CONFIRMED', 'NOT_CONFIRMED', 'INSUFFICIENT_INFORMATION']).optional(),
+});
+
+// GET /api/officers/available — list field officers available for assignment
+router.get('/officers/available', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const officers = await prisma.officer.findMany({
+    where: { accountStatus: 'ACTIVE' },
+    select: { id: true, name: true, email: true, role: true, region: true }
+  });
+  res.json({ data: officers });
+}));
+
+// GET /api/incidents/:id/contacts — get communication logs
+router.get('/incidents/:id/contacts', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const incident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!incident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  const logs = await prisma.incidentContactLog.findMany({
+    where: { incidentId: incident.id },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      officer: { select: { id: true, name: true, role: true } }
+    }
+  });
+  res.json({ data: logs });
+}));
+
+// POST /api/incidents/:id/contacts — log communication attempt
+router.post('/incidents/:id/contacts', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const officer = (req as any).officer;
+  const body = contactLogSchema.parse(req.body);
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const incident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!incident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  const contactLog = await prisma.incidentContactLog.create({
+    data: {
+      incidentId: incident.id,
+      officerId: officer.id,
+      method: body.method,
+      outcome: body.outcome,
+      note: body.note,
+    },
+    include: {
+      officer: { select: { id: true, name: true, role: true } }
+    }
+  });
+
+  // Log in timeline
+  await prisma.incidentTimeline.create({
+    data: {
+      incidentId: incident.id,
+      eventType: `CONTACT_${body.method}`,
+      message: `Reporter contacted via ${body.method.toLowerCase()}. Outcome: ${body.outcome.toLowerCase().replace('_', ' ')}. Note: "${body.note || 'None'}"`,
+      actorId: officer.id,
+      metadata: { method: body.method, outcome: body.outcome, note: body.note }
+    }
+  });
+
+  res.status(201).json({ data: contactLog });
+}));
+
+// GET /api/incidents/:id/field-verification — get field verification status
+router.get('/incidents/:id/field-verification', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const incident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!incident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  const verifications = await prisma.fieldVerification.findMany({
+    where: { incidentId: incident.id },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      assignedOfficer: { select: { id: true, name: true, role: true } },
+      requestedByOfficer: { select: { id: true, name: true, role: true } }
+    }
+  });
+  res.json({ data: verifications });
+}));
+
+// POST /api/incidents/:id/field-verification — request field verification
+router.post('/incidents/:id/field-verification', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const officer = (req as any).officer;
+  const body = fieldVerificationSchema.parse(req.body);
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const incident = await prisma.incident.findUnique({
+    where: isUuid ? { id } : { incidentId: id },
+  });
+  if (!incident) {
+    return res.status(404).json({ error: { message: `Incident ${id} not found.` } });
+  }
+
+  if (incident.status === 'REJECTED') {
+    return res.status(409).json({ error: { message: 'Cannot request field verification for a rejected incident.' } });
+  }
+
+  const fieldOfficer = await prisma.officer.findUnique({ where: { id: body.assignedOfficerId } });
+  if (!fieldOfficer) {
+    return res.status(404).json({ error: { message: 'Assigned field officer not found.' } });
+  }
+
+  // Set incident status to NEEDS_INFORMATION (or keep reported but mark that verification is pending)
+  // Let's create the verification task
+  const verification = await prisma.fieldVerification.create({
+    data: {
+      incidentId: incident.id,
+      assignedOfficerId: body.assignedOfficerId,
+      requestedByOfficerId: officer.id,
+      status: 'ASSIGNED',
+    },
+    include: {
+      assignedOfficer: { select: { id: true, name: true, role: true } },
+      requestedByOfficer: { select: { id: true, name: true, role: true } }
+    }
+  });
+
+  // Write timeline
+  await prisma.incidentTimeline.create({
+    data: {
+      incidentId: incident.id,
+      eventType: 'FIELD_VERIFICATION_REQUESTED',
+      message: `Field verification requested. Assigned to officer ${fieldOfficer.name}.`,
+      actorId: officer.id,
+      metadata: { verificationId: verification.id, assignedOfficerId: fieldOfficer.id }
+    }
+  });
+
+  res.status(201).json({ data: verification });
+}));
+
+// PATCH /api/field-verifications/:id — update verification progress/report (travel/observe)
+router.patch('/field-verifications/:id', requireOfficerAuth, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const officer = (req as any).officer;
+  const body = fieldVerificationUpdateSchema.parse(req.body);
+
+  const verification = await prisma.fieldVerification.findUnique({
+    where: { id },
+  });
+  if (!verification) {
+    return res.status(404).json({ error: { message: 'Field verification task not found.' } });
+  }
+
+  // Validate decision required for completion
+  if (body.status === 'COMPLETED' && (!body.observation || !body.decision)) {
+    return res.status(400).json({ error: { message: 'Observation and decision are required to complete field verification.' } });
+  }
+
+  const updated = await prisma.fieldVerification.update({
+    where: { id },
+    data: {
+      status: body.status,
+      observation: body.observation || verification.observation,
+      decision: body.decision || verification.decision,
+    },
+    include: {
+      assignedOfficer: { select: { id: true, name: true, role: true } }
+    }
+  });
+
+  // Log to timeline
+  let timelineMsg = `Field verification status updated to ${body.status.toLowerCase().replace('_', ' ')} by ${officer.name}.`;
+  if (body.status === 'COMPLETED') {
+    timelineMsg = `Field verification completed by ${officer.name}. Decision: ${body.decision}. Observation: "${body.observation}"`;
+  }
+
+  await prisma.incidentTimeline.create({
+    data: {
+      incidentId: verification.incidentId,
+      eventType: `FIELD_VERIFICATION_${body.status}`,
+      message: timelineMsg,
+      actorId: officer.id,
+      metadata: { status: body.status, decision: body.decision, observation: body.observation }
+    }
+  });
+
+  res.json({ data: updated });
 }));
 
 

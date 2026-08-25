@@ -116,6 +116,9 @@ model Officer {
   allocations  Allocation[]
   dispatches   Dispatch[]
   assessments  IncidentAssessment[]
+  contactLogs  IncidentContactLog[]
+  assignedVerifications  FieldVerification[] @relation("AssignedFieldOfficer")
+  requestedVerifications FieldVerification[] @relation("RequestedByOfficer")
 }
 
 model Incident {
@@ -137,10 +140,16 @@ model Incident {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  timelines     IncidentTimeline[]
-  demands       DemandRequest[]
-  notifications Notification[]
-  assessments   IncidentAssessment[]
+  reporterName    String?
+  reporterPhone   String?
+  reporterEmail   String?
+
+  timelines           IncidentTimeline[]
+  demands             DemandRequest[]
+  notifications       Notification[]
+  assessments         IncidentAssessment[]
+  contactLogs         IncidentContactLog[]
+  fieldVerifications  FieldVerification[]
 }
 
 model IncidentTimeline {
@@ -157,6 +166,44 @@ model IncidentTimeline {
   actor    Officer? @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([incidentId])
+}
+
+// Logs communications (Phone call attempts, SMS, Email, etc.)
+model IncidentContactLog {
+  id              String   @id @default(uuid()) @db.Uuid
+  incidentId      String   @db.Uuid
+  officerId       String   @db.Uuid
+  method          String   // PHONE | SMS | EMAIL | OTHER
+  outcome         String   // CONNECTED | NO_ANSWER | BUSY | INVALID_NUMBER | SENT | FAILED | OTHER
+  note            String
+  createdAt       DateTime @default(now())
+
+  incident        Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  officer         Officer  @relation(fields: [officerId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+  @@index([officerId])
+}
+
+// Logs field verification tasks assigned to mobile/field officers
+model FieldVerification {
+  id                   String   @id @default(uuid()) @db.Uuid
+  incidentId           String   @db.Uuid
+  assignedOfficerId    String   @db.Uuid
+  requestedByOfficerId String   @db.Uuid
+  status               String   // REQUESTED | ASSIGNED | EN_ROUTE | ARRIVED | COMPLETED | CANCELLED
+  observation          String?
+  decision             String?  // CONFIRMED | NOT_CONFIRMED | INSUFFICIENT_INFORMATION
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  incident             Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  assignedOfficer      Officer  @relation("AssignedFieldOfficer", fields: [assignedOfficerId], references: [id], onDelete: Restrict)
+  requestedByOfficer   Officer  @relation("RequestedByOfficer", fields: [requestedByOfficerId], references: [id], onDelete: Restrict)
+
+  @@index([incidentId])
+  @@index([assignedOfficerId])
+  @@index([requestedByOfficerId])
 }
 
 // Persists the officer's formal assessment decision for an incident.

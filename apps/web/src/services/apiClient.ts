@@ -252,6 +252,49 @@ export const apiClient = {
     return fetchJson<any[]>(`/incidents/${incidentId}/assessment`);
   },
 
+  // ── Incident Contact Logs ──
+  async getIncidentContacts(incidentId: string) {
+    return fetchJson<any[]>(`/incidents/${incidentId}/contacts`);
+  },
+
+  async createIncidentContact(incidentId: string, payload: {
+    method: 'PHONE' | 'SMS' | 'EMAIL' | 'OTHER';
+    outcome: 'CONNECTED' | 'NO_ANSWER' | 'BUSY' | 'INVALID_NUMBER' | 'SENT' | 'FAILED' | 'OTHER';
+    note: string;
+  }) {
+    return fetchJson<any>(`/incidents/${incidentId}/contacts`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  // ── Field Verification ──
+  async getFieldVerifications(incidentId: string) {
+    return fetchJson<any[]>(`/incidents/${incidentId}/field-verification`);
+  },
+
+  async createFieldVerification(incidentId: string, payload: { assignedOfficerId: string }) {
+    return fetchJson<any>(`/incidents/${incidentId}/field-verification`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateFieldVerification(verificationId: string, payload: {
+    status: 'REQUESTED' | 'ASSIGNED' | 'EN_ROUTE' | 'ARRIVED' | 'COMPLETED' | 'CANCELLED';
+    observation?: string;
+    decision?: 'CONFIRMED' | 'NOT_CONFIRMED' | 'INSUFFICIENT_INFORMATION';
+  }) {
+    return fetchJson<any>(`/field-verifications/${verificationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getAvailableOfficers() {
+    return fetchJson<any[]>('/officers/available');
+  },
+
   // ── Matching & Allocations ──
   async getMatchingRecommendations(demandId: string) {
     return fetchJson<any>(`/matching/demands/${demandId}/recommendations`);

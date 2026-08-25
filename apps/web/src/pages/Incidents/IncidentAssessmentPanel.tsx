@@ -13,7 +13,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import {
   X, MapPin, Clock, User, AlertTriangle, CheckCircle2, XCircle,
-  HelpCircle, FileText, Shield, Send, ChevronDown, AlertOctagon
+  HelpCircle, FileText, Shield, Send, ChevronDown,
+  Phone, Mail, MessageSquare, Plus, Activity
 } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import { useAuth } from '../../context/AuthContext';
@@ -74,17 +75,57 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
   const [rejectionReason, setRejectionReason] = useState('');
   const [infoRequestReason, setInfoRequestReason] = useState('');
 
+  // Contact logs & verification states
+  const [contactHistory, setContactHistory] = useState<any[]>([]);
+  const [showCallForm, setShowCallForm] = useState(false);
+  const [callOutcome, setCallOutcome] = useState<'CONNECTED' | 'NO_ANSWER' | 'BUSY' | 'INVALID_NUMBER'>('CONNECTED');
+  const [callNote, setCallNote] = useState('');
+
+  const [showSmsForm, setShowSmsForm] = useState(false);
+  const [smsText, setSmsText] = useState('');
+
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailText, setEmailText] = useState('');
+
+  // Field Verification states
+  const [fieldVerifications, setFieldVerifications] = useState<any[]>([]);
+  const [availableOfficers, setAvailableOfficers] = useState<any[]>([]);
+  const [selectedOfficerId, setSelectedOfficerId] = useState('');
+  const [showFieldVerificationRequest, setShowFieldVerificationRequest] = useState(false);
+  const [fieldObservation, setFieldObservation] = useState('');
+  const [fieldDecision, setFieldDecision] = useState<'CONFIRMED' | 'NOT_CONFIRMED' | 'INSUFFICIENT_INFORMATION'>('CONFIRMED');
+
   // Load state
   const [corroborationCount, setCorroborationCount] = useState<number | null>(null);
-  const [isLoadingCorroboration, setIsLoadingCorroboration] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submittedAssessment, setSubmittedAssessment] = useState<any>(null);
 
-  // Fetch timeline to see if assessment is already loaded
-
   const incidentUuid = (incident as any).uuid || incident.id;
+
+  // Role permissions check
+  const isAuthorizedOfficer = authUser && ['OPERATOR', 'REGIONAL_AUTHORITY', 'ADMIN'].includes(authUser.role);
+
+  // Masking functions
+  const maskPhone = (phone?: string) => {
+    if (!phone) return 'Phone unavailable';
+    if (!isAuthorizedOfficer) return '+91 XXXXX XXXXX';
+    return phone;
+  };
+
+  const maskEmail = (email?: string) => {
+    if (!email) return 'Email unavailable';
+    if (!isAuthorizedOfficer) return 'r***@example.com';
+    return email;
+  };
+
+  const maskName = (name?: string) => {
+    if (!name) return 'Civilian';
+    if (!isAuthorizedOfficer) return name.split(' ')[0] + ' ***';
+    return name;
+  };
 
   // Animate in
   useEffect(() => {
@@ -97,30 +138,127 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
     }
   }, []);
 
-  // Load real corroboration count and timeline from backend
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadData = async () => {
-      setIsLoadingCorroboration(true);
-      try {
-        // Load existing assessment if any
-        const asmRes = await apiClient.getIncidentAssessments(incidentUuid);
-        if (!cancelled && Array.isArray(asmRes.data) && asmRes.data.length > 0) {
-          // Already assessed — show result
-          setSubmittedAssessment(asmRes.data[0]);
-          setSubmitted(true);
-        }
-      } catch {
-        // Non-critical: corroboration unavailable
-      } finally {
-        if (!cancelled) setIsLoadingCorroboration(false);
+  const loadAssessmentData = async () => {
+    try {
+      // Load existing assessment if any
+      const asmRes = await apiClient.getIncidentAssessments(incidentUuid);
+      if (Array.isArray(asmRes.data) && asmRes.data.length > 0) {
+        setSubmittedAssessment(asmRes.data[0]);
+        setSubmitted(true);
       }
-    };
 
-    loadData();
-    return () => { cancelled = true; };
+      // Load contact history
+      const contactRes = await apiClient.getIncidentContacts(incidentUuid);
+      if (Array.isArray(contactRes.data)) {
+        setContactHistory(contactRes.data);
+      }
+
+      // Load field verifications
+      const verRes = await apiClient.getFieldVerifications(incidentUuid);
+      if (Array.isArray(verRes.data)) {
+        setFieldVerifications(verRes.data);
+      }
+
+      // Load available officers
+      const offRes = await apiClient.getAvailableOfficers();
+      if (Array.isArray(offRes.data)) {
+        setAvailableOfficers(offRes.data);
+      }
+    } catch {
+      // Non-critical fallback
+    }
+  };
+
+  useEffect(() => {
+    loadAssessmentData();
   }, [incidentUuid]);
+
+  // Handle contact log submission
+  const handleSaveContactResult = async () => {
+    try {
+      await apiClient.createIncidentContact(incidentUuid, {
+        method: 'PHONE',
+        outcome: callOutcome,
+        note: callNote,
+      });
+      setShowCallForm(false);
+      setCallNote('');
+      loadAssessmentData();
+      if (callOutcome === 'CONNECTED') {
+        setSelectedMethods(prev => prev.includes('REPORTER_CONTACTED') ? prev : [...prev, 'REPORTER_CONTACTED']);
+      }
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to save contact result.');
+    }
+  };
+
+  // Handle SMS demo submit
+  const handleSendSms = async () => {
+    try {
+      await apiClient.createIncidentContact(incidentUuid, {
+        method: 'SMS',
+        outcome: 'SENT',
+        note: `Message: "${smsText}" (Demo mode - Twilio not configured)`,
+      });
+      setShowSmsForm(false);
+      setSmsText('');
+      loadAssessmentData();
+      setSelectedMethods(prev => prev.includes('REPORTER_CONTACTED') ? prev : [...prev, 'REPORTER_CONTACTED']);
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to send SMS.');
+    }
+  };
+
+  // Handle Email demo submit
+  const handleSendEmail = async () => {
+    try {
+      await apiClient.createIncidentContact(incidentUuid, {
+        method: 'EMAIL',
+        outcome: 'SENT',
+        note: `Subject: "${emailSubject}" | Message: "${emailText}" (Demo mode - SendGrid not configured)`,
+      });
+      setShowEmailForm(false);
+      setEmailSubject('');
+      setEmailText('');
+      loadAssessmentData();
+      setSelectedMethods(prev => prev.includes('REPORTER_CONTACTED') ? prev : [...prev, 'REPORTER_CONTACTED']);
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to send Email.');
+    }
+  };
+
+  // Handle request field verification
+  const handleRequestFieldVerification = async () => {
+    if (!selectedOfficerId) return;
+    try {
+      await apiClient.createFieldVerification(incidentUuid, {
+        assignedOfficerId: selectedOfficerId,
+      });
+      setShowFieldVerificationRequest(false);
+      loadAssessmentData();
+      setSelectedMethods(prev => prev.includes('FIELD_RESPONDER_INFO') ? prev : [...prev, 'FIELD_RESPONDER_INFO']);
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to request field verification.');
+    }
+  };
+
+  // Handle simulator update of field verification status
+  const handleSimulateFieldStatus = async (verId: string, targetStatus: any) => {
+    try {
+      const payload: any = { status: targetStatus };
+      if (targetStatus === 'COMPLETED') {
+        payload.observation = fieldObservation;
+        payload.decision = fieldDecision;
+      }
+      await apiClient.updateFieldVerification(verId, payload);
+      loadAssessmentData();
+      if (targetStatus === 'COMPLETED' && fieldDecision === 'CONFIRMED') {
+        setSelectedMethods(prev => prev.includes('FIELD_RESPONDER_INFO') ? prev : [...prev, 'FIELD_RESPONDER_INFO']);
+      }
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to simulate field status update.');
+    }
+  };
 
   // Animate corroboration count IN after load (purely cosmetic)
   // We use the real count from the assessment if it exists
@@ -139,11 +277,7 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
     }
   };
 
-  const toggleMethod = (methodId: string) => {
-    setSelectedMethods(prev =>
-      prev.includes(methodId) ? prev.filter(m => m !== methodId) : [...prev, methodId]
-    );
-  };
+
 
   const canSubmit = (): boolean => {
     if (!decision) return false;
@@ -184,7 +318,7 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
     CRITICAL: '#EF4444', HIGH: '#F47C20', MEDIUM: '#EAB308', LOW: '#10B981'
   };
 
-  const hasReporterContact = !!(incident.reporterContact && incident.reporterContact !== '');
+
   const hasLocation = !!(incident.coordinates?.lat && incident.coordinates?.lng);
 
   const reportedAt = new Date(incident.reportedAt || incident.time);
@@ -294,7 +428,7 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
         ) : (
           <div className={styles.panelBody}>
 
-            {/* ── Section 1: Report Details ── */}
+            {/* ── Section 1: Report Details & Reporter Info ── */}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>
                 <FileText size={14} />
@@ -338,139 +472,390 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
                   </div>
                 )}
                 <div className={styles.detailItemFull}>
-                  <span className={styles.detailLabel}>
-                    <User size={11} style={{ marginRight: 4 }} />
-                    Reporter
-                  </span>
-                  <span className={styles.detailValue}>
-                    {incident.reporterName || 'Civilian (not authenticated)'}
-                  </span>
-                </div>
-                <div className={styles.detailItemFull}>
                   <span className={styles.detailLabel}>Description</span>
                   <span className={styles.detailValue} style={{ fontStyle: 'italic', lineHeight: 1.6 }}>
                     "{incident.description || 'No description provided.'}"
                   </span>
                 </div>
               </div>
+
+              {/* Reporter Information Card */}
+              <div className={styles.reporterCard}>
+                <div className={styles.reporterCardHeader}>
+                  <User size={13} />
+                  <span>REPORTER INFORMATION</span>
+                </div>
+                <div className={styles.reporterInfoGrid}>
+                  <div className={styles.reporterInfoItem}>
+                    <span className={styles.reporterInfoLabel}>NAME</span>
+                    <span className={styles.reporterInfoValue}>{maskName(incident.reporterName)}</span>
+                  </div>
+                  <div className={styles.reporterInfoItem}>
+                    <span className={styles.reporterInfoLabel}>PHONE</span>
+                    <span className={styles.reporterInfoValue}>{maskPhone((incident as any).reporterPhone || (incident as any).reporterContact)}</span>
+                  </div>
+                  <div className={styles.reporterInfoItem}>
+                    <span className={styles.reporterInfoLabel}>EMAIL</span>
+                    <span className={styles.reporterInfoValue}>{maskEmail((incident as any).reporterEmail)}</span>
+                  </div>
+                  <div className={styles.reporterInfoItem}>
+                    <span className={styles.reporterInfoLabel}>CONTACT ATTEMPTS</span>
+                    <span className={styles.reporterInfoValue}>
+                      {contactHistory.length > 0 ? `${contactHistory.length} attempts logged` : 'Not Contacted'}
+                    </span>
+                  </div>
+                </div>
+
+                {isAuthorizedOfficer && ((incident as any).reporterPhone || (incident as any).reporterContact) && (
+                  <div className={styles.commActionButtons}>
+                    <a
+                      href={`tel:${(incident as any).reporterPhone || (incident as any).reporterContact}`}
+                      className={styles.commBtn}
+                      onClick={() => setShowCallForm(true)}
+                    >
+                      <Phone size={13} />
+                      CALL REPORTER
+                    </a>
+                    <button className={styles.commBtn} onClick={() => setShowSmsForm(true)}>
+                      <MessageSquare size={13} />
+                      SEND SMS
+                    </button>
+                    <button className={styles.commBtn} onClick={() => setShowEmailForm(true)}>
+                      <Mail size={13} />
+                      SEND EMAIL
+                    </button>
+                  </div>
+                )}
+
+                {/* Sub-form: Phone call outcome tracker */}
+                {showCallForm && (
+                  <div className={styles.subForm}>
+                    <h4>RECORD CALL OUTCOME</h4>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Outcome</label>
+                      <div className={styles.outcomeOptions}>
+                        {['CONNECTED', 'NO_ANSWER', 'BUSY', 'INVALID_NUMBER'].map(o => (
+                          <label key={o} className={styles.outcomeLabel}>
+                            <input
+                              type="radio"
+                              name="callOutcome"
+                              checked={callOutcome === o}
+                              onChange={() => setCallOutcome(o as any)}
+                            />
+                            <span>{o.replace('_', ' ')}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Call Note</label>
+                      <input
+                        type="text"
+                        className={styles.textInput}
+                        placeholder="Reporter statement or call details..."
+                        value={callNote}
+                        onChange={e => setCallNote(e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.subFormActions}>
+                      <button className={styles.subFormSaveBtn} onClick={handleSaveContactResult}>
+                        SAVE CONTACT RESULT
+                      </button>
+                      <button className={styles.subFormCancelBtn} onClick={() => setShowCallForm(false)}>
+                        CANCEL
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-form: SMS sender */}
+                {showSmsForm && (
+                  <div className={styles.subForm}>
+                    <h4>SEND SMS (DEMO MODE)</h4>
+                    <p className={styles.subFormHint}>SMS service not configured (abstractions logs only)</p>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>SMS Message</label>
+                      <textarea
+                        className={styles.textarea}
+                        rows={2}
+                        placeholder="Type SMS content here..."
+                        value={smsText}
+                        onChange={e => setSmsText(e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.subFormActions}>
+                      <button className={styles.subFormSaveBtn} onClick={handleSendSms} disabled={!smsText.trim()}>
+                        SEND SMS
+                      </button>
+                      <button className={styles.subFormCancelBtn} onClick={() => setShowSmsForm(false)}>
+                        CANCEL
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-form: Email sender */}
+                {showEmailForm && (
+                  <div className={styles.subForm}>
+                    <h4>SEND EMAIL (DEMO MODE)</h4>
+                    <p className={styles.subFormHint}>Email service not configured (abstractions logs only)</p>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Subject</label>
+                      <input
+                        type="text"
+                        className={styles.textInput}
+                        placeholder="SAKSHAM — Incident Alert"
+                        value={emailSubject}
+                        onChange={e => setEmailSubject(e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Email Message</label>
+                      <textarea
+                        className={styles.textarea}
+                        rows={3}
+                        placeholder="Type email content here..."
+                        value={emailText}
+                        onChange={e => setEmailText(e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.subFormActions}>
+                      <button className={styles.subFormSaveBtn} onClick={handleSendEmail} disabled={!emailText.trim()}>
+                        SEND EMAIL
+                      </button>
+                      <button className={styles.subFormCancelBtn} onClick={() => setShowEmailForm(false)}>
+                        CANCEL
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </section>
 
             <div className={styles.divider} />
 
-            {/* ── Section 2: Verification Signals ── */}
+            {/* ── Section 2: Contact History Log ── */}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>
-                <Shield size={14} />
-                AVAILABLE VERIFICATION SIGNALS
+                <MessageSquare size={14} />
+                CONTACT HISTORY
               </h2>
-              <p className={styles.sectionNote}>
-                These signals reflect what is actually available in the system. No information has been fabricated.
-              </p>
-
-              <div className={styles.signalGrid}>
-                {/* Location */}
-                <div className={styles.signalCard}>
-                  <div className={styles.signalHeader}>
-                    <MapPin size={14} />
-                    <span>LOCATION</span>
-                  </div>
-                  <div className={`${styles.signalItem} ${hasLocation ? styles.signalAvailable : styles.signalUnavailable}`}>
-                    {hasLocation ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
-                    <span>{hasLocation ? 'Coordinates received' : 'No coordinates'}</span>
-                  </div>
-                  <div className={`${styles.signalItem} ${hasLocation ? styles.signalAvailable : styles.signalUnavailable}`}>
-                    {hasLocation ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
-                    <span>{hasLocation ? 'Location mapped on system' : 'Location not mappable'}</span>
-                  </div>
-                </div>
-
-                {/* Reporter Contact */}
-                <div className={styles.signalCard}>
-                  <div className={styles.signalHeader}>
-                    <User size={14} />
-                    <span>REPORTER CONTACT</span>
-                  </div>
-                  <div className={`${styles.signalItem} ${hasReporterContact ? styles.signalAvailable : styles.signalUnavailable}`}>
-                    {hasReporterContact ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
-                    <span>{hasReporterContact ? `Contact available (${incident.reporterContact})` : 'No contact info provided'}</span>
-                  </div>
-                  <div className={styles.signalItem} style={{ color: 'rgba(250,248,243,0.4)' }}>
-                    <HelpCircle size={13} />
-                    <span>Phone verification: Not attempted</span>
-                  </div>
-                </div>
-
-                {/* Evidence */}
-                <div className={styles.signalCard}>
-                  <div className={styles.signalHeader}>
-                    <AlertTriangle size={14} />
-                    <span>EVIDENCE</span>
-                  </div>
-                  <div className={`${styles.signalItem} ${styles.signalUnavailable}`}>
-                    <XCircle size={13} />
-                    <span>No evidence submitted by reporter.</span>
-                  </div>
-                  <div className={styles.signalItem} style={{ color: 'rgba(250,248,243,0.35)', fontSize: '11px' }}>
-                    <span>Evidence upload system not yet available in this version.</span>
-                  </div>
-                </div>
-
-                {/* Corroboration */}
-                <div className={styles.signalCard}>
-                  <div className={styles.signalHeader}>
-                    <AlertOctagon size={14} />
-                    <span>REPORT CORROBORATION</span>
-                  </div>
-                  {isLoadingCorroboration ? (
-                    <div className={`${styles.signalItem} ${styles.signalPending}`}>
-                      <HelpCircle size={13} />
-                      <span>Calculating nearby incidents...</span>
+              <div className={styles.contactHistoryFeed}>
+                {contactHistory.length > 0 ? (
+                  contactHistory.map((log, idx) => (
+                    <div key={log.id || idx} className={styles.contactLogItem}>
+                      <div className={styles.contactLogMeta}>
+                        <span className={styles.contactLogTime}>
+                          {new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        </span>
+                        <span className={styles.contactLogMethod}>
+                          {log.method === 'PHONE' ? '📞 Call attempted' : log.method === 'SMS' ? '✉ SMS logged' : '✉ Email logged'}
+                        </span>
+                        <span className={styles.contactLogOfficer}>
+                          Officer: {log.officer?.name || 'Officer'}
+                        </span>
+                      </div>
+                      <div className={styles.contactLogContent}>
+                        <p className={styles.contactLogNote}>Outcome: <strong>{log.outcome.replace('_', ' ')}</strong></p>
+                        {log.note && <p className={styles.contactLogDesc}>📝 "{log.note}"</p>}
+                      </div>
                     </div>
-                  ) : corroborationCount !== null ? (
-                    <div className={`${styles.signalItem} ${corroborationCount > 0 ? styles.signalAvailable : styles.signalUnavailable}`}>
-                      {corroborationCount > 0 ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
-                      <span>
-                        {corroborationCount > 0
-                          ? `${corroborationCount} nearby incident${corroborationCount !== 1 ? 's' : ''} detected within ~500m`
-                          : 'No corroborating reports found'}
-                      </span>
+                  ))
+                ) : (
+                  <p className={styles.emptyFeed}>No contact attempts recorded.</p>
+                )}
+              </div>
+            </section>
+
+            <div className={styles.divider} />
+
+            {/* ── Section 3: Field Verification Workflow ── */}
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>
+                <Activity size={14} />
+                FIELD VERIFICATION
+              </h2>
+
+              {fieldVerifications.length > 0 ? (
+                fieldVerifications.map((ver, idx) => (
+                  <div key={ver.id || idx} className={styles.verificationProgressCard}>
+                    <div className={styles.verificationProgressHeader}>
+                      <span>Task: FIELD_VERIFICATION</span>
+                      <span className={styles.verStatusBadge}>{ver.status}</span>
                     </div>
-                  ) : (
-                    <div className={`${styles.signalItem} ${styles.signalPending}`}>
-                      <HelpCircle size={13} />
-                      <span>Corroboration data unavailable</span>
+                    <div className={styles.verificationProgressBody}>
+                      <p><strong>Assigned Officer:</strong> {ver.assignedOfficer?.name || 'Field Officer'}</p>
+                      <p><strong>Requested By:</strong> {ver.requestedByOfficer?.name || 'Command Officer'}</p>
+                      {ver.status === 'COMPLETED' && (
+                        <div className={styles.observationBlock}>
+                          <p><strong>Decision:</strong> <span style={{ color: ver.decision === 'CONFIRMED' ? '#10B981' : '#EF4444' }}>{ver.decision}</span></p>
+                          <p><strong>Observation:</strong> "{ver.observation || 'No details provided'}"</p>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Field Officer Simulation controls */}
+                    {ver.status !== 'COMPLETED' && ver.status !== 'CANCELLED' && (
+                      <div className={styles.simulatorControls}>
+                        <h5>FIELD OFFICER SIMULATION CONTROL</h5>
+                        <div className={styles.simulatorButtons}>
+                          {ver.status === 'ASSIGNED' && (
+                            <button
+                              className={styles.simBtn}
+                              onClick={() => handleSimulateFieldStatus(ver.id, 'EN_ROUTE')}
+                            >
+                              START TRAVEL (EN ROUTE)
+                            </button>
+                          )}
+                          {ver.status === 'EN_ROUTE' && (
+                            <button
+                              className={styles.simBtn}
+                              onClick={() => handleSimulateFieldStatus(ver.id, 'ARRIVED')}
+                            >
+                              MARK ARRIVED
+                            </button>
+                          )}
+                          {ver.status === 'ARRIVED' && (
+                            <div className={styles.observationInputBlock}>
+                              <textarea
+                                className={styles.textarea}
+                                rows={2}
+                                placeholder="Enter actual field observation..."
+                                value={fieldObservation}
+                                onChange={e => setFieldObservation(e.target.value)}
+                              />
+                              <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                                <select
+                                  className={styles.select}
+                                  value={fieldDecision}
+                                  onChange={e => setFieldDecision(e.target.value as any)}
+                                >
+                                  <option value="CONFIRMED">INCIDENT CONFIRMED</option>
+                                  <option value="NOT_CONFIRMED">INCIDENT NOT CONFIRMED</option>
+                                  <option value="INSUFFICIENT_INFORMATION">INSUFFICIENT INFORMATION</option>
+                                </select>
+                                <button
+                                  className={styles.simBtn}
+                                  style={{ backgroundColor: '#059669', color: '#fff' }}
+                                  disabled={!fieldObservation.trim()}
+                                  onClick={() => handleSimulateFieldStatus(ver.id, 'COMPLETED')}
+                                >
+                                  SUBMIT OBSERVATION
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div style={{ marginBottom: '14px' }}>
+                  <p className={styles.emptyFeed}>No field verification requested.</p>
+                  {isAuthorizedOfficer && (
+                    <button
+                      className={styles.requestFieldBtn}
+                      onClick={() => setShowFieldVerificationRequest(!showFieldVerificationRequest)}
+                    >
+                      <Plus size={13} />
+                      REQUEST FIELD VERIFICATION
+                    </button>
                   )}
                 </div>
+              )}
+
+              {showFieldVerificationRequest && (
+                <div className={styles.subForm}>
+                  <h4>ASSIGN FIELD OFFICER</h4>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Available Personnel</label>
+                    {availableOfficers.length > 0 ? (
+                      <div className={styles.selectWrapper}>
+                        <select
+                          className={styles.select}
+                          value={selectedOfficerId}
+                          onChange={e => setSelectedOfficerId(e.target.value)}
+                        >
+                          <option value="">— Select Officer —</option>
+                          {availableOfficers.map(o => (
+                            <option key={o.id} value={o.id}>
+                              {o.name} ({o.role}) &middot; MAPPED
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown size={14} className={styles.selectIcon} />
+                      </div>
+                    ) : (
+                      <p className={styles.subFormHint}>No available field officers.</p>
+                    )}
+                  </div>
+                  <div className={styles.subFormActions}>
+                    <button
+                      className={styles.subFormSaveBtn}
+                      disabled={!selectedOfficerId}
+                      onClick={handleRequestFieldVerification}
+                    >
+                      ASSIGN FIELD OFFICER
+                    </button>
+                    <button className={styles.subFormCancelBtn} onClick={() => setShowFieldVerificationRequest(false)}>
+                      CANCEL
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <div className={styles.divider} />
+
+            {/* ── Section 4: Verification Checklist Summary ── */}
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>
+                <Shield size={14} />
+                VERIFICATION SUMMARY
+              </h2>
+              <div className={styles.verificationSummaryTable}>
+                <div className={styles.summaryRow}>
+                  <span>Reporter contacted</span>
+                  <span>{contactHistory.some(c => c.outcome === 'CONNECTED') ? '✓ Connected' : '✕ No phone verification'}</span>
+                </div>
+                <div className={styles.summaryRow}>
+                  <span>Location reviewed</span>
+                  <span>{hasLocation ? '✓ Reviewed' : '✕ Unavailable'}</span>
+                </div>
+                <div className={styles.summaryRow}>
+                  <span>Evidence reviewed</span>
+                  <span>✕ No evidence submitted</span>
+                </div>
+                <div className={styles.summaryRow}>
+                  <span>Corroborating reports</span>
+                  <span>{corroborationCount !== null ? `✓ ${corroborationCount} report(s) nearby` : '✕ None'}</span>
+                </div>
+                <div className={styles.summaryRow}>
+                  <span>Field verification</span>
+                  <span>
+                    {fieldVerifications.some(f => f.status === 'COMPLETED' && f.decision === 'CONFIRMED')
+                      ? '✓ Confirmed'
+                      : fieldVerifications.length > 0
+                        ? `⚠ Pending (${fieldVerifications[0].status})`
+                        : '✕ Not requested'}
+                  </span>
+                </div>
               </div>
             </section>
 
             <div className={styles.divider} />
 
-            {/* ── Section 3: Officer Assessment Form ── */}
+            {/* ── Section 5: Decision ── */}
             <section className={styles.section}>
               <h2 className={styles.sectionTitle}>
-                <Shield size={14} />
-                OFFICER ASSESSMENT
+                <AlertTriangle size={14} />
+                ASSESSMENT DECISION
               </h2>
-
-              {/* Verification methods */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Verification methods used (select all that apply)</label>
-                <div className={styles.checkboxGrid}>
-                  {VERIFICATION_METHODS.map(method => (
-                    <label key={method.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        className={styles.checkbox}
-                        checked={selectedMethods.includes(method.id)}
-                        onChange={() => toggleMethod(method.id)}
-                      />
-                      <span className={styles.checkboxText}>{method.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <p className={styles.sectionNote}>
+                Select your final decision. This action will be permanently recorded in the incident audit log.
+                It cannot be undone.
+              </p>
 
               {/* Assessment note */}
               <div className={styles.formGroup}>
@@ -480,7 +865,7 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
                 <textarea
                   id="assessment-note"
                   className={styles.textarea}
-                  rows={4}
+                  rows={3}
                   placeholder="Describe your assessment of this incident, what you reviewed, and any relevant findings..."
                   value={assessmentNote}
                   onChange={e => setAssessmentNote(e.target.value)}
@@ -503,27 +888,13 @@ export const IncidentAssessmentPanel: React.FC<AssessmentPanelProps> = ({
                         borderColor: opt.color,
                         color: opt.color
                       } : {}}
-                      onClick={() => setPriorityAssessment(priorityAssessment === opt.value ? null : opt.value)}
+                      onClick={() => setPriorityAssessment(priorityAssessment === opt.value ? null : (opt.value as any))}
                     >
                       {opt.label}
                     </button>
                   ))}
                 </div>
               </div>
-            </section>
-
-            <div className={styles.divider} />
-
-            {/* ── Section 4: Decision ── */}
-            <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>
-                <AlertTriangle size={14} />
-                ASSESSMENT DECISION
-              </h2>
-              <p className={styles.sectionNote}>
-                Select your final decision. This action will be permanently recorded in the incident audit log.
-                It cannot be undone.
-              </p>
 
               {/* Decision selector */}
               <div className={styles.decisionRow}>
